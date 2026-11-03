@@ -2,7 +2,7 @@
 
 > *"Some gods brighten the sky when they are born; others, when they die."*
 
-A third-person narrative RPG / visual novel hybrid by **Burnt Potato Games (BPG)**, built in **Unity 6 LTS with HDRP** for *Game Studio: AI in Game Development*.
+A third-person narrative RPG / visual novel hybrid by **Burnt Potato Games (BPG)**, built in **Unity 6.3 LTS with HDRP** for *Game Studio: AI in Game Development*.
 
 An assassin disguised as a dancer sneaks into the palace of a king who burns villages to save a dying sun. You talk to the characters in your own words, and they remember what you said: a rival assassin who slowly falls for you, and a king who has been hunting you all along.
 
@@ -53,7 +53,7 @@ Prologue: Ash → 1. The Garden of Ash → 2. The Private Dance → 3. Rooftop o
 ## Getting started
 
 ### Requirements
-- **Unity 6 LTS (6000.0.x)**, the same patch version for every team member. `ProjectSettings/ProjectVersion.txt` is set to 6000.0.58f2; if you agree on another 6000.0.x patch, open the project with it and commit the updated file.
+- **Unity 6.3 LTS (6000.3.27f2)**, the same version for every team member (set in `ProjectSettings/ProjectVersion.txt`). If you both move to another version, open the project with it and commit the updated file.
 - **Git LFS**: install it once with `git lfs install` *before* cloning.
 
 ### First open
