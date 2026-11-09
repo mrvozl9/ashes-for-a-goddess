@@ -80,7 +80,8 @@ Assets/_Project/
   Scenes/   Boot, Title, Palace, Cutscenes
   Scripts/  Core, Player, Dialogue, AI, UI, Guards
   Tests/    EditMode
-Docs/       Licenses.md, PromptLog.md
+Docs/       gdd.md, design.md, technical_design.md, level-design.md,
+            production_pipeline.md, PROGRESS.md, debug.md, Licenses.md, PromptLog.md
 ```
 
 ### Conventions
