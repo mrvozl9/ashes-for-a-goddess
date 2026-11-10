@@ -37,14 +37,16 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 | Must (new 09.11) | Clues and Rumor Journal; key scene locked until enough clues | Yes (week 2) |
 | Must (raised 10.11) | Guards on timed routes, Suspicion, hiding spots, eavesdropping | Yes (week 2), simplified: no chasing |
 | Must (raised 10.11) | Nightly dance minigame, one per chapter, rewards and Suspicion | Yes (week 2 system, week 3 songs) |
-| Must | Day / night chapter flow, offline mode for every scene | Yes (weeks 2–3) |
+| Must | Day / night chapter flow; every scene completes with fallback lines when the AI fails | Yes (weeks 2–3) |
+| Must (new 10.11) | Built-in AI model shipped inside the game (llama-server + Qwen3.5-4B, no key, no internet) | Yes (week 1 connection, week 4 packaging) |
 | Must | 4 chapters + prologue, pyre, epilogue cutscenes | Yes (week 3) |
 | Must | Conversation UI, exploration HUD, title, pause, chapter cards | Yes (weeks 1–3) |
 | Must | Placeholder portraits, basic fire VFX, 1 music loop + 1 dance song per night | Yes |
 | Should | Memories + generated pyre confession | Week 3 if the Phase 12 risk check passes |
 | Should | Nura and Idris as LLM characters | ⚠️ Pre-written by default (minor NPCs always pre-written) |
 | Should | Final portraits, 3 music loops, phoenix-rise VFX | Week 4 if time |
-| Nice | Local model, TTS for Zafir, varying epilogue lines, proxy server | ⚠️ Cut (varying epilogue lines only if memories land early) |
+| Nice | TTS for Zafir, varying epilogue lines, optional external AI endpoint setting | ⚠️ Cut (varying epilogue lines only if memories land early) |
+| Proposed cut (10.11) | Full pre-written offline dialogue trees for every scene | ⚠️ Not built while the built-in model works; ~120 fallback lines stay (MISSING: team confirmation) |
 
 ### Cut order if a phase slips more than one day
 1. Generated pyre confession and memories (pre-written pyre).
@@ -139,17 +141,19 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 
 ---
 
-## PHASE 3: LLM Provider (Cloud + Offline)
-**Objective:** One LLM request is answered in the Output Log, and the same call works offline.
+## PHASE 3: LLM Provider (Built-in Model + Fallback)
+**Objective:** One request to the built-in AI model is answered in the Output Log; when the model is off or too slow, a fallback line answers instead (decided 10.11.2026: the model ships inside the game, no API key).
 **Depends on:** Phase 0 (can run in parallel with Phases 1–2).
 
 **Tasks:**
-- [C++] `ULLMProvider` (abstract), `UCloudLLMProvider` (`FHttpModule`, `SetTimeout(6)`, async callback on the game thread), `UOfflineLLMProvider` (returns a canned JSON).
-- [C++] API key from the environment variable `ASHES_LLM_API_KEY` or `Secrets/llm_key.txt` (git-ignored), never `Config/*.ini`; startup check → AI mode Online / Offline in `UAshesGameInstance`.
-- ⚠️ Choose the provider and model (GDD: fast low-cost hosted model, for example Claude Haiku 5.5); set a spending cap in the provider console.
+- ✅ [C++] `ULLMProvider` (abstract), `UOpenAICompatibleLLMProvider` (`FHttpModule`, `SetTimeout(6)`, async callback on the game thread; built-in server or optional external endpoint), `UOfflineLLMProvider` (returns a canned JSON).
+- ✅ [C++] `ULocalModelSubsystem` starts / stops the bundled llama-server (hidden, free port, dies with the game), `UAshesAISettings`, AI mode Online / Offline in `UAshesGameInstance` with automatic fallback; console commands `Ashes.TestLLM`, `Ashes.LLM.Start / Stop / Status`.
+- ✅ [TOOLS] `Tools/GetLocalLLM.ps1` downloads the pinned llama.cpp b12138 (Vulkan) and Qwen3.5-4B Q4_K_M with SHA-256 checks (git-ignored `ThirdParty/LLM`, or `ASHES_LLM_DIR`).
+- ✅ Provider and model chosen (10.11.2026): built-in model, free, no key (GDD 8.4).
+- [TEST] Speed on the stronger PC (target: reply under 6 s); this laptop (RTX 3050 Ti 4 GB) gets 7–12 tokens/s = 13–30 s per reply.
 
-**Deliverable:** A debug key or console command sends Zafir's test prompt (GDD 12.4) and prints the JSON; without a key it prints the offline reply.
-**Verification Gate:** Run with key → reply in under 6 s; run without key → offline reply; unplug network → timeout path, no freeze. ✋ Confirm with the user.
+**Deliverable:** `Ashes.TestLLM` sends Zafir's test prompt and prints the JSON reply; with the model stopped it prints a fallback reply.
+**Verification Gate:** Model running → valid JSON reply (under 6 s on the target PC); `Ashes.LLM.Stop` → fallback reply, no freeze; no internet needed. ✋ Confirm with the user.
 
 ---
 
@@ -288,7 +292,7 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 - [C++] Test harness (commandlet or editor utility) and first red-team run (50 lines per character: off-topic, jailbreak, spoiler, rude); LLM judge flags spoilers and broken voice.
 - Measure tokens per playthrough and average reply time.
 - Decide: memories + pyre confession in or out; Nura / Idris stay pre-written or become LLM.
-- ⚠️ Early warnings (GDD 13.5): average reply over 4 s or under 90% valid JSON → offline mode becomes the default. Chapter 2 cards not final → apply the cut order. Palace still grey-box → custom models cut.
+- ⚠️ Early warnings (GDD 13.5): average reply over 4 s on the stronger PC or under 90% valid JSON → smaller model, shorter replies or word-by-word streaming; court NPCs stay pre-written. Chapter 2 cards not final → apply the cut order. Palace still grey-box → custom models cut.
 
 **Deliverable:** Playable Chapter 1, red-team report, decisions in Notes and `PROGRESS.md`.
 **Verification Gate:** User plays Chapter 1 and confirms the loop is fun; decisions confirmed. ✋
@@ -420,11 +424,11 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 **Depends on:** Phase 21.
 
 **Tasks:**
-- Platforms → Windows → Package Project (Shipping) to `Builds/` (git-ignored); no API key in the build or `Config/`; starts offline without a key.
+- Platforms → Windows → Package Project (Shipping) to `Builds/` (git-ignored); stage `ThirdParty/LLM` (llama-server + model) as non-UFS files into the build; no API key anywhere; check the model starts and the fallback works if it cannot.
 - Test on a PC without Unreal Engine installed and without internet.
 
 **Deliverable:** Final Windows build, tagged release on `main`.
-**Verification Gate:** Clean-machine run online and offline from Title to Credits, including all 4 nights. ✋ Final sign-off.
+**Verification Gate:** Clean-machine run (no internet) from Title to Credits with the built-in model, including all 4 nights; once more with the model folder removed (fallback lines). ✋ Final sign-off.
 
 ---
 

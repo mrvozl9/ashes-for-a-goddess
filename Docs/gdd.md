@@ -145,7 +145,7 @@ The player should feel playful tension in the conversations and a slowly growing
 - **Investigation by conversation (new 09.11):** gather clues by talking to many NPCs in an open palace and use them as new topics. MISSING: the team's own comparison games for this part (detective and social-stealth games).
 - **Open AI storytelling with hard limits:** compared with **AI Dungeon** (Latitude, 2019), our characters only know a ~600-word hand-written lore bible, brush off off-topic questions in character and cannot reveal the twist early, because secrets are only added to the prompt in the chapter where they can be revealed.
 - **Memory system** based on Park et al. (2023), *Generative Agents*.
-- **Always playable:** an offline mode replaces the LLM with pre-written dialogue trees.
+- **Always playable, no internet:** the AI model ships inside the game and runs on the player's PC (no account, no key, no internet); if it fails or is too slow, pre-written fallback lines answer instead (decided 10.11.2026).
 
 ### Design Pillars
 > MISSING: the GDD has no explicit design pillars. The four below are suggested from the GDD's Unique Selling Points and scope rules; confirm or replace them.
@@ -170,8 +170,9 @@ Every AI feature has a fallback (timeout fallback lines, offline mode), and the 
 - 3D levels for the pyre and the festival temple: they are 2D illustrations.
 - Any 3D level other than the palace (one hub with five rooms).
 - Voice acting (text only); text-to-speech for Zafir is only a nice-to-have and is cut in the 4-week plan.
-- Local model backend (offline AI through Ollama): nice-to-have, cut in the 4-week plan; offline mode uses pre-written dialogue.
-- A proxy server for the API key: nice-to-have, cut in the 4-week plan.
+- A hosted (cloud) LLM API as the main AI: replaced on 10.11.2026 by the built-in local model (free, no key); an external OpenAI-compatible endpoint stays an optional setting.
+- A proxy server for an API key: not needed (no key).
+- Full pre-written offline dialogue trees for every scene: proposed cut on 10.11.2026 (the built-in model is always there; ~120 fallback lines stay). MISSING: team confirmation.
 - Gamepad support (the GDD targets keyboard and mouse only).
 - Branching story or multiple endings: the ending is always the same.
 - Visible relationship meters or numbers.
@@ -495,10 +496,10 @@ The LLM writes what the characters say, but our own C++ code decides what actual
 
 | Part | Technique | Runs in |
 | :-- | :-- | :-- |
-| Zafir, Vashir and 2 court NPCs talk freely | LLM character with structured (JSON) output | Cloud LLM API; local model as backup |
+| Zafir, Vashir and 2 court NPCs talk freely | LLM character with structured (JSON) output | Built-in local model (llama.cpp + Qwen3.5-4B) on the player's PC |
 | Scene flow (nudge, end, fail) | Finite state machine (Scene Director) | Our C++ |
 | Faces and gestures | Emotion state machine driven by the LLM's emotion tag | Our C++ + Animation Blueprint |
-| Memories between scenes | LLM summary call after each scene | Cloud LLM API |
+| Memories between scenes | LLM summary call after each scene | Built-in local model |
 | Palace guards (must have since 10.11) | Simplified Behavior Tree + NavMesh: Patrol → Notice → Patrol | Our C++ / Blueprint + Unreal AI Perception and Navigation |
 
 **Prompt order:** (1) character card, (2) lore bible (~600 words; nothing outside it exists), (3) scene card, (4) state (values as words, for example "Trust: wary", and up to 6 memories), (5) conversation (last 8 turns and the player's new line).
@@ -530,7 +531,7 @@ The LLM writes what the characters say, but our own C++ code decides what actual
 | Explicit or hateful content | Provider moderation + word list | Refuses in character; after 3 times the scene closes politely |
 | Jailbreak | Pattern list; model told to stay in role | In-character confused reply |
 | Impossible value change | Limit in C++ | Cut to the per-turn maximum |
-| No API key or no internet | Check at startup | Offline mode with pre-written dialogue trees |
+| Built-in model missing, failed to start or still loading | `ULocalModelSubsystem` state (`/health`) | Pre-written fallback lines; Settings shows "AI: built-in model unavailable" |
 | Scene goal never reached | Turn counter | Nudge, then forced close |
 
 **What makes it believable:** distinct voices; characters have their own goals (ask back, refuse, bargain); they remember; portrait and gesture react within 1 s; hints instead of meters; replay value from Zafir's dodged answers.
@@ -542,8 +543,8 @@ The LLM writes what the characters say, but our own C++ code decides what actual
 | Art and illustration | An image model | Portrait drafts, background concepts, GDD diagrams | Tuana checks palette and style, repaints; no artist names in prompts | Free tier or course credits |
 | Audio and music | Royalty-free libraries first; AI music only if terms fit | 3 loops, ambience | Listened in scene, loop seams, license in `Docs/Licenses.md` | Free |
 | Writing and dialogue | Claude | Brainstorming, fallback line variants, GDD draft | Tuana edits every line against the lore bible; lore bible and cards hand-written | Free tier |
-| Testing | Own test harness + LLM judge | Red-team: 50 lines per character (off-topic, jailbreak, spoiler, rude) | Read every flagged reply + 20 random; target 0 spoiler leaks, 95% valid JSON | Same API key, small cost |
-| In-game runtime | Fast low-cost hosted model (for example Claude Haiku 5.5); Ollama local model nice-to-have | Replies, memory summaries | C++ validator; playtest logs reviewed weekly | Pay per token; spending cap; tokens per playthrough measured in week 2 |
+| Testing | Own test harness (`Ashes.TestLLM`) + LLM judge | Red-team: 50 lines per character (off-topic, jailbreak, spoiler, rude) | Read every flagged reply + 20 random; target 0 spoiler leaks, 95% valid JSON | Free (built-in model) |
+| In-game runtime | Built-in model shipped with the game: llama.cpp `llama-server` (MIT) + Qwen3.5-4B Q4_K_M (Apache 2.0); optional external endpoint (Ollama / cloud) as a setting | Replies, memory summaries | C++ validator; playtest logs reviewed weekly | Free: runs on the player's PC; download +2.8 GB; needs a GPU with ~6 GB for fast replies |
 
 **Not made with AI:** the lore bible, character cards and key story lines (final line, nickname); the twist and its pacing; Scene Director logic; final look of the portraits; level design.
 
@@ -552,12 +553,12 @@ The LLM writes what the characters say, but our own C++ code decides what actual
 ### 8.3 Top Risks and What We Cut
 | Risk | Early warning (4-week plan) | What we cut |
 | :-- | :-- | :-- |
-| LLM integration slower or less reliable than planned | End of week 1 / mid week 2: average reply over 4 s, or under 90% valid JSON | Court NPCs and the pyre confession become pre-written; offline mode becomes the default |
+| LLM integration slower or less reliable than planned (built-in model too slow on target PCs) | End of week 1 / mid week 2: average reply over 4 s on the stronger PC, or under 90% valid JSON | Smaller model or shorter replies; stream the reply word by word; court NPCs and the pyre confession become pre-written |
 | Writing takes longer (cards, fallback lines, cutscenes) | End of week 2: Chapter 2 cards not final | Fallback lines cut by half; cutscenes become still images with text |
 | 3D art and animation take too long | End of week 2: palace still grey-box | Custom models; final portraits (placeholders stay) |
 
 ### 8.4 API Keys and Cost
-The key is never in the repository; it is read from the environment variable `ASHES_LLM_API_KEY` or a file in `Secrets/` that `.gitignore` excludes; it is never put in `Config/*.ini` or the packaged build. A spending cap is set in the provider console. Turn limits keep each playthrough to a fixed number of calls. The submitted build starts in offline mode unless a key is present, so it always runs.
+No API key and no cost (decided 10.11.2026): the AI model ships inside the game and runs on the player's PC, so players download nothing else and nobody pays per token. The model and server files (~2.8 GB) are not in the repository; `Tools/GetLocalLLM.ps1` downloads the pinned versions (SHA-256 checked) and the packaged build ships them in `ThirdParty/LLM`. Licenses: llama.cpp MIT, Qwen3.5-4B Apache 2.0 (`Docs/Licenses.md`). If an optional external endpoint is ever used, its key is never in the repository, `Config/*.ini` or the build (environment variable `ASHES_LLM_API_KEY` or `Secrets/`, git-ignored). Turn limits still keep each scene short.
 
 ### 8.5 References
 - **Games:** Façade (Procedural Arts, 2005); Disco Elysium (ZA/UM, 2019); Hades (Supergiant Games, 2020); AI Dungeon (Latitude, 2019).
