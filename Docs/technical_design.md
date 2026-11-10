@@ -282,7 +282,7 @@ Text entry uses a UMG Editable Text box; `IMC_Exploration` is removed while typi
 | C++ vs Blueprint split | All Blueprint / C++ core + Blueprint glue | C++ core + Blueprint glue (section 0.3) |
 | Timeout | 6 s (GDD text) / 5 s (Figure 2) | 6 s (text wins) |
 | LLM provider and model | Hosted low-cost model (for example Claude Haiku 5.5) | MISSING: final choice |
-| Editor access for the AI agent | MCP + VibeUE / user does editor work | MCP + VibeUE (course template); MISSING: confirm both PCs have it installed |
+| Editor access for the AI agent | MCP + VibeUE / user does editor work | MCP + VibeUE (course template); installed as submodule `Plugins/VibeUE`, working on PC 1 (10.11.2026); MISSING: confirm on PC 2 |
 | Court NPCs (Nura, Idris) as LLM | LLM / pre-written | Pre-written first; LLM if the week-2 risk check passes |
 | Dance minigame | Minigame / cutscene | Minigame every night (10.11) |
 | Guard patrols | Full FSM / simple patrol + perception | Simple patrol + perception + hiding spots, no chasing (10.11) |

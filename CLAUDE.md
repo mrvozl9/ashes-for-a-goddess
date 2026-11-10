@@ -25,3 +25,11 @@
 - Keep Tick off unless something must run every frame; use delegates and timers.
 - Every AI-assisted C++ file starts with `// AI-assisted: <tool>, <date>, <what>. Reviewed by <name>.` (a Comment node in Blueprints).
 - Work on `feature/<name>-<task>` branches; `main` must always open and run.
+
+## Editor access (MCP + VibeUE)
+- The editor serves MCP at `http://127.0.0.1:8000/mcp` (Unreal MCP plugin, auto-starts with the editor; `.mcp.json` points Claude Code at it). The editor must be open for MCP tools to work.
+- VibeUE is a git submodule in `Plugins/VibeUE` (after cloning: `git submodule update --init`). Its agent guide is imported below with a relative path so it works on both PCs; do not replace it with `VibeUE.GenerateAgentConfig`, which writes an absolute path.
+
+<!-- BEGIN VibeUE — relative import of the plugin's agent guide -->
+@Plugins/VibeUE/Content/samples/AGENTS.md.sample
+<!-- END VibeUE -->

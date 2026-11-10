@@ -85,4 +85,4 @@ Follow `Docs/design.md` section 9. C++: `A` actor, `U` object / component / subs
 ## 15. Live Editor Control
 - Use MCP + VibeUE to inspect the open level, actors, Blueprints and the Output Log, to create assets and to run PIE.
 - Prove each change with a screenshot or Output Log lines. If the tool is not connected, ask the user to paste Output Log errors and describe what they see in PIE.
-- MISSING: confirm VibeUE is installed and working on both PCs (Phase 0).
+- VibeUE (git submodule `Plugins/VibeUE`, pinned to dc051be) and Unreal MCP work on Merve's PC (tested 10.11.2026). MISSING: confirm on the second PC after `git submodule update --init` and a build.
