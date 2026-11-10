@@ -84,12 +84,13 @@ Source: `gdd.md` sections 5 (Graphics), 2 (Screens) and 8 (Appendix). Values mar
 
 ## 7. Screen Inventory & Navigation Flow
 ```
-[Boot] -> [Title] -> New Game -> [Prologue cutscene] -> [Chapter card] -> [Exploration HUD] <-> [Conversation]
+[Boot] -> [Title] -> New Game -> [Prologue cutscene] -> [Chapter card] -> DAY [Exploration HUD] <-> [Conversation] / [Hiding]
+                                                       -> NIGHT [Dance] -> KEY SCENE [Conversation] -> [Cutscene] -> next [Chapter card]
                   -> Continue -> [Chapter card at last checkpoint]
                   -> [Settings]
                   -> Quit
 [Exploration HUD / Conversation] -> Esc -> [Pause] -> Resume / [Settings] / Restart Chapter / Quit
-[Exploration HUD / Conversation] -> Tab -> [Log and memories]
+[Exploration HUD / Conversation] -> Tab -> [Rumor Journal]
 Suspicion 100 -> (Caught) -> [Chapter card at checkpoint]
 Chapter 4 end -> [Pyre cutscene] -> [Epilogue cutscene] -> [Credits] -> [Title]
 ```
@@ -102,12 +103,17 @@ Chapter 4 end -> [Pyre cutscene] -> [Epilogue cutscene] -> [Credits] -> [Title]
 | S5 | Win | Epilogue cutscene, then Credits (team, licensed assets, AI-assisted assets and tools) |
 | S6 | Settings | Text speed, volume, AI mode (Online / Offline), status line "AI: connected" / "AI: offline, pre-written dialogue" |
 | S7 | Chapter card | Chapter number, title, one line of verse, 3 s |
-| S8 | Log and memories | Full conversation log and each character's memories in their own words |
+| S8 | Rumor Journal (new 09.11) | Chapter question, found clues with speaker portrait, "?" slots for missing clues, full conversation log, each character's memories |
+| S10 | Dance (new 10.11) | 4 arrow lanes, notes, hit feedback (Great / Good / Miss), accuracy result with reward or Suspicion warning; Throne Hall visible behind |
 | S9 | Cutscene (visual novel) | 2D background, speaker, text; Space advances |
 
 ## 8. HUD Spec
 - **Goal line:** top left; italic one-line goal, for example "Goal: find out why the other dancer carries a blade"; shown under the chapter title in conversations.
-- **Eye icon:** fills only while a guard sees Sahra (`Sem_Danger`); empty otherwise. MISSING: exact position.
+- **Eye icon:** fills only while a guard sees Sahra (`Sem_Danger`); empty otherwise; shows a closed eye while Sahra is in a hiding spot (new 10.11). MISSING: exact position.
+- **Day / night tag (new 10.11):** "Day 1" or "Night 1" next to the goal line; at nightfall the goal becomes "Perform in the Throne Hall".
+- **Hiding-spot glow and prompt (new 10.11):** soft `Core_Primary` glow on curtains and lattice screens; "E: Hide" / "E: Leave".
+- **Eavesdrop indicator (new 10.11):** small ear icon with a fill bar while an exchange is being overheard.
+- **"New clue" toast (new 09.11):** gold-framed note at the top right for 2 s.
 - **"E: Talk" prompt:** world-space prompt over a highlighted character or object in range.
 - **Turns left:** top right in conversations, "Turns left: 6 · Tab: log".
 - **Mood hint:** italic `Sem_Hint` line under the latest reply; replaces any relationship meter. Numbers are never shown.

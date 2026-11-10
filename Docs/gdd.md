@@ -3,20 +3,22 @@
 
 > *"Some gods brighten the sky when they are born; others, when they die."*
 
-**Author:** Burnt Potato Games (BPG): Merve Özal, Tuana Tuna · **Version:** 1.1 (Markdown version of the midterm GDD dated 07.11.2026, schedule updated for the 4-week plan) · **Date:** 09.11.2026
+**Author:** Burnt Potato Games (BPG): Merve Özal, Tuana Tuna · **Version:** 1.2 (Markdown version of the midterm GDD dated 07.11.2026; 4-week schedule; "Court of Whispers" investigation concept added 09.11.2026; day/night loop, nightly dance and guard stealth added 10.11.2026) · **Date:** 10.11.2026
 **Genre:** Third-person narrative RPG and visual novel hybrid; dark fantasy romance · **Platform:** Windows PC, keyboard and mouse (Unity standalone build) · **Engine:** Unity 6.3 LTS (6000.3.27f2), C#, 3D, HDRP · **Players:** Single player
 
 | Field | Details |
 | :-- | :-- |
 | Course | Game Studio: AI in Game Development (midterm GDD in Week 8, final build in this 4-week plan) |
 | Target player | Players aged 16+ who enjoy story-driven and romance games; visual novel fans curious about AI characters |
-| Play time | 12–15 minutes per playthrough: 4 free-talk chapters of about 3 minutes each, plus short exploration and cutscenes |
+| Play time | About 25–30 minutes per playthrough (*proposed*, changed 10.11): 4 chapters of about 6–7 minutes (day investigation, night dance, key conversation) plus cutscenes. The midterm GDD said 12–15 minutes |
 | Rating target | Teen: violence and death are shown; the romance is not explicit |
 
 | Member | Role | Owns |
 | :-- | :-- | :-- |
 | Merve Özal | Lead Programmer, Level Designer, Audio Designer | Player controller, camera, LLM client, prompt builder, validator, level, audio |
 | Tuana Tuna | Lead Artist, UI Designer, Narrative Designer, Programmer | Lore bible, character and scene cards, fallback lines, portraits, UI screens, playtests |
+
+> **Concept update (09.11.2026): "Court of Whispers".** The team chose to make the palace an **open palace** that the player explores freely, talking to **several NPCs to gather information (clues)**, with cutscenes as the story advances. On 10.11.2026 the team fixed the three active parts: **gather information (Rumor Journal)**, **avoid patrolling guards** and **dance every night** to keep Sahra's cover, in a **day / night loop** per chapter. The story, characters, AI conversation systems and ending from the midterm GDD stay the same. New parts are marked **(new 09.11)** or **(new 10.11)**; numbers marked *proposed* are starting values for playtests, not from the midterm GDD.
 
 > **Engine note.** The course templates assume Unreal Engine 5.8. This project uses **Unity 6.3 LTS with HDRP** (GDD 13.1, and the engine version both members agreed on 03.11.2026; the GDD text still says "Unity 6 LTS 6000.0.x"). Every document in `Docs/` uses Unity terms.
 
@@ -37,14 +39,14 @@
 ## 1. Game Design
 
 ### Pitch
-An assassin disguised as a dancer sneaks into the palace of a king who burns villages to save a dying sun. The player is Sahra, the sole survivor of a burned village, who explores the palace in third person while guards watch and talks to the characters in her own words. Instead of picking from a list, the player types anything (or picks one of 3 suggested replies), and the characters answer in character, remember what was said and treat Sahra differently because of it. The fun is a romance that feels personal: a rival assassin who slowly falls for you, and a king who has been hunting you all along. The main story and ending are fixed, but how the romance develops and what the characters reveal depends on the player.
+An assassin disguised as a dancer sneaks into the palace of a king who burns villages to save a dying sun. The player is Sahra, the sole survivor of a burned village, who explores the palace in third person while guards watch and talks to the characters in her own words. Instead of picking from a list, the player types anything (or picks one of 3 suggested replies), and the characters answer in character, remember what was said and treat Sahra differently because of it. The palace is open: each chapter poses a question, and the player roams the House of Embers and draws answers out of dancers, guards, servants and priests in her own words. They gossip, lie, bargain and clam up, and every useful answer becomes a clue in Sahra's Rumor Journal. By day she gathers clues while avoiding patrolling guards, slipping into hiding spots and eavesdropping where the guards gossip. Every night she must dance in the court to keep her cover: a rhythm minigame where a fine performance wins the king's favor and overheard secrets, and a clumsy one draws suspicion. Enough clues open the chapter's key conversation with Zafir or Vashir, and the story moves on in a cutscene. The fun is detective work where your words are the tool, wrapped around a romance that feels personal: a rival assassin who slowly falls for you, and a king who has been hunting you all along. The main story and ending are fixed, but how the romance develops and what the characters reveal depends on the player.
 
 ### Characters
 
 #### Sahra
 - **Role:** Player character. Sole survivor of the village Tamra; the desert's best assassin, disguised as a dancer.
 - **Look:** A dancer in silks and a veil with anklets (her disguise); long dark hair and red-and-gold jewelry in the conversation portrait. Linked to the Ember orange color (#E8642C).
-- **Abilities:** Walk (2.2 m/s) and run (4.5 m/s) through the palace; talk to characters by typing up to 200 characters or picking 1 of 3 suggested replies; interact with highlighted characters and objects (E); dance for Vashir in Chapter 2 (timing minigame, should have). In the epilogue she is revealed to be the phoenix and walks unburned out of the sacred fire.
+- **Abilities:** Walk (2.2 m/s) and run (4.5 m/s) through the palace; talk to characters by typing up to 200 characters or picking 1 of 3 suggested replies; interact with highlighted characters and objects (E); hide in hiding spots (E) and eavesdrop from them; dance every night in the court (rhythm minigame, must have since 10.11), with the private dance for Vashir in Chapter 2. In the epilogue she is revealed to be the phoenix and walks unburned out of the sacred fire.
 - **Personality / behaviour:** Voiced by the player's own words. She wants Vashir dead. She hides that she survived the fire at all.
 
 #### Zafir
@@ -60,28 +62,36 @@ An assassin disguised as a dancer sneaks into the palace of a king who burns vil
 - **Personality / behaviour:** Talks slowly, seems warm and kind, religious; asks probing questions that raise Suspicion if Sahra says the wrong thing. Wants the phoenix's power, to live forever. Hides that every fire was a hunt for the phoenix. Teaches that the Sun Goddess is a phoenix who must be fed with fire.
 
 #### Nura
-- **Role:** Court NPC (LLM character as a should-have; pre-written dialogue otherwise). Head of the royal dancers. Found in the Dancers' Quarters in Chapter 1.
+- **Role:** Court NPC (pre-written dialogue by default; LLM character only if the week-2 risk check passes). Head of the royal dancers; she runs the nightly performances and judges Sahra's dance. Found in the Dancers' Quarters in Chapter 1.
 - **Look:** MISSING: physical description of Nura.
 - **Abilities:** Free conversation (4 turns per scene); 4–6 portrait emotions.
 - **Personality / behaviour:** Gossipy, quick, practical. Wants to survive the court. Hides that she lost a sister to a burning.
 
 #### Captain Idris
-- **Role:** Court NPC (LLM character as a should-have; pre-written dialogue otherwise). Captain of the palace guard. Found at the Guard Post in Chapter 1.
+- **Role:** Court NPC (pre-written dialogue by default; LLM character only if the week-2 risk check passes). Captain of the palace guard; he sets the patrol routes. Found at the Guard Post in Chapter 1.
 - **Look:** MISSING: physical description of Captain Idris.
 - **Abilities:** Free conversation (4 turns per scene); 4–6 portrait emotions.
 - **Personality / behaviour:** Short, formal, suspicious. Wants order in the palace. Hides that he doubts the burnings.
 
+#### Minor Court NPCs (new 09.11)
+- **Role:** 3–4 short-lived information sources (proposed: a palace servant, a temple priest, a talkative off-duty guard, a second dancer). Each uses a pre-written dialogue tree (pick 1 / 2 / 3) and holds 1–3 clues per chapter.
+- **Look:** Licensed base models, recolored (same rule as the guards). MISSING: individual looks.
+- **Abilities:** Free conversation (4 turns); give clues; may ask a small favor or demand a clue in return before talking (proposed).
+- **Personality / behaviour:** MISSING: names, voices and secrets; Tuana writes their cards by hand (GDD 12.3: character cards are not AI-generated).
+
 #### Palace Guards
-- **Role:** Enemies (should have). 2–4 guards on set patrol routes.
+- **Role:** Enemies (**must have since 10.11**). 2–4 guards on fixed, timed patrol routes that the player can learn.
 - **Look:** The same licensed base model, recolored.
-- **Abilities:** View cone of 70° and 9 m; finite state machine Patrol → Notice → Investigate → Alert on a NavMesh; raise Suspicion when Sahra runs in view, stays in a restricted room or is seen with a weapon.
+- **Abilities:** View cone of 70° and 9 m; simple state machine Patrol → Notice (stops and looks while Suspicion rises) → back to Patrol; no chasing (simplified 10.11 for the 4-week scope); cannot see into hiding spots; pairs of guards stop at set points and talk (eavesdrop chances); raise Suspicion when Sahra runs in view, stays in a restricted room or is seen with a weapon.
 - **Personality / behaviour:** Predictable patrols; they do not talk.
 
 ### Gameplay
-Second by second, the player walks Sahra through the palace (walk by default, Shift to run), keeping out of guard view cones. When a highlighted character shows "E: Talk", the player presses E and a conversation opens over the 3D scene. The player types a line (up to 200 characters) and presses Enter, or presses 1 / 2 / 3 to pick a suggested reply. After a typing indicator of at least 0.4 s, the character answers in 1–4 sentences, and the portrait and gesture change within 1 second. A one-line hint (for example "Zafir looks at you a moment too long.") shows how the character's opinion changed. Minute by minute, the player finds the right character for the chapter goal, pushes the conversation toward the hidden beats before the turns run out, and then moves to the next room as the next chapter opens.
+Second by second, the player walks Sahra through the palace (walk by default, Shift to run), keeping out of guard view cones. When a highlighted character shows "E: Talk", the player presses E and a conversation opens over the 3D scene. The player types a line (up to 200 characters) and presses Enter, or presses 1 / 2 / 3 to pick a suggested reply. After a typing indicator of at least 0.4 s, the character answers in 1–4 sentences, and the portrait and gesture change within 1 second. A one-line hint (for example "Zafir looks at you a moment too long.") shows how the character's opinion changed. Each chapter is **one day and one night** (new 10.11). By day, the player roams the open palace choosing whom to question, collects clues into the Rumor Journal (a short "New clue" toast appears), uses those clues as new topics with other characters, slips past patrols, hides behind curtains and lattice screens and eavesdrops on guards. At nightfall the player goes to the Throne Hall and dances (30–45 s rhythm minigame) to keep Sahra's cover; a good dance pays out Favor and a reward. Then, with enough clues, the player opens the chapter's key conversation and pushes it toward the hidden beats before the turns run out. A cutscene and chapter card then move the story on, and the NPCs move to new places for the next question.
 
 #### Core Loop
-Explore the palace (walk, sneak, find people) → talk freely (type or pick a reply) → the character reacts (mood, hidden values, memory) → is the scene goal met? If no, keep talking (the turn limit applies). If yes, a story beat plays (cutscene, chapter card) → the next chapter opens (new area, new goal) → explore again. If Suspicion reaches 100 at any point, the cover is blown and the chapter restarts from its checkpoint (GDD Figure 1).
+**Chapter loop (new 10.11):** DAY: read the chapter question → explore the open palace while avoiding patrols (hide, eavesdrop, question NPCs) → clues go into the Rumor Journal → use clues as topics with others → NIGHT: dance in the court (good dance = Favor + reward; bad dance = Suspicion) → KEY SCENE with Zafir or Vashir (needs the required clues) → cutscene → next day.
+
+**Investigation loop (new 09.11):** read the chapter question → explore the open palace (walk, sneak, find people) → question an NPC (type or pick a reply) → the NPC reacts and may give a clue (Rumor Journal) → use the clue as a topic with someone else → repeat until enough clues → the key conversation opens. **Key scene loop (GDD Figure 1):** talk freely → the character reacts (mood, hidden values, memory) → is the scene goal met? If no, keep talking (the turn limit applies). If yes, a story beat plays (cutscene, chapter card) → the next chapter question appears → explore again. If Suspicion reaches 100 at any point, the cover is blown and the chapter restarts from its checkpoint (GDD Figure 1).
 
 #### Main Mechanics
 
@@ -98,25 +108,32 @@ Each scene has 2–3 hidden beats (key story moments such as `zafir_reveals_targ
 After each scene, a summary call writes 1–2 short memories for each character (6 kept per character, oldest dropped). Memories come back in later scenes and in the epilogue; in the pyre scene Zafir's confession quotes two moments from the player's own conversations. It is fun because the ending becomes personal (should have).
 
 ##### 5. Exploration and Suspicion
-Sahra explores the palace in third person. Guards on set patrol routes notice if she runs, stays in restricted rooms or is seen with a weapon, and Suspicion rises; it falls slowly when no guard is watching. Vashir can also raise Suspicion when Sahra answers carelessly. It is fun because it adds tension between conversations (guard patrols are a should have).
+Sahra explores the palace in third person. Guards on set patrol routes notice if she runs, stays in restricted rooms or is seen with a weapon, and Suspicion rises; it falls slowly when no guard is watching. Vashir can also raise Suspicion when Sahra answers carelessly. **(Changed 10.11, must have):** guards walk fixed, timed routes the player can learn; hiding spots (curtains, lattice screens, alcoves) make Sahra invisible; the best clues sit near guards (guards gossiping at their stops, guarded rooms), so sneaking is how information is earned, not only an obstacle. It is fun because it adds readable tension between conversations.
 
-##### 6. Dance Minigame (should have)
-In Chapter 2 Sahra dances for Vashir in a 30-second timing minigame with 4 keys and 0.25 s hit windows. Above 80% accuracy adds +10 Favor; below 40% adds +10 Suspicion. If it is cut, the dance becomes a cutscene and Favor comes from conversation only.
+##### 6. Clues and the Rumor Journal (new 09.11)
+Each chapter has one question and 5–6 clues spread over 3–4 NPCs (*proposed*). A clue is a short fact the team writes in advance (for example "Nura: the dancer with the blade arrived the same night as the new contract riders"). When the conversation reveals it, the LLM marks it in the JSON (`clues`) the same way it marks beats, and the Scene Director accepts it only if that NPC holds that clue in this chapter, so the model cannot invent clues. Accepted clues go into the Rumor Journal (Tab) with the authored text. Clues unlock new topics: a clue becomes an extra suggested reply and is added to the next NPC's prompt so they react to it ("Nura told me about your sister..."). When the chapter's required clues are found (3 of 5–6, *proposed*), the key conversation opens. In offline mode, pre-written trees give the same clues. It is fun because the player is a detective whose tool is conversation, and every NPC is worth talking to.
+
+##### 7. Nightly Dance (must have since 10.11)
+Every night Sahra performs in the Throne Hall, because a dancer who skips the performance blows her cover. It is the GDD's timing minigame: 4 keys, 0.25 s hit windows, 30–45 s per dance. Above 80% accuracy: +10 Favor and a reward (an overheard clue from the watching nobles, or access such as an invitation or a key); 40–80%: no change; below 40%: +10 Suspicion ("a real dancer wouldn't miss"). Each night is different: a new song, a faster tempo and a new audience; the Chapter 2 dance is the private dance for Vashir in the King's Chamber. It is fun because it is a short skill break between conversations and it feeds the investigation.
+
+##### 8. Hiding and Eavesdropping (new 10.11)
+Hiding spots (curtains, lattice screens, alcoves) are marked by a soft gold glow; E enters and leaves them; guards cannot see into them. Eavesdrop zones sit next to hiding spots where guards or courtiers stop to talk: staying in the zone unseen for the whole exchange (about 10 s) adds an authored clue. Being seen breaks the exchange. It is fun because it turns the guard patrols into an information source.
 
 #### Win and Lose
 - **Win:** Finish the final chapter. The ending is always the same, but the epilogue lines change with the relationship values and the memories the characters kept.
-- **Lose:** Suspicion reaches 100, either from guards (running, going into restricted rooms) or from Vashir (asking careless questions). Running out of turns is not a game over: the scene still ends, but with a weaker outcome and lower relationship values.
+- **Lose:** Suspicion reaches 100, either from guards (running, going into restricted rooms), from Vashir (asking careless questions) or from a bad night dance (below 40%). Running out of turns is not a game over: the scene still ends, but with a weaker outcome and lower relationship values.
 - **What happens after losing:** The chapter restarts from its checkpoint (the start of each chapter).
 
 #### Gameplay Walkthrough
 1. **Title screen:** embers drift over the dying sun. The player picks New Game.
 2. **Prologue: Ash (cutscene):** Tamra burns and a girl walks out of the smoke. Years later, Sahra arrives at the palace as a dancer. Space advances the text.
 3. **Chapter card:** "Chapter 1 · The Garden of Ash" with one line of verse, for 3 seconds.
-4. **Dancers' Quarters (start and checkpoint):** Sahra starts here. The goal line at the top left reads "Find out why the other dancer carries a blade." Nura is here; the player can talk to her (4 turns) for gossip about the court.
-5. **Garden of Ash (hub):** the player walks into the moonlit garden with its dry fountain and lanterns. A guard patrols the garden; running in view raises Suspicion by 12 per second, and the eye icon fills while a guard sees Sahra. The Guard Post with Captain Idris (4 turns) is off the garden.
-6. **Meeting Zafir:** the player finds Zafir in the garden and presses E. Zafir opens with an authored line ("Careful, Little Ember. Blades that small cut their owners first."). The player has 10 turns to learn why he is here and to agree to work together (beats such as `zafir_reveals_target` and `alliance_agreed`). Hints like "Zafir looks at you a moment too long." show the mood. If 2 turns are left, Zafir suggests the alliance himself.
-7. **Resolve:** when all beats are met, a closing line plays; Sahra has stolen Zafir's knife. The memory summary writes 1–2 memories per character.
-8. **Next chapter:** the game saves at the checkpoint and the Chapter 2 card plays; the Throne Hall and (by invitation) the King's Chamber open.
+4. **Dancers' Quarters (start and checkpoint):** Sahra starts here. The chapter question at the top left reads "Find out why the other dancer carries a blade." Nura is here; talking to her gives gossip and a first clue. A toast shows "New clue" and Tab opens the Rumor Journal.
+5. **Open palace:** every room except the King's Chamber (restricted) and the city gate (locked) is open. The player walks into the moonlit garden with its dry fountain and lanterns. A guard patrols the garden; running in view raises Suspicion by 12 per second, and the eye icon fills while a guard sees Sahra. The player chooses whom to question next: Captain Idris at the Guard Post, a servant in the Throne Hall, a priest on the Rooftop Terrace (minor NPCs with pre-written dialogue). Mentioning Nura's clue to Idris opens a new topic. Behind a lattice screen in the garden, Sahra can eavesdrop on two guards at their stop for a clue. Zafir is visible in the garden but avoids Sahra ("Not now, Little Ember.") until she has 3 clues.
+6. **Nightfall:** a bell rings; the goal line changes to "Perform in the Throne Hall". Sahra dances for the court (30 s, 4 keys). A good dance adds Favor and a noble's gossip as a clue; a poor one adds Suspicion. After the performance, Zafir waits in the garden.
+7. **Meeting Zafir (key scene):** with 3 clues, after the dance the player confronts Zafir in the garden and presses E. Zafir opens with an authored line ("Careful, Little Ember. Blades that small cut their owners first."). The player has 10 turns to learn why he is here and to agree to work together (beats such as `zafir_reveals_target` and `alliance_agreed`). Hints like "Zafir looks at you a moment too long." show the mood. If 2 turns are left, Zafir suggests the alliance himself. Clues the player found are in his prompt, so he reacts to what she knows.
+8. **Resolve:** when all beats are met, a closing line plays; Sahra has stolen Zafir's knife. The memory summary writes 1–2 memories per character.
+9. **Next chapter:** a short cutscene, then the game saves at the checkpoint and the Chapter 2 card plays with a new question ("How does a dancer get a private audience with the king?"); NPCs move to new places.
 
 ### Mindset
 The player should feel playful tension in the conversations and a slowly growing tragedy in the story: the talks are teasing and flirtatious, but fire and ash are everywhere and the ending is a death. Stealth sections (guards, Vashir's probing questions) should feel tense, because one careless word or step raises Suspicion. Zafir's warmth growing over the chapters should feel earned and personal, because it comes from the player's own words. The Trap (Chapter 4) should feel like betrayal and loss, and the pyre and epilogue should turn grief into triumph when Sahra rises as the phoenix and the sun returns. On a second playthrough the player should feel the irony of Zafir's dodged answers, now knowing what he was hiding.
@@ -125,6 +142,7 @@ The player should feel playful tension in the conversations and a slowly growing
 - **Free conversation inside a fixed story:** the player types anything and characters remember it, unlike choice-list romance games. Compared with **Façade** (Procedural Arts, 2005), which also uses typed conversation inside a fixed story.
 - **Dialogue as the main gameplay:** compared with **Disco Elysium** (ZA/UM, 2019), dialogue with hidden checks; here the hidden values are moved by an LLM and clamped by our code.
 - **Relationships through many short conversations:** compared with **Hades** (Supergiant Games, 2020).
+- **Investigation by conversation (new 09.11):** gather clues by talking to many NPCs in an open palace and use them as new topics. MISSING: the team's own comparison games for this part (detective and social-stealth games).
 - **Open AI storytelling with hard limits:** compared with **AI Dungeon** (Latitude, 2019), our characters only know a ~600-word hand-written lore bible, brush off off-topic questions in character and cannot reveal the twist early, because secrets are only added to the prompt in the chapter where they can be revealed.
 - **Memory system** based on Park et al. (2023), *Generative Agents*.
 - **Always playable:** an offline mode replaces the LLM with pre-written dialogue trees.
@@ -145,6 +163,10 @@ Characters only know the lore bible, refuse off-topic questions in character and
 Every AI feature has a fallback (timeout fallback lines, offline mode), and the must-have features alone make a complete game.
 
 ### Out of Scope
+- A true open world outside the palace: "open" means the whole palace is free to explore (one 3D level, about 60 × 30 m).
+- Clues invented by the LLM: every clue is authored; the model can only reveal clues from the NPC's card.
+- Guards that chase or fight: guards only notice and raise Suspicion (simplified 10.11).
+- A free day / night clock: night falls on a story trigger (enough clues or the player chooses "Go to perform"), not on a timer (*proposed*).
 - 3D levels for the pyre and the festival temple: they are 2D illustrations.
 - Any 3D level other than the palace (one hub with five rooms).
 - Voice acting (text only); text-to-speech for Zafir is only a nice-to-have and is cut in the 4-week plan.
@@ -168,7 +190,7 @@ Every AI feature has a fallback (timeout fallback lines, offline mode), and the 
 - **Goes to:** New Game → Prologue cutscene → Chapter 1 card; Continue → last chapter checkpoint; Settings → Settings; Quit → exit to desktop.
 
 #### B. In-Game HUD
-- **Elements:** Exploration HUD: goal line at the top left; an eye icon that fills only while a guard sees Sahra; an "E: Talk" prompt over characters. Conversation screen (GDD Figure 5): chapter title and goal at the top left, "PLAYING AS SAHRA" tag, "Turns left: N · Tab: log" at the top right; dialogue panel with the speaker's line next to their small portrait and name; italic hint line under the line instead of a meter; Sahra's portrait below as the point of view; large character portrait on the right that changes with the emotion tag, with emotion icons; 3 numbered suggested-reply buttons (1 / 2 / 3); text field "Reply as Sahra to [name] · 200 characters" with a Send (Enter) button. Chapter card: chapter number, title and one line of verse, for 3 seconds. Log and memories (Tab): the full conversation log and each character's memories in their own words.
+- **Elements:** Exploration HUD: goal line at the top left; an eye icon that fills only while a guard sees Sahra; an "E: Talk" prompt over characters. Conversation screen (GDD Figure 5): chapter title and goal at the top left, "PLAYING AS SAHRA" tag, "Turns left: N · Tab: log" at the top right; dialogue panel with the speaker's line next to their small portrait and name; italic hint line under the line instead of a meter; Sahra's portrait below as the point of view; large character portrait on the right that changes with the emotion tag, with emotion icons; 3 numbered suggested-reply buttons (1 / 2 / 3); text field "Reply as Sahra to [name] · 200 characters" with a Send (Enter) button. "New clue" toast when a clue is accepted. Chapter card: chapter number, title, one line of verse and the chapter question, for 3 seconds. Time of day tag ("Day 1 · Morning" / "Night") and a "Perform in the Throne Hall" goal at nightfall (new 10.11). Dance screen (new 10.11): note lane with 4 arrows, hit feedback, accuracy at the end with the reward or Suspicion result. Rumor Journal (Tab, new 09.11; extends the GDD's log screen): the chapter question, found clues (authored text, who said it), clues still missing as "?" slots, the full conversation log and each character's memories in their own words.
 
 #### C. Pause Menu
 - **Elements:** Resume, Settings, Restart Chapter, Quit.
@@ -194,10 +216,11 @@ Every AI feature has a fallback (timeout fallback lines, offline mode), and the 
 | Run | Shift (hold) | Not supported | Button | 4.5 m/s; raises Suspicion near guards |
 | Say anything | Type + Enter | Not supported | Text input + Button | Max 200 characters; longer text is cut with a warning |
 | Pick suggested reply | 1 / 2 / 3 | Not supported | Button | Picks one of the 3 suggested replies instead of typing |
-| Conversation log | Tab | Not supported | Button | Opens the conversation log and memories |
+| Rumor Journal | Tab | Not supported | Button | Opens the Rumor Journal: chapter question, clues, conversation log and memories |
 | Advance cutscene | Space | Not supported | Button | Advances cutscene text |
 | Pause | Esc | Not supported | Button | Opens the pause menu |
-| Dance keys | MISSING: which 4 keys | Not supported | Button | Dance minigame, Chapter 2 (should have) |
+| Dance keys | ← ↑ ↓ → (*proposed*; MISSING in the midterm GDD) | Not supported | Button | Nightly dance minigame |
+| Hide / leave hiding spot | E | Not supported | Button | Same key as Interact, near a hiding spot |
 
 ### Camera
 - **View:** Third person (Cinemachine).
@@ -226,21 +249,27 @@ Every AI feature has a fallback (timeout fallback lines, offline mode), and the 
 - **Edge cases:** MISSING: what happens if the summary call fails or times out (no memory is written is the likely default; confirm).
 
 #### 5. Exploration and Suspicion
-- **Rule:** Guards see Sahra inside their view cone; running, staying in a restricted room or carrying a visible weapon raises Suspicion; it falls when no guard sees her.
-- **Numbers:** Walk 2.2 m/s; run 4.5 m/s; guard view cone 70°, 9 m; running in view +12 per second; restricted room in view +20 per second; out of view −5 per second; checkpoint at the start of each chapter.
+- **Rule:** Guards walk fixed, timed routes; they see Sahra inside their view cone unless she is in a hiding spot; running, staying in a restricted room or carrying a visible weapon raises Suspicion; it falls when no guard sees her. Eavesdrop zones give an authored clue after the whole exchange is heard unseen (new 10.11).
+- **Numbers:** Walk 2.2 m/s; run 4.5 m/s; guard view cone 70°, 9 m; running in view +12 per second; restricted room in view +20 per second; out of view −5 per second; checkpoint at the start of each chapter. Patrol loop 20–40 s with 3–5 s stops (*proposed*); eavesdrop exchange about 10 s (*proposed*).
 - **Edge cases:** Suspicion reaches 100: chapter restarts from its checkpoint. The King's Chamber is restricted until Vashir's Favor reaches 60. MISSING: Suspicion value for "seen with a weapon".
 
-#### 6. Dance Minigame (should have)
-- **Rule:** 30-second timing minigame with 4 keys in Chapter 2.
+#### 6. Clues and the Rumor Journal (new 09.11)
+- **Rule:** Each chapter has a question and authored clues held by specific NPCs. The LLM flags a revealed clue id in `clues`; the Scene Director accepts it only if that NPC holds it in this chapter. Accepted clues are added to the Rumor Journal, become a topic (extra suggested reply) and are added to later prompts. The key conversation of the chapter is locked until the required clues are found.
+- **Numbers (proposed):** 5–6 clues per investigation chapter, held by 3–4 NPCs, 1–3 clues per NPC; 3 required to open the key scene; minor NPC turn limit 4; "New clue" toast 2 s; Chapter 4 has no clue requirement (the trap is scripted).
+- **Edge cases:** The model claims a clue the NPC doesn't hold: rejected, nothing added. A clue already found: ignored. The NPC's turns run out before the clue: the clue is offered in the forced-close line (proposed) so the chapter can never soft-lock. Offline mode: each pre-written tree contains the NPC's clues. Caught (Suspicion 100): clues found in this chapter are kept (proposed, MISSING: confirm).
+
+#### 7. Nightly Dance (must have since 10.11)
+- **Rule:** Timing minigame with 4 keys, once per chapter at night in the Throne Hall (Chapter 2: the private dance in the King's Chamber); new song, faster tempo and new audience each night.
 - **Numbers:** Hit window 0.25 s; accuracy above 80%: +10 Favor; below 40%: +10 Suspicion.
-- **Edge cases:** If cut, the dance becomes a cutscene and Favor comes from conversation only. MISSING: result between 40% and 80% (no change is implied).
+- **Numbers (added 10.11, proposed):** 30 s on night 1 rising to 45 s; tempo +10% per night; 40–80% accuracy: no change; > 80%: also a reward (overheard clue or access). Dance keys ← ↑ ↓ →.
+- **Edge cases:** Below 40% adds +10 Suspicion and can trigger Caught at 100 (restart the chapter at its checkpoint). Missing the reward clue never blocks progress: every required clue can also be found by day. Pause during the dance stops the music and notes.
 
 ---
 
 ## 3. Level Design
 
 ### Level Design Philosophy
-The game has one 3D level: the palace, built as a hub (the Garden of Ash) with five rooms around it, about 60 × 30 m. Rooms unlock chapter by chapter, so the open doors guide the player to the next goal. The player always passes through the garden, so its guard patrol is the main stealth challenge in every chapter. Lanterns and firelight pick out details against plum and burgundy shadows; restricted rooms (the King's Chamber, Rose red) raise Suspicion when Sahra is seen in them. The on-screen goal line states the chapter goal. MISSING: specific guidance techniques (light, color, sound or shape cues) for leading the player to characters and doors.
+The game has one 3D level: the palace, built as a hub (the Garden of Ash) with five rooms around it, about 60 × 30 m. **(Changed 09.11:)** the palace is open from Chapter 1: every room except the restricted King's Chamber and the locked city gate can be explored at any time, and NPCs move to new rooms each chapter. The chapter question and the NPCs who are present guide the player, instead of locked doors. The player always passes through the garden, so its guard patrol is the main stealth challenge in every chapter. Lanterns and firelight pick out details against plum and burgundy shadows; restricted rooms (the King's Chamber, Rose red) raise Suspicion when Sahra is seen in them. The on-screen goal line states the chapter goal. MISSING: specific guidance techniques (light, color, sound or shape cues) for leading the player to characters and doors.
 
 ### Themes
 
@@ -252,20 +281,20 @@ The game has one 3D level: the palace, built as a hub (the Garden of Ash) with f
 
 #### Theme 2: Chapter 1: The Garden of Ash
 - **Mood:** Moonlit garden with a huge pale moon, lanterns, a dry fountain; night plum and old gold.
-- **Objects:** Dancers' Quarters (start, checkpoint), Garden of Ash hub (dry fountain, lanterns), Guard Post (gate to the city, locked); Zafir's knife.
-- **Challenges:** 2 guards, garden patrol; talking to Zafir (10 turns), Nura and Idris (4 turns each).
-- **Goal:** Learn why Zafir is here and agree to work together.
+- **Objects:** Whole palace open except the King's Chamber; Dancers' Quarters (start, checkpoint), Garden of Ash hub (dry fountain, lanterns), Guard Post (gate to the city, locked); Zafir's knife.
+- **Challenges:** 2 guards, garden patrol; gather 3 clues from Nura, Idris and minor NPCs (4 turns each), then talk to Zafir (10 turns).
+- **Goal:** Question: "Why does the other dancer carry a blade?" Learn why Zafir is here and agree to work together.
 
 #### Theme 3: Chapter 2: The Private Dance
 - **Mood:** Vashir's court: burgundy curtains, gold, firelight.
 - **Objects:** + Throne Hall (audience with Vashir, court NPCs, 1 guard), King's Chamber (by invitation).
-- **Challenges:** 3 guards; Vashir's probing questions raise Suspicion (8 turns); dance minigame (should have).
+- **Challenges:** 3 guards; gather 3 clues about what pleases the king (proposed question: "How does a dancer get a private audience with the king?"); Vashir's probing questions raise Suspicion (8 turns); the night's dance is the private dance in the King's Chamber (rhythm minigame).
 - **Goal:** Get a private meeting with Vashir without raising Suspicion. Afterwards, Zafir's jealousy shows.
 
 #### Theme 4: Chapter 3: Rooftop of Smoke
 - **Mood:** Rooftop terrace on the upper level, smoke and moonlight; romance.
 - **Objects:** + Rooftop Terrace, reached by stairs from the Dancers' Quarters.
-- **Challenges:** Conversation with Zafir (10 turns).
+- **Challenges:** Gather 3 clues for the strike (proposed question: "How do we reach the king's bed unseen?": guard shifts, the chamber's hidden door, the festival timing), then talk with Zafir (10 turns).
 - **Goal:** Plan the strike. If Affection is high (60), they both admit their feelings.
 
 #### Theme 5: Chapter 4: The Trap
@@ -288,14 +317,14 @@ The game has one 3D level: the palace, built as a hub (the Garden of Ash) with f
 
 ### Game Flow
 1. Title → Prologue: Ash (cutscene, start).
-2. Chapter 1: The Garden of Ash (tutorial for walking, talking and the garden patrol; Dancers' Quarters, Garden, Guard Post; 2 guards).
-3. Chapter 2: The Private Dance (adds the Throne Hall and King's Chamber; Vashir's Suspicion; 3 guards).
-4. Chapter 3: Rooftop of Smoke (adds the Rooftop Terrace; Affection decides the confession).
+2. Chapter 1: The Garden of Ash (tutorial for walking, talking, gathering clues and the garden patrol; whole palace open except the King's Chamber; 2 guards).
+3. Chapter 2: The Private Dance (new question and clues; Vashir's Suspicion; the King's Chamber opens by invitation; 3 guards).
+4. Chapter 3: Rooftop of Smoke (new question and clues; Affection decides the confession on the rooftop).
 5. Chapter 4: The Trap (King's Chamber; only 4 turns; the twist).
 6. Chapter 5: The Pyre (cutscene with generated confession).
 7. Epilogue: The Long Flame (cutscene; epilogue lines depend on the values and memories) → Credits.
 
-Difficulty grows through more guards (2 → 3), restricted rooms opening, Vashir's Suspicion entering in Chapter 2 and fewer turns in Chapter 4.
+Difficulty grows through more guards (2 → 3), clues that need other clues first (proposed for Chapters 2–3), Vashir's Suspicion entering in Chapter 2 and fewer turns in Chapter 4.
 
 ---
 
@@ -310,7 +339,8 @@ Difficulty grows through more guards (2 → 3), restricted rooms opening, Vashir
 | `GameManager` | MonoBehaviour | Chapters and checkpoints |
 | `PlayerController` | MonoBehaviour | Movement and camera |
 | `InteractionSystem` | MonoBehaviour | "E: Talk" starts a scene |
-| `SceneDirector` | MonoBehaviour (FSM) | Intro, talk, nudge, resolve, forced close |
+| `SceneDirector` | MonoBehaviour (FSM) | Intro, talk, nudge, resolve, forced close; accepts beats and clues |
+| `ClueJournal` (new 09.11) | MonoBehaviour | Found clues per chapter, topic unlocks, key-scene gate |
 | `NPCBrain` | MonoBehaviour (one per character) | Profile, relationship values, memories |
 | `PromptBuilder` | Plain C# class | Builds the prompt from card, lore, scene, state and turns |
 | `ResponseValidator` | Plain C# class | JSON parse, lore, spoiler, safety checks and clamping |
@@ -342,10 +372,11 @@ Difficulty grows through more guards (2 → 3), restricted rooms opening, Vashir
 | Lore bible (text) | One ~600-word text | Kingdom and dying sun, cult of the Sun Goddess, palace rooms and routines, festival, dancers, guard |
 | Fallback lines | ~120 lines by scene, beat and emotion | Scene, beat, emotion, line, AI-assisted flag |
 | Cutscene script | ~150 lines (Prologue, Ch4–5, Epilogue) | Part, speaker, line, background |
+| Clue table (new 09.11) | 5–6 clues per chapter, e.g. `ch1_nura_contract_riders` | Id, chapter, holder NPC, authored journal text, topic text for the suggested reply, prompt hint, required (yes / no) |
 | Exploration settings | Walk 2.2, run 4.5, view cone 70° / 9 m, Suspicion rates | Speeds, cone angle and range, Suspicion per second per cause |
 
 ### AI
-**Guards (should have):** finite state machine on a NavMesh: Patrol (set routes) → Notice → Investigate → Alert. They see Sahra inside a 70°, 9 m view cone. They raise Suspicion when she runs in view (+12/s), is in a restricted room in view (+20/s) or is seen with a weapon. The player escapes by leaving their view: Suspicion falls by 5 per second out of view. At 100 the chapter restarts. MISSING: hearing, Notice/Investigate timings and what Alert does before the restart.
+**Guards (must have since 10.11, simplified):** NavMesh agents on fixed, timed waypoint routes: Patrol → Notice (stop and look while Suspicion rises) → Patrol; no chasing; hiding spots block their sight; eavesdrop stops where two guards talk. They see Sahra inside a 70°, 9 m view cone. They raise Suspicion when she runs in view (+12/s), is in a restricted room in view (+20/s) or is seen with a weapon. The player escapes by leaving their view: Suspicion falls by 5 per second out of view. At 100 the chapter restarts. MISSING: hearing, Notice/Investigate timings and what Alert does before the restart.
 
 **Conversation AI:** the LLM writes what characters say; our C# decides what changes. See Appendix 8.1.
 
@@ -364,7 +395,8 @@ Difficulty grows through more guards (2 → 3), restricted rooms opening, Vashir
 #### Characters
 | Asset | Description | Animations |
 | :-- | :-- | :-- |
-| Sahra | Licensed base model, recolored; dancer disguise (veil, anklets) | Walk, run, idle, talk gestures, dance loop |
+| Sahra | Licensed base model, recolored; dancer disguise (veil, anklets) | Walk, run, idle, talk gestures, hide (enter / leave), 4 dance moves + idle dance loop for the nightly dance |
+| Minor court NPCs (3–4, new 09.11) | Same base models, recolored | Idle, talk gestures (shared set) |
 | Zafir | Licensed base model, recolored | Idle, walk, 6 talk gestures (shared set), "hesitates" |
 | Vashir | Licensed base model, recolored | Idle, talk gestures, "hesitates" |
 | Nura | Licensed base model, recolored | Idle, talk gestures |
@@ -400,7 +432,9 @@ Difficulty grows through more guards (2 → 3), restricted rooms opening, Vashir
 | Mood / emotion icons | Small icons under the large portrait |
 | Eye icon | Fills while a guard sees Sahra |
 | Reply buttons | Numbered 1 / 2 / 3 framed buttons |
-| Chapter card | Chapter number, title and one line of verse |
+| Chapter card | Chapter number, title, one line of verse and the chapter question |
+| Rumor Journal (new 09.11) | Parchment-style page in the ornate gold frame: question, clue entries with speaker portraits, "?" slots |
+| "New clue" toast | Small gold-framed note at the top right |
 
 ---
 
@@ -418,6 +452,7 @@ Realistic and atmospheric: stone, fire, cloth and blades, with a Middle-Eastern 
 | Blades | Zafir's knife, the Trap |
 | Crowd | Court in the Throne Hall, the festival |
 | UI sounds | MISSING: UI sound list (hover, confirm, back, typing) |
+| New clue | A clue is added to the Rumor Journal (MISSING: sound choice) |
 
 All SFX come from free libraries with CC0 or CC-BY licenses; credits are kept in `Docs/Licenses.md`.
 
@@ -438,8 +473,8 @@ Must have: 1 music loop (the palace loop); should have: all 3. Royalty-free libr
 | Milestone | What is done | Date |
 | :-- | :-- | :-- |
 | Prototype | Movement, camera, grey-box test scene, interaction prompt; prompt builder, validator and one LLM request; Chapter 1 with Zafir playable online and offline. Merve: code. Tuana: lore bible, Zafir's card, Chapter 1 scene card and fallback lines, conversation UI sketch | Sun 15.11.2026 |
-| First playable | Scene Director FSM, relationship values, palace grey-box with all rooms, Chapters 1–3 playable online and offline; token cost measured; first red-team run. Tuana: Vashir's card, Chapters 2–4 cards and fallback lines, portraits v1 | Sun 22.11.2026 |
-| Content complete | Chapter 4, cutscene system, prologue / pyre / epilogue, HUD and all menus, memories; should-haves that fit (guards); first playtest with outside players | Sun 29.11.2026 |
+| First playable | Scene Director FSM, relationship values, open palace grey-box with all rooms, day / night chapter flow, clues and Rumor Journal, guards with hiding spots and eavesdropping, nightly dance minigame; Chapter 1 complete (day, night, key scene) online and offline; token cost measured; first red-team run. Tuana: Vashir's card, Chapter 2–4 cards, clue lists and NPC trees, dance songs, portraits v1 | Sun 22.11.2026 |
+| Content complete | Chapters 2–4 (clues, NPC trees, nights), cutscene system, prologue / pyre / epilogue, HUD and all menus, guards with hiding spots and eavesdropping, nightly dance for all 4 nights, memories if kept; first playtest with outside players | Sun 29.11.2026 |
 | Feature freeze and polish | Art and audio pass, tuning, second playtest, red-team pass with 0 leaks | Thu 03.12.2026 |
 | Final | Windows build, offline mode verified, credits, AI disclosure, final prompt log | Sat 05.12.2026 (06.12 buffer) |
 
@@ -456,7 +491,7 @@ The LLM writes what the characters say, but our own C# code decides what actuall
 | Scene flow (nudge, end, fail) | Finite state machine (Scene Director) | Our C# |
 | Faces and gestures | Emotion state machine driven by the LLM's emotion tag | Our C# + Animator |
 | Memories between scenes | LLM summary call after each scene | Cloud LLM API |
-| Palace guards (should have) | FSM + NavMesh: Patrol → Notice → Investigate → Alert | Our C# + Unity AI Navigation |
+| Palace guards (must have since 10.11) | Simplified FSM + NavMesh: Patrol → Notice → Patrol | Our C# + Unity AI Navigation |
 
 **Prompt order:** (1) character card, (2) lore bible (~600 words; nothing outside it exists), (3) scene card, (4) state (values as words, for example "Trust: wary", and up to 6 memories), (5) conversation (last 8 turns and the player's new line).
 
@@ -538,7 +573,7 @@ The key is never in the repository; it is read from an environment variable or a
 | 1. Design Pillars | MISSING (suggested pillars given, need confirmation) |
 | 1. Out of Scope | FILLED (MISSING: combat confirmation) |
 | 2. Screens | FILLED (MISSING: lose screen, credits buttons, video/control settings) |
-| 2. Controls | FILLED (MISSING: dance keys) |
+| 2. Controls | FILLED (dance keys proposed) |
 | 2. Camera | FILLED (MISSING: distances and limits) |
 | 2. Mechanics | FILLED (MISSING: memory failure, weapon Suspicion, dance mid-range) |
 | 3. Level Design Philosophy | FILLED (MISSING: guidance cues) |

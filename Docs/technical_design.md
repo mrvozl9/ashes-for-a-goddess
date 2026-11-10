@@ -8,6 +8,8 @@
 
 **Source legend:** class names and their jobs come from GDD Figure 6 (Main scripts). Items marked **(derived)** are architecture details this document adds to make the GDD buildable; they are not in the GDD and can be changed freely.
 
+**Gameplay update 10.11.2026:** each chapter is a day (gather clues into the Rumor Journal while avoiding guards, with hiding spots and eavesdropping) and a night (dance minigame to keep Sahra's cover), then a key conversation and a cutscene. Clues, guards and the dance are must-haves. See `gdd.md` 1 Mechanics 5–8.
+
 Repository state checked on 09.11.2026 (`main` at `2090454`): Unity 6.3 project, HDRP default resources created, packages installed, `Assets/_Project/` folders created, Active Input Handling = Input System. No scenes and no scripts yet.
 
 ---
@@ -67,7 +69,12 @@ Three layers (GDD Figure 6). Gameplay sends the chapter to Conversation AI; Conv
 | `NPCBrain` | MonoBehaviour (one per character) | Character profile, relationship values, memories |
 | `PromptBuilder` | Plain C# class | Assembles card, lore, scene, state and turns into one request |
 | `ILLMProvider` | C# interface | `Cloud` / `Local` / `Offline script` implementations |
-| `ResponseValidator` | Plain C# class | JSON, lore, spoiler, safety checks; clamps value changes |
+| `ResponseValidator` | Plain C# class | JSON, lore, spoiler, safety checks; clamps value changes; checks claimed clue ids |
+| `ClueJournal` (new 09.11) | MonoBehaviour | Found clues per chapter, topic unlocks, key-scene gate; feeds the Rumor Journal UI |
+| `DayNightCycle` (new 10.11) | MonoBehaviour | Chapter phases Day → Night → KeyScene; nightfall trigger, lighting and NPC positions per phase |
+| `DanceMinigame` (new 10.11) | MonoBehaviour | Nightly rhythm game; result → Favor, Suspicion, reward |
+| `HidingSpot` / `EavesdropZone` (new 10.11) | MonoBehaviour | Invisible-to-guards spots; timed overheard exchanges that award clues |
+| `SuspicionMeter` (derived) | MonoBehaviour | One Suspicion value fed by guards, Vashir and the dance; Caught at 100 |
 | `UIManager` | MonoBehaviour | Owns every screen |
 | `ConversationUI` | MonoBehaviour | Text, input, 3 replies |
 | `HUD` | MonoBehaviour | Goal, eye icon, prompts |
@@ -84,7 +91,9 @@ Three layers (GDD Figure 6). Gameplay sends the chapter to Conversation AI; Conv
 | `ZafirEmotion` | Neutral, Teasing, Tender, Jealous, Cold, Angry (fallback Neutral) | `NPCBrain`, `PortraitAnimator` |
 | `VashirEmotion` | Serene, Curious, Pleased, Suspicious, Wrathful (fallback Serene) | `NPCBrain`, `PortraitAnimator` |
 | Nura / Idris emotions | MISSING: their 4–6 emotion names | `PortraitAnimator` |
-| `GuardState` | Patrol, Notice, Investigate, Alert | `GuardFSM` |
+| `GuardState` | Patrol, Notice (simplified 10.11: no Investigate / Alert chase; Caught comes from the Suspicion meter) | `GuardFSM` |
+| `DayPhase` (new 10.11) | Day, Night, KeyScene | `DayNightCycle`, `GameManager` |
+| `DanceGrade` (new 10.11) | Great (> 80%), Fine (40–80%), Poor (< 40%) | `DanceMinigame` |
 | `AIMode` | Online, Offline | `GameManager`, Settings |
 | `RoomId` **(derived)** | DancersQuarters, GardenOfAsh, GuardPost, ThroneHall, KingsChamber, RooftopTerrace | `GameManager`, `GuardFSM` |
 
@@ -97,12 +106,15 @@ Three layers (GDD Figure 6). Gameplay sends the chapter to Conversation AI; Conv
 | `RelationshipValue` (struct) | Name (Trust / Affection / Favor / Suspicion), start, current 0–100, max increase per turn, max decrease per turn, thresholds with unlock ids | `NPCBrain`, `ResponseValidator` |
 | `SceneCard` (SO) | Chapter, place, time, goal text, beats (id, rule, required), turn limit, characters, authored opener, closing lines (full / weaker) | `SceneDirector`, `PromptBuilder` |
 | `LoreBible` (TextAsset) | ~600-word text | `PromptBuilder` |
-| `LLMResponse` (C# class for Newtonsoft) | `reply`, `emotion`, `gesture`, `trust_delta`, `affection_delta`, `beats[]`, `suggestions[3]`, `off_topic` (MISSING: Vashir's field names, presumably `favor_delta`, `suspicion_delta`) | `ResponseValidator`, `SceneDirector` |
+| `LLMResponse` (C# class for Newtonsoft) | `reply`, `emotion`, `gesture`, `trust_delta`, `affection_delta`, `beats[]`, `suggestions[3]`, `off_topic`, `clues[]` (new 09.11: clue ids the reply revealed) (MISSING: Vashir's field names, presumably `favor_delta`, `suspicion_delta`) | `ResponseValidator`, `SceneDirector` |
 | `Memory` (struct) | Character, text, chapter | `NPCBrain` (max 6) |
 | `FallbackLine` (SO table) | Scene, beat, emotion, line, AI-assisted flag (~120) | `OfflineScriptProvider` |
 | `OfflineDialogueTree` (SO) | Scene, nodes (3 replies → character line, value changes, beats) | `OfflineScriptProvider` |
 | `CutsceneScript` (SO / Timeline) | Part, background, speaker, lines (~150 total) | Cutscene player |
-| `ExplorationSettings` (SO) | Walk 2.2, run 4.5, cone 70° / 9 m, +12/s run, +20/s restricted, −5/s out of view | `PlayerController`, `GuardFSM` |
+| `ExplorationSettings` (SO) | Walk 2.2, run 4.5, cone 70° / 9 m, +12/s run, +20/s restricted, −5/s out of view, patrol loop 20–40 s, stops 3–5 s, eavesdrop ~10 s (proposed) | `PlayerController`, `GuardFSM`, `EavesdropZone` |
+| `Clue` (SO, new 09.11) | Id, chapter, holder NPC, journal text, topic text, prompt hint, required flag, source (talk / eavesdrop / dance reward) | `ClueJournal`, `PromptBuilder`, `ResponseValidator` |
+| `ChapterQuestion` (SO, new 09.11) | Chapter, question text, required clue count (3, proposed), key-scene character | `ClueJournal`, HUD |
+| `DanceChart` (SO, new 10.11) | Night, song, tempo, length 30–45 s, notes (time, lane 1–4), reward clue | `DanceMinigame` |
 | `ConversationSettings` (SO) | 200 chars, 3 suggestions, 80 words, 6 s timeout, 0.4 s typing, last 8 turns, 6 memories | `ConversationUI`, `PromptBuilder`, providers |
 
 ---
@@ -148,19 +160,32 @@ Three layers (GDD Figure 6). Gameplay sends the chapter to Conversation AI; Conv
 - **Current state:** 🔲 Not started.
 - **Required work:** summary prompt, storage, Log screen display, pyre confession call with 2 memories. MISSING: behaviour when the summary call fails.
 
-## 4.4 Exploration and Suspicion System (should have for guards)
+## 4.4 Exploration, Guards and Suspicion System (must have since 10.11)
 - **GDD basis:** 1 Mechanics 5, 2 Mechanics 5, 4 AI.
 - **Architecture:** `SuspicionMeter` **(derived)** on `GameManager` sums Suspicion from `GuardFSM` sight checks and Vashir's `suspicion_delta`; restricted rooms are trigger volumes **(derived)**.
-- **Numbers & formulas:** +12/s running in view; +20/s restricted room in view; −5/s out of view; 100 = caught. MISSING: weapon-seen rate.
+- **Architecture (added 10.11):** `GuardFSM` walks fixed NavMesh waypoints with timed stops; sight = 70° / 9 m cone + raycast line of sight; `HidingSpot` sets the player hidden (E to enter / leave) so cone checks fail; `EavesdropZone` next to a hiding spot plays an authored exchange (~10 s) and awards a clue if the player stays in the zone unseen until the end.
+- **Numbers & formulas:** +12/s running in view; +20/s restricted room in view; −5/s out of view; +10 for a Poor dance; 100 = caught. Patrol loop 20–40 s, stops 3–5 s (proposed). MISSING: weapon-seen rate.
 - **Current state:** 🔲 Not started.
-- **Required work:** view cone check, restricted volumes, eye icon events, checkpoint restart.
+- **Required work:** guard prefab and routes, view cone, restricted volumes, hiding spots, eavesdrop zones, eye icon events, checkpoint restart, Edit Mode test for the meter.
 
-## 4.5 Dance Minigame (should have; cut first)
+## 4.4b Clues and Rumor Journal (must have, new 09.11)
 - **GDD basis:** 1 Mechanics 6, 2 Mechanics 6.
-- **Architecture:** standalone UI minigame **(derived)**; result → `NPCBrain(Vashir)`.
-- **Numbers & formulas:** 30 s, 4 keys (MISSING: which), 0.25 s windows; > 80% → +10 Favor; < 40% → +10 Suspicion.
+- **Architecture:** clues come from three sources: LLM replies (`clues[]`, accepted only if the NPC holds that clue this chapter), pre-written NPC trees, and eavesdrop / dance rewards. `ClueJournal` stores them, adds topic replies and prompt hints, and opens the key scene at the required count.
+- **Numbers & formulas:** 5–6 clues per chapter, 3 required, 1–3 per NPC, toast 2 s (proposed).
 - **Current state:** 🔲 Not started.
-- **Required work:** only if time allows in week 3; otherwise a cutscene.
+- **Required work:** SO tables, journal logic and UI, validator change, tests (unknown clue, duplicate, gate).
+
+## 4.5 Nightly Dance Minigame (must have since 10.11)
+- **GDD basis:** 1 Mechanics 7, 2 Mechanics 7.
+- **Architecture:** `DanceMinigame` reads a `DanceChart` per night; timing from `AudioSettings.dspTime` so notes stay in sync **(derived)**; separate `Dance` input map; result → `NPCBrain(Vashir).Favor`, `SuspicionMeter`, `ClueJournal` (reward clue). `DayNightCycle` starts it at nightfall in the Throne Hall (Chapter 2: King's Chamber).
+- **Numbers & formulas:** 4 lanes ← ↑ ↓ → (proposed), 0.25 s windows, 30 s on night 1 rising to 45 s, tempo +10% per night; > 80% → +10 Favor + reward; 40–80% → nothing; < 40% → +10 Suspicion.
+- **Current state:** 🔲 Not started.
+- **Required work:** minigame, 4 charts, dance screen, Sahra's dance animations, Edit Mode test for grading.
+
+## 4.5b Day / Night Chapter Flow (must have, new 10.11)
+- **Architecture:** `DayNightCycle` per chapter: Day (investigate) → nightfall when the required clues are found or the player chooses "Go to perform" (proposed) → Night (dance) → KeyScene (Scene Director) → cutscene → next chapter. Switches the HDRP lighting volume, the goal line and NPC spawn points.
+- **Current state:** 🔲 Not started.
+- **Required work:** phase state, lighting volumes, spawn sets, save at chapter start.
 
 ## 4.6 Cutscene System
 - **GDD basis:** 3 Themes (Prologue, Pyre, Epilogue), 1 Gameplay Walkthrough.
@@ -181,10 +206,11 @@ Three layers (GDD Figure 6). Gameplay sends the chapter to Conversation AI; Conv
 | `Interact` | `Exploration` | E |
 | `Submit` | `Conversation` | Enter |
 | `PickReply1` / `PickReply2` / `PickReply3` | `Conversation` | 1 / 2 / 3 |
-| `OpenLog` | `Exploration`, `Conversation` | Tab |
+| `OpenLog` (Rumor Journal) | `Exploration`, `Conversation` | Tab |
 | `Advance` | `Cutscene` | Space |
 | `Pause` | `Exploration`, `Conversation`, `Cutscene` | Esc |
-| `DanceKey1–4` | `Dance` | MISSING: dance keys |
+| `DanceKey1–4` | `Dance` | ← ↑ ↓ → (proposed) |
+| `Hide` | `Exploration` | E (same key as Interact, near a hiding spot) |
 | `Jump` | none | Not in the game |
 
 Text entry uses a TextMeshPro input field; the `Exploration` map is disabled while typing so W A S D do not move Sahra **(derived)**.
@@ -192,8 +218,8 @@ Text entry uses a TextMeshPro input field; the `Exploration` map is disabled whi
 ---
 
 ## 6. AI
-- **States:** Guards: Patrol → Notice → Investigate → Alert (GDD 5.1). Conversation: Scene Director states (section 4.2). Emotions: per-character emotion state machine driven by the LLM's emotion tag.
-- **Perception:** sight only: 70° cone, 9 m range. MISSING: hearing, Notice and Investigate timings, line-of-sight rule.
+- **States:** Guards: Patrol → Notice → Patrol (simplified 10.11 from the GDD's Patrol → Notice → Investigate → Alert; no chasing). Conversation: Scene Director states (section 4.2). Emotions: per-character emotion state machine driven by the LLM's emotion tag.
+- **Perception:** sight only: 70° cone, 9 m range, raycast line of sight; blind to hiding spots. No hearing (proposed). MISSING: Notice duration.
 - **Classes:** `GuardFSM` + `NavMeshAgent` with patrol waypoints; NavMesh baked with AI Navigation; `SceneDirector`; `PortraitAnimator`.
 - **Current state:** 🔲 Not started.
 - **Required work:** guard prefab, patrol routes in the garden (2 guards Ch1, 3 guards Ch2), suspicion hook.
@@ -249,8 +275,9 @@ Text entry uses a TextMeshPro input field; the `Exploration` map is disabled whi
 | LLM provider and model | Hosted low-cost model (for example Claude Haiku 5.5) | MISSING: final choice |
 | Unity editor access for the AI agent | Unity MCP bridge / user does editor work | MISSING |
 | Court NPCs (Nura, Idris) as LLM | LLM / pre-written | Pre-written first; LLM if week 2 risk check passes |
-| Dance minigame | Minigame / cutscene | Cutscene unless week 3 has time |
-| Guard patrols | Full FSM / simple patrol + cone | MISSING |
+| Dance minigame | Minigame / cutscene | Minigame every night (team decision 10.11) |
+| Guard patrols | Full FSM / simple patrol + cone | Simple timed patrol + cone + hiding spots, no chasing (10.11) |
+| Nightfall trigger | Required clues found / player chooses / timer | Clues found or player chooses (proposed) |
 | Vashir JSON fields | `favor_delta`, `suspicion_delta` | MISSING |
 
 ---

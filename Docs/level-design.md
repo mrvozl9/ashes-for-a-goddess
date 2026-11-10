@@ -5,12 +5,14 @@
 
 **World overview:** One 3D level, the palace (House of Embers), about 60 × 30 m: a hub (Garden of Ash) with five rooms around it (Dancers' Quarters, Guard Post, Throne Hall, King's Chamber, Rooftop Terrace). Played in order: Prologue: Ash (2D) → Chapter 1: The Garden of Ash → Chapter 2: The Private Dance → Chapter 3: Rooftop of Smoke → Chapter 4: The Trap → Chapter 5: The Pyre (2D) → Epilogue: The Long Flame (2D). In Unity, the palace is the `Palace` scene; the 2D parts play in `Cutscenes`.
 
+**Updated 09.11 and 10.11.2026:** the palace is **open** from Chapter 1 (everything except the restricted King's Chamber and the locked city gate). Each chapter is **a day and a night**: by day the player gathers clues for the Rumor Journal while avoiding guards (hiding spots, eavesdropping); at night Sahra dances in the Throne Hall (Chapter 2: the King's Chamber); then the key conversation and a cutscene. NPCs and guard routes change per chapter and per phase.
+
 ---
 
 ## 1. Level Design Philosophy
-1. **Guidance:** Rooms unlock chapter by chapter, so only the doors that matter are open. The goal line on the HUD names the target ("Find out why the other dancer carries a blade"). Lanterns and firelight (Old gold, Ember orange) pick out details in plum and burgundy shadows; the restricted King's Chamber is marked with Rose red. Characters show an "E: Talk" prompt. MISSING: specific light, sound or shape cues that lead to each character and door.
+1. **Guidance:** (Changed 09.11) the palace is open, so the chapter question, the NPCs present and lit eavesdrop spots guide the player instead of locked doors; at nightfall the Throne Hall is lit brightest and the court gathers there. The goal line on the HUD names the target ("Find out why the other dancer carries a blade"). Lanterns and firelight (Old gold, Ember orange) pick out details in plum and burgundy shadows; the restricted King's Chamber is marked with Rose red. Characters show an "E: Talk" prompt. MISSING: specific light, sound or shape cues that lead to each character and door.
 2. **Teaching structure:** Chapter 1 introduces walking, talking and the garden guard patrol safely (2 guards, three friendly or neutral characters) → Chapter 2 combines exploration with Vashir's Suspicion in conversation and adds a third guard and a restricted room → Chapter 3 is a twist in tone: no threat, only the romance, decided by Affection → Chapter 4 is the final test: only 4 turns with Vashir, then the trap.
-3. **Layout style:** Hub and spokes. The Garden of Ash is the hub; every route passes through it, so its guard patrol is the stealth challenge in every chapter.
+3. **Layout style:** Hub and spokes, fully open. The Garden of Ash is the hub; every route passes through it, so its guard patrol is the stealth challenge in every chapter. Each room has at least one hiding spot near its door and each chapter has 1–2 eavesdrop stops on guard routes (proposed).
 
 **Scale standard:** Palace about 60 × 30 m; walk 2.2 m/s, run 4.5 m/s (crossing 60 m takes about 27 s walking or 13 s running); guard sight 9 m in a 70° cone. MISSING: player height, door width and height, corridor width. No jumping.
 
@@ -26,9 +28,12 @@
 | Interact (E) | Sahra | 2 Controls | Start conversations; objects (MISSING: which objects are interactive besides characters) |
 | Guard sight / Suspicion | Guards, Vashir | 1 Mechanics 5 | Garden patrol; Throne Hall guard; restricted King's Chamber |
 | Restricted room | Level | 3 Level Design | King's Chamber until Favor 60 |
-| Room unlock by chapter | Level | 3 Level Design | Doors open at chapter start |
+| Gather clues (Rumor Journal) | Sahra | 1 Mechanics 6 | 5–6 clues per chapter from NPCs, eavesdrop stops and the night's dance reward |
+| Hide (E) | Sahra | 1 Mechanics 8 | Curtains, lattice screens, alcoves; at least one per room |
+| Eavesdrop | Sahra, guards, courtiers | 1 Mechanics 8 | Guard stops and courtier corners next to a hiding spot |
+| Day / night phase | Level | 1 Gameplay | Lighting, NPC positions and the goal change at nightfall |
 | Checkpoint | Level | 1 Win and Lose | Dancers' Quarters, start of each chapter |
-| Dance minigame (should have) | Sahra | 1 Mechanics 6 | Chapter 2, King's Chamber |
+| Nightly dance (must have since 10.11) | Sahra | 1 Mechanics 7 | Every night in the Throne Hall; Chapter 2 in the King's Chamber |
 | Cutscene (visual novel) | Game | 3 Themes | Prologue, after Chapter 4, Pyre, Epilogue |
 
 ---
@@ -37,24 +42,25 @@
 
 **Theme / mood:** Moonlit garden under a huge pale moon; lanterns, a dry fountain; night plum shadows and old-gold light. Palace music loop (oud, frame drum, drone); footsteps on stone.
 **Threats:** 2 guards; one patrols the garden.
-**Goal:** Learn why Zafir is here and agree to work together (beats such as `zafir_reveals_target`, `alliance_agreed`). On-screen goal: "Find out why the other dancer carries a blade."
+**Goal:** Learn why Zafir is here and agree to work together (beats such as `zafir_reveals_target`, `alliance_agreed`). On-screen question: "Find out why the other dancer carries a blade." Day: 3 of 5–6 clues. Night: dance 1 in the Throne Hall (30 s).
 
 ### Layout
 Rooms open: Dancers' Quarters, Garden of Ash, Guard Post.
 ```
-                 [Rooftop Terrace]*   [Throne Hall]*   [King's Chamber]* (locked)
-                        |  (stairs)         |
+                 [Rooftop Terrace]       [Throne Hall]          [King's Chamber] (restricted)
+                   priest (minor NPC)      servant (minor NPC)
+                        |  (stairs)            |   NIGHT: dance 1
 [Dancers' Quarters] -- [ Garden of Ash (hub) ] -- [Guard Post] -- (gate to city, locked)
   START / checkpoint      Zafir, dry fountain       Captain Idris
-  Nura                    guard patrol loop
-* = closed in this chapter
+  Nura                    guard patrol loop,        guard 2 stop
+                          lattice screen = hide + eavesdrop
 ```
 
 ### Progression
-- **1. Introduce:** Sahra starts in the Dancers' Quarters (safe, no guard) and can talk to Nura (4 turns) to learn talking.
-- **2. Combine:** walk into the garden while the guard patrols; walking keeps Suspicion low, running in view adds +12/s.
-- **3. Twist:** find Zafir in the garden and talk under the patrol; Zafir dodges questions (10 turns, nudge at 2 left).
-- **4. Final test:** reach the alliance beat before the turn limit; Sahra steals Zafir's knife; chapter resolves.
+- **1. Introduce (day):** Sahra starts in the Dancers' Quarters (safe, no guard) and talks to Nura to learn talking and the Rumor Journal (first clue).
+- **2. Combine (day):** cross the garden while the guard patrols; learn to hide behind the lattice screen and eavesdrop on the two guards (second clue); question Idris, the servant or the priest for the third.
+- **3. Twist (night):** nightfall; dance 1 in the Throne Hall in front of the court; a great dance gives an extra clue from a noble.
+- **4. Final test (key scene):** Zafir waits in the garden; reach the alliance beat before the turn limit; Sahra steals Zafir's knife; chapter resolves.
 
 ### Secrets & extras
 - Captain Idris at the Guard Post (4 turns): he doubts the burnings.
@@ -62,7 +68,7 @@ Rooms open: Dancers' Quarters, Garden of Ash, Guard Post.
 - MISSING: any hidden areas or collectibles (none in the GDD).
 
 ### Enemy / hazard notes
-- Garden patrol loop around the hub (GDD Figure 4, "guard patrol"); MISSING: exact waypoint route, timing and where the second guard stands (Guard Post is likely).
+- Garden patrol loop around the hub (GDD Figure 4, "guard patrol"); loop 20–40 s with a stop at the lattice screen where the two guards talk (eavesdrop) (proposed). MISSING: exact waypoints and timing; second guard's stop (Guard Post is likely). At night the guards stand at the Throne Hall doors instead (proposed).
 
 ---
 
@@ -73,7 +79,7 @@ Rooms open: Dancers' Quarters, Garden of Ash, Guard Post.
 **Goal:** Get a private meeting with Vashir without raising Suspicion (invitation at Favor 60). Afterwards, Zafir's jealousy shows.
 
 ### Layout
-Rooms open: + Throne Hall, King's Chamber (by invitation).
+Whole palace open; the King's Chamber stays restricted until the invitation (Favor 60). Night: the private dance (dance 2) in the King's Chamber.
 ```
 [Dancers' Quarters] -- [Garden of Ash] -- [Guard Post]
                               |
@@ -103,7 +109,7 @@ Rooms open: + Throne Hall, King's Chamber (by invitation).
 **Goal:** Plan the strike with Zafir. If Affection is high (60), they both admit their feelings (full rooftop confession).
 
 ### Layout
-Rooms open: + Rooftop Terrace.
+Whole palace open. Day: clues for the strike plan. Night: dance 3 in the Throne Hall (faster tempo), then the rooftop key scene.
 ```
 [Rooftop Terrace]  (upper level)
         | stairs
@@ -131,7 +137,7 @@ Rooms open: + Rooftop Terrace.
 **Goal:** The scripted twist: Vashir reveals that he hired Zafir to kill her; Sahra is cut down and dies in Zafir's arms. The chapter ends in a cutscene.
 
 ### Layout
-Rooms open: King's Chamber.
+Whole palace open. Short day; night: dance 4 (45 s) in the Throne Hall; then Vashir summons Sahra to the King's Chamber for the trap (proposed).
 ```
 [Garden of Ash] -- [Throne Hall] -- [King's Chamber]  Vashir, Zafir, guards
 ```
@@ -160,10 +166,10 @@ Rooms open: King's Chamber.
 ## 8. Difficulty Curve
 | Level | New mechanic | Difficulty (1 to 5) | Notes |
 | :-- | :-- | :-- | :-- |
-| Chapter 1: The Garden of Ash | Walk, talk, garden patrol | MISSING (suggested 1) | 2 guards; 10 turns with Zafir |
-| Chapter 2: The Private Dance | Vashir's Suspicion, restricted room, dance | MISSING (suggested 3) | 3 guards; 8 turns |
-| Chapter 3: Rooftop of Smoke | Affection decides the confession | MISSING (suggested 2) | No new threat |
-| Chapter 4: The Trap | Only 4 turns | MISSING (suggested 2) | Scripted outcome |
+| Chapter 1: The Garden of Ash | Walk, talk, clues, hide, eavesdrop, dance 1 | MISSING (suggested 1) | 2 guards; 3 clues; 30 s dance; 10 turns with Zafir |
+| Chapter 2: The Private Dance | Vashir's Suspicion, restricted room, private dance | MISSING (suggested 3) | 3 guards; 3 clues; dance 2 (+10% tempo); 8 turns |
+| Chapter 3: Rooftop of Smoke | Affection decides the confession; clues that need other clues first | MISSING (suggested 3) | 3 guards (proposed); dance 3; 10 turns |
+| Chapter 4: The Trap | Only 4 turns | MISSING (suggested 2) | Short day; dance 4 (45 s); scripted outcome |
 
 ---
 
