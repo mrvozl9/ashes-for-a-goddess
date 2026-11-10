@@ -2,13 +2,15 @@
 
 > **Canonical design source:** `gdd.md`. Companions: `technical_design.md` (how the code works) and `level-design.md` (where things are). This file is the **order of operations**: small phases, in order, each with a hard check before the next one starts.
 >
-> **How to use this file:** treat each Phase as a node in a state machine. A phase may not start until its `Depends on` phases are `DONE`. Every phase ends with a **Verification Gate**: the feature is tested in Unity **Play Mode** and the user confirms before moving on. Never build UI before the gameplay it shows. Never build a level before its mechanics work in the `Test` scene.
+> **How to use this file:** treat each Phase as a node in a state machine. A phase may not start until its `Depends on` phases are `DONE`. Every phase ends with a **Verification Gate**: the feature is tested in **Play In Editor (PIE)** in Unreal Engine 5.8 and the user confirms before moving on. Never build UI before the gameplay it shows. Never build a level before its mechanics work in the `L_Test` level.
 >
 > **Time box: 4 weeks in total, Monday 09.11.2026 to Sunday 06.12.2026.** Final build on Saturday 05.12.2026; Sunday 06.12 is buffer only. This compresses the GDD's Weeks 9–14 plan (which ended 20.12.2026). Owners follow the GDD roles: **Merve** (code, level, audio) and **Tuana** (art, UI, writing, programming). Two tracks run in parallel; a phase lists who owns it.
 >
+> **Engine (10.11.2026):** Unreal Engine 5.8, C++ for the testable core and Blueprints for glue, UI and animation (see `technical_design.md`). The earlier Unity skeleton is kept as the Git tag `unity-skeleton`.
+>
 > **Updated 10.11.2026 for the agreed gameplay:** each chapter is a day and a night in the open palace. Day = gather clues into the **Rumor Journal** while **avoiding patrolling guards** (hiding spots, eavesdropping). Night = the **nightly dance** minigame to keep Sahra's cover. Then the key conversation and a cutscene. Guards and the dance are now must-haves.
 
-**Legend:** `[C#]` code · `[UNITY]` scene / prefab / editor work · `[ART]` assets · `[UI]` interface · `[AUDIO]` sound · `[WRITE]` lore, cards, lines · `⚠️` risk / decision
+**Legend:** `[C++]` C++ code · `[BP]` Blueprint / editor work · `[UE]` project, level or editor setup · `[REPO]` Git · `[TOOLS]` tool setup · `[ART]` assets · `[UI]` interface · `[AUDIO]` sound · `[WRITE]` lore, cards, lines · `⚠️` risk / decision
 
 ---
 
@@ -22,7 +24,7 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
                      (week 2 = all systems, week 3 = all content)
 ```
 
-**Stage 1 goal:** Sahra walks and talks in a test scene; one conversation with Zafir (Chapter 1) works end to end, online through the LLM and offline through pre-written lines, with the validator in between.
+**Stage 1 goal:** Sahra walks and talks in the test level; one conversation with Zafir (Chapter 1) works end to end, online through the LLM and offline through pre-written lines, with the validator in between.
 **Stage 2 goal:** Week 2 builds every gameplay system and finishes Chapter 1 as a complete day and night (clues and Rumor Journal, guards with hiding spots and eavesdropping, nightly dance, key scene, cutscene). Week 3 fills Chapters 2–4, the cutscenes (prologue, pyre, epilogue), HUD and menus, offline mode for every scene. First playtest with outside players.
 **Stage 3 goal:** Art and audio pass, tuning from playtests (dance difficulty, patrol timing, clue counts), red-team pass with 0 spoiler leaks, Windows build that starts in offline mode without a key, credits and AI disclosure.
 
@@ -60,7 +62,7 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 
 | # | Phase | Stage | Owner | Target | Status | Last update | Notes |
 | :-- | :-- | :-- | :-- | :-- | :-- | :-- | :-- |
-| 0 | Project setup & test scene | 1 | Merve | Mon 09.11 | 🔄 IN PROGRESS | 09.11.2026 | HDRP, packages, folders, Input System done; scenes not created yet |
+| 0 | Project setup & test level | 1 | Merve | Tue 10.11 | 🔄 IN PROGRESS | 10.11.2026 | Engine switched to Unreal 5.8; Unity tagged `unity-skeleton` and removed; UE project not created yet |
 | 1 | Player movement & camera | 1 | Merve | Tue 10.11 | ⬜ NOT STARTED | | |
 | 2 | Interaction system (E: Talk) | 1 | Merve | Wed 11.11 | ⬜ NOT STARTED | | |
 | 3 | LLM provider (cloud + offline) | 1 | Merve | Wed 11.11 | ⬜ NOT STARTED | | |
@@ -88,22 +90,23 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 
 # STAGE 1: PROTOTYPE (Week 1 · 09.11 – 15.11)
 
-## PHASE 0: Project Setup & Test Scene
-**Objective:** A project both members open on Unity 6.3 LTS (6000.3.27f2) with `Boot`, `Test` and `Palace` scenes that run.
+## PHASE 0: Project Setup & Test Level
+**Objective:** An Unreal Engine 5.8 C++ project both members open, with `L_Test` and `L_Palace` levels that run. Replaces the earlier Unity skeleton (decided 10.11.2026: same repository, Unity kept as the tag `unity-skeleton`).
 **Depends on:** none.
 
 **Tasks:**
-- ✅ [UNITY] HDRP Wizard "Fix All", HDRP default resources committed.
-- ✅ [UNITY] Packages: HDRP, Input System, Cinemachine, AI Navigation, Timeline, uGUI/TMP, Newtonsoft Json, VFX Graph, Test Framework; Active Input Handling = Input System.
-- ✅ [UNITY] `Assets/_Project/` folder layout.
-- [UNITY] Create `Boot`, `Test`, `Palace` (and later `Title`, `Cutscenes`) in `Assets/_Project/Scenes/` and add them to Build Profiles.
-- [UNITY] `Test` scene: floor, a few walls and a ramp, HDRP sky and a night volume.
-- [C#] Assembly definitions for `Scripts` and `Tests/EditMode` (derived) so Edit Mode tests compile.
-- [UNITY] Both members clone with Git LFS and open the project on the same version.
+- ✅ [REPO] Remove `Assets/`, `Packages/`, `ProjectSettings/`; Unreal `.gitignore` (Binaries, Intermediate, Saved, DerivedDataCache, `.vs`, `Secrets/`) and `.gitattributes` (Git LFS, `*.uasset` / `*.umap` lockable).
+- [REPO] Merve: tag the last Unity commit on `main` (`2090454`) as `unity-skeleton`: `git tag unity-skeleton 2090454` then `git push origin unity-skeleton` (or GitHub → Releases → Draft a new release → new tag `unity-skeleton` on that commit).
+- [UE] Merve: create the project from the **Third Person** template, **C++**, named `Ashes`, in the repository folder; Starter Content off; Lumen on (default).
+- [UE] Enable plugins: Enhanced Input (default), Gameplay Debugger, Functional Testing (Automation); add the C++ modules `HTTP`, `Json`, `JsonUtilities`, `UMG`, `AIModule`, `NavigationSystem`, `GameplayTasks` to `Ashes.Build.cs` (derived).
+- [UE] Create `Content/Ashes/` (folders from `design.md` section 10), `L_Test` (floor, walls, a ramp, night sky, Nav Mesh Bounds Volume) and an empty `L_Palace`; set `L_Test` as the editor startup map and `GM_Ashes` as the default game mode.
+- [UE] Project Settings → Editor → Source Control: Git with LFS; turn on "One File Per Actor" for `L_Palace` (World Settings → Use External Actors).
+- [UE] Both members clone with Git LFS, build in Visual Studio 2022 (or Rider), and open the project on the same engine version; `git lfs lock` before editing any `.uasset` / `.umap`.
+- [TOOLS] Install MCP + VibeUE (course setup) so the AI agent can reach the editor; confirm both PCs have it.
 - [WRITE] Tuana: start the GitHub Projects task board (To Do, Doing, Review, Done) with this tracker's phases.
 
-**Deliverable:** `main` opens and the `Boot` and `Test` scenes play with no errors on both PCs.
-**Verification Gate:** Open the project on both PCs, press Play in `Test`, Console shows no errors. ✋ Confirm with the user before the next phase.
+**Deliverable:** `main` opens the Unreal project and `L_Test` plays with no errors on both PCs.
+**Verification Gate:** Open the project on both PCs, press Play In Editor (PIE) in `L_Test`, the Output Log shows no errors and the C++ build succeeds. ✋ Confirm with the user before the next phase.
 
 ---
 
@@ -112,13 +115,13 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 **Depends on:** Phase 0.
 
 **Tasks:**
-- [UNITY] Input action asset: maps `Exploration` (Move, Look, Run, Interact, OpenLog, Pause), `Conversation`, `Cutscene`.
-- [C#] `PlayerController`: walk 2.2 m/s, run 4.5 m/s (Shift), `IsRunning`, `SetInputEnabled`.
-- [UNITY] `P_Sahra` with a placeholder capsule or licensed base model + Animator (idle, walk, run).
-- [UNITY] Cinemachine orbital follow camera (MISSING in GDD: distance and limits; pick and record in `technical_design.md`).
+- [BP] Enhanced Input: `IA_Move`, `IA_Look`, `IA_Run`, `IA_Interact`, `IA_OpenJournal`, `IA_Pause` in `IMC_Exploration`; `IMC_Conversation`, `IMC_Cutscene`, `IMC_Dance` (keys in `technical_design.md` section 5); remove the template's jump.
+- [C++] `AAshesCharacter` (from the template character): walk 220 cm/s, run 450 cm/s (Shift), `bIsRunning`, `SetGameplayInputEnabled`; `AAshesPlayerController` adds the mapping contexts.
+- [BP] `BP_Sahra` with the template mannequin or a licensed base model + `ABP_Sahra` (idle, walk, run).
+- [BP] Spring Arm + Camera orbit (MISSING in GDD: arm length and pitch limits; pick and record in `technical_design.md`).
 
-**Deliverable:** `P_Sahra` moving in `Test`.
-**Verification Gate:** In Play Mode, W A S D walks at about 2.2 m/s, Shift runs at about 4.5 m/s, mouse orbits the camera, no jump. ✋ Confirm with the user.
+**Deliverable:** `BP_Sahra` moving in `L_Test`.
+**Verification Gate:** In PIE, W A S D walks at about 2.2 m/s, Shift runs at about 4.5 m/s, mouse orbits the camera, no jump. ✋ Confirm with the user.
 
 ---
 
@@ -127,25 +130,25 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 **Depends on:** Phase 1.
 
 **Tasks:**
-- [C#] `InteractionSystem` + `Interactable` component; event `OnInteract`.
-- [UI] World-space "E: Talk" prompt (placeholder style).
-- [UNITY] Placeholder Zafir capsule in `Test`.
+- [C++] `UInteractionComponent` (sphere trace on a 0.1 s timer, not Tick) + `IAshesInteractable` interface; delegate `OnInteract`.
+- [UI] "E: Talk" prompt as a Widget Component (`WBP_InteractPrompt`, placeholder style).
+- [BP] Placeholder `BP_Zafir` (mannequin) in `L_Test`.
 
-**Deliverable:** E on the placeholder Zafir logs "Start scene: Zafir" and disables movement.
+**Deliverable:** E on the placeholder Zafir prints "Start scene: Zafir" to the Output Log and disables movement.
 **Verification Gate:** Walk up to Zafir, prompt appears, E starts the event, walking away hides the prompt. ✋ Confirm with the user.
 
 ---
 
 ## PHASE 3: LLM Provider (Cloud + Offline)
-**Objective:** One LLM request is answered in the Console, and the same call works offline.
+**Objective:** One LLM request is answered in the Output Log, and the same call works offline.
 **Depends on:** Phase 0 (can run in parallel with Phases 1–2).
 
 **Tasks:**
-- [C#] `ILLMProvider`, `CloudProvider` (UnityWebRequest, async/await, 6 s timeout), `OfflineScriptProvider` (returns a canned JSON).
-- [C#] API key from an environment variable or `Secrets/` (git-ignored); startup check → AI mode Online / Offline.
+- [C++] `ULLMProvider` (abstract), `UCloudLLMProvider` (`FHttpModule`, `SetTimeout(6)`, async callback on the game thread), `UOfflineLLMProvider` (returns a canned JSON).
+- [C++] API key from the environment variable `ASHES_LLM_API_KEY` or `Secrets/llm_key.txt` (git-ignored), never `Config/*.ini`; startup check → AI mode Online / Offline in `UAshesGameInstance`.
 - ⚠️ Choose the provider and model (GDD: fast low-cost hosted model, for example Claude Haiku 5.5); set a spending cap in the provider console.
 
-**Deliverable:** A debug button sends Zafir's test prompt (GDD 12.4) and prints the JSON; without a key it prints the offline reply.
+**Deliverable:** A debug key or console command sends Zafir's test prompt (GDD 12.4) and prints the JSON; without a key it prints the offline reply.
 **Verification Gate:** Run with key → reply in under 6 s; run without key → offline reply; unplug network → timeout path, no freeze. ✋ Confirm with the user.
 
 ---
@@ -156,24 +159,24 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 
 **Tasks:**
 - [WRITE] Tuana: lore bible (~600 words, hand-written); Zafir's character card (add the line on when he turns cold or angry, from the 03.11 test); Chapter 1 scene card with beats and turn limit 10.
-- [C#] `CharacterCard`, `SceneCard` ScriptableObjects; `PromptBuilder` (card, lore, scene, state words, last 8 turns + new line).
-- [C#] `ResponseValidator`: Newtonsoft parse, 1 silent retry, emotion whitelist with fallback, 80-word limit, `off_topic`, spoiler keywords (regenerate once), safety word list, delta clamp.
-- [C#] Edit Mode tests: valid JSON, broken JSON, unknown emotion, +50 Trust clamped to +8, over-long reply.
+- [C++] Row structs `FCharacterCardRow`, `FSceneCardRow` and DataTables `DT_Characters`, `DT_Scenes`, Data Asset `DA_LoreBible`; `UPromptBuilder` (card, lore, scene, state words, last 8 turns + new line).
+- [C++] `UResponseValidator`: `FJsonObjectConverter` parse, 1 silent retry, emotion whitelist with fallback, 80-word limit, `off_topic`, spoiler keywords (regenerate once), safety word list, delta clamp.
+- [C++] Automation tests: valid JSON, broken JSON, unknown emotion, +50 Trust clamped to +8, over-long reply.
 
-**Deliverable:** Console conversation with Zafir through the real prompt; all Edit Mode tests green.
-**Verification Gate:** Test Runner all green; the 5 lines from GDD 12.4 pass again through the API; reply times measured. ✋ Confirm with the user.
+**Deliverable:** Output Log conversation with Zafir through the real prompt; all Automation tests green.
+**Verification Gate:** Session Frontend → Automation all green; the 5 lines from GDD 12.4 pass again through the API; reply times measured. ✋ Confirm with the user.
 
 ---
 
 ## PHASE 5: Conversation UI + Chapter 1 Zafir Scene
-**Objective:** Talking to Zafir in `Test` uses the real conversation screen, online and offline.
+**Objective:** Talking to Zafir in `L_Test` uses the real conversation screen, online and offline.
 **Depends on:** Phases 2 and 4.
 
 **Tasks:**
-- [UI] Tuana: conversation screen per `design.md` (dialogue panel, small portraits, hint line, large portrait, 3 reply buttons, 200-character input, Send, turns left) with placeholder portraits.
-- [C#] `ConversationUI`, `PortraitAnimator` (emotion → sprite within 1 s), typing indicator ≥ 0.4 s, input cut at 200 with a warning, 1 / 2 / 3 picks.
+- [UI] Tuana: `WBP_Conversation` per `design.md` (dialogue panel, small portraits, hint line, large portrait, 3 reply buttons, 200-character input, Send, turns left) with placeholder portraits.
+- [BP] `WBP_Conversation` logic and portrait swap (emotion → portrait texture within 1 s), typing indicator ≥ 0.4 s, input cut at 200 with a warning, 1 / 2 / 3 picks.
 - [WRITE] Tuana: Chapter 1 fallback lines and the offline dialogue tree for Zafir.
-- [C#] Turn counter and simple end at 10 turns (full Director comes in Phase 7).
+- [C++] Turn counter and simple end at 10 turns (full Director comes in Phase 7).
 
 **Deliverable:** A playable Zafir conversation from E to the 10th turn.
 **Verification Gate:** Play online: type, pick suggestions, portrait changes, fallback on timeout. Play offline: the whole scene is playable with the 3 pre-written replies. ✋ Confirm with the user.
@@ -185,7 +188,7 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 **Depends on:** Phases 0–5.
 
 **Tasks:**
-- Both: play the `Test` scene end to end, online and offline.
+- Both: play `L_Test` end to end, online and offline.
 - ⚠️ Early warning check (GDD 13.5): average reply over 4 s, or under 90% valid JSON? If yes → offline mode becomes the default and court NPCs and the pyre confession become pre-written.
 - Update this tracker, `PROGRESS.md` and the task board.
 
@@ -203,10 +206,10 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 **Depends on:** Phase 6.
 
 **Tasks:**
-- [C#] `SceneDirector` FSM: Intro → FreeTalk → Nudge (2 turns left or 3 stalled) → Resolve / ForcedClose → NextChapter; Caught at Suspicion 100.
-- [C#] `NPCBrain` with Trust 20 / Affection 10 (±8), Favor 30 (±6), Suspicion 10 (+10 / −5); thresholds 50, 60, 70; value-to-word bands for the prompt.
+- [C++] `USceneDirectorSubsystem` state machine: Intro → FreeTalk → Nudge (2 turns left or 3 stalled) → Resolve / ForcedClose → NextChapter; Caught at Suspicion 100.
+- [C++] `UNPCBrainComponent` with Trust 20 / Affection 10 (±8), Favor 30 (±6), Suspicion 10 (+10 / −5); thresholds 50, 60, 70; value-to-word bands for the prompt.
 - [WRITE] Tuana: hint lines ("Zafir looks at you a moment too long.") per value change; nudge notes per scene.
-- [C#] Edit Mode tests for transitions and thresholds.
+- [C++] Automation tests for transitions and thresholds.
 
 **Deliverable:** The Zafir scene resolves with full or weaker outcome; hints instead of numbers.
 **Verification Gate:** Reach the goal → Resolve; stall → Nudge; hit the limit → Forced close; tests green. ✋ Confirm with the user.
@@ -218,10 +221,10 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 **Depends on:** Phase 7.
 
 **Tasks:**
-- [UNITY] Grey-box hub + 5 rooms at about 60 × 30 m in `Palace` (see `level-design.md` section 9); stairs to the Rooftop; start point and checkpoint in the Dancers' Quarters; King's Chamber as a restricted volume; locked city gate; bake NavMesh.
-- [UNITY] Mark hiding spots (curtains, lattice screens, alcoves) and eavesdrop stops in the grey-box, even before they work.
-- [C#] `GameManager`: chapters, phases of the day (Day, Night, KeyScene), checkpoint save at chapter start, NPC spawn points per chapter and per phase; `SaveSystem` (Continue).
-- [C#] Nightfall trigger: when the required clues are found or the player chooses "Go to perform" (*proposed*), the goal line switches to "Perform in the Throne Hall"; lighting switches to night.
+- [UE] Grey-box hub + 5 rooms at about 6000 × 3000 cm in `L_Palace` (see `level-design.md` section 9); stairs to the Rooftop; Player Start and checkpoint in the Dancers' Quarters; King's Chamber as a `BP_RestrictedVolume`; locked city gate; Nav Mesh Bounds Volume (check with `P`).
+- [UE] Mark hiding spots (curtains, lattice screens, alcoves) and eavesdrop stops in the grey-box, even before they work.
+- [C++] `UDayNightSubsystem` and `AAshesGameMode`: chapters, phases of the day (Day, Night, KeyScene), checkpoint save at chapter start (`UAshesSaveGame`, USaveGame), `BP_NPCSpawnPoint` per chapter and per phase; Continue loads the save.
+- [C++] Nightfall trigger: when the required clues are found or the player chooses "Go to perform" (*proposed*), the goal line switches to "Perform in the Throne Hall"; lighting switches to night (Directional Light, Sky Atmosphere and Post Process Volume).
 
 **Deliverable:** Walk the whole palace; Chapter 1 phases advance with placeholder triggers.
 **Verification Gate:** Every room except the King's Chamber is reachable; Day → Night → Key scene → Chapter 2 card works; quit and Continue returns to the checkpoint. ✋ Confirm with the user.
@@ -233,11 +236,11 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 **Depends on:** Phase 8.
 
 **Tasks:**
-- [C#] `Clue` ScriptableObject table and `ClueJournal`: accept a clue only if the NPC holds it this chapter; ignore duplicates; required-clue gate for the key scene; clue → extra suggested reply and prompt hint for later NPCs.
-- [C#] Add `clues` to the LLM JSON and to the validator; pre-written NPC trees give clues directly.
-- [UI] Tuana: Rumor Journal (Tab): chapter question, found clues with speaker, "?" slots, conversation log, memories; "New clue" toast.
+- [C++] `FClueRow` / `DT_Clues` and `UClueJournalSubsystem`: accept a clue only if the NPC holds it this chapter; ignore duplicates; required-clue gate for the key scene; clue → extra suggested reply and prompt hint for later NPCs.
+- [C++] Add `clues` to the LLM JSON and to the validator; pre-written NPC trees give clues directly.
+- [UI] Tuana: `WBP_RumorJournal` (Tab): chapter question, found clues with speaker, "?" slots, conversation log, memories; "New clue" toast.
 - [WRITE] Tuana: Chapter 1 question and 5–6 clues; pre-written trees for Nura, Idris and the minor NPCs present in Chapter 1.
-- [C#] Edit Mode tests: rejected unknown clue, duplicate, gate opens at the required count.
+- [C++] Automation tests: rejected unknown clue, duplicate, gate opens at the required count.
 
 **Deliverable:** Chapter 1 day: gather 3 clues, Zafir opens up.
 **Verification Gate:** Zafir refuses with 2 clues and talks with 3; journal shows the right entries online and offline. ✋ Confirm with the user.
@@ -246,14 +249,14 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 
 ## PHASE 10: Guards, Hiding Spots & Eavesdropping
 **Objective:** Patrols make moving around tense, and sneaking earns information.
-**Depends on:** Phase 8 (built first in `Test`, then placed in `Palace`).
+**Depends on:** Phase 8 (built first in `L_Test`, then placed in `L_Palace`).
 
 **Tasks:**
-- [C#] `GuardFSM`: NavMeshAgent on fixed waypoints with stops (loop 20–40 s, stops 3–5 s, *proposed*); Patrol → Notice → Patrol; 70° / 9 m cone with line of sight; no chasing.
-- [C#] `SuspicionMeter`: +12/s running in view, +20/s restricted room in view, −5/s out of view; dance and Vashir add to the same meter; Caught at 100 → restart at checkpoint.
-- [C#] `HidingSpot` (E to enter / leave; invisible to guards) and `EavesdropZone` (hear the whole ~10 s exchange unseen → authored clue; seen → exchange stops).
-- [UI] Eye icon, hiding-spot glow and prompt.
-- [UNITY] `P_Guard`; 2 guards in Chapter 1 with one garden route and one eavesdrop stop behind a lattice screen.
+- [C++] / [BP] `AGuardAIController` + `BT_Guard` / `BB_Guard`: Move To fixed Target Points with Wait stops (loop 20–40 s, stops 3–5 s, *proposed*); Patrol → Notice → Patrol; AI Perception Sight 70° (35° half-angle) / 900 cm with line of sight; no chasing.
+- [C++] `USuspicionComponent`: +12/s running in view, +20/s restricted room in view, −5/s out of view; dance and Vashir add to the same meter; Caught at 100 → restart at checkpoint.
+- [C++] `AHidingSpot` (E to enter / leave; Sahra is not sensed by guards) and `AEavesdropZone` (hear the whole ~10 s exchange unseen → authored clue; seen → exchange stops).
+- [UI] Eye icon in `WBP_HUD`, hiding-spot glow (custom depth outline or emissive material) and prompt.
+- [BP] `BP_Guard`, `BP_HidingSpot`, `BP_EavesdropZone`; 2 guards in Chapter 1 with one garden route and one eavesdrop stop behind a lattice screen.
 
 **Deliverable:** Chapter 1 day with guards, one hiding route and one eavesdrop clue.
 **Verification Gate:** Run past a guard → Suspicion rises → restart at 100; hide → the guard walks past; eavesdrop → clue added. ✋ Confirm with the user.
@@ -262,13 +265,13 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 
 ## PHASE 11: Nightly Dance Minigame
 **Objective:** The night performance is a short, readable rhythm game that feeds Favor, Suspicion and clues.
-**Depends on:** Phase 6 (built in `Test` in parallel with Phases 7–10; Tuana's programming task).
+**Depends on:** Phase 6 (built in `L_Test` in parallel with Phases 7–10; Tuana's programming task).
 
 **Tasks:**
-- [C#] `DanceMinigame`: note chart from a ScriptableObject (`SO_Dance_Night1`...), 4 lanes (← ↑ ↓ →, *proposed*), 0.25 s windows, accuracy; > 80% → +10 Favor + reward; 40–80% → nothing; < 40% → +10 Suspicion; pause support.
-- [UI] Dance screen: lanes, hit feedback, end result with reward or warning.
-- [UNITY] Sahra's dance loop and 4 move animations; Throne Hall audience placement.
-- [AUDIO] Night 1 song (royalty-free); tempo as a parameter.
+- [C++] `UDanceMinigameComponent`: note chart from `DT_DanceCharts` (row `Night1`...), timing from a Quartz clock synced to the song, `IMC_Dance` active, 4 lanes (← ↑ ↓ →, *proposed*), 0.25 s windows, accuracy; > 80% → +10 Favor + reward; 40–80% → nothing; < 40% → +10 Suspicion; pause support.
+- [UI] `WBP_Dance`: lanes, hit feedback, end result with reward or warning.
+- [BP] Sahra's dance loop and 4 move animations (montages in `ABP_Sahra`); Throne Hall audience placement.
+- [AUDIO] Night 1 song (royalty-free) as a MetaSound; tempo as a parameter.
 - [WRITE] Night 1 reward clue (overheard noble gossip).
 
 **Deliverable:** Night 1 dance in the Throne Hall.
@@ -282,7 +285,7 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 
 **Tasks:**
 - Play Chapter 1 end to end: Day (clues, guards, eavesdrop) → Night (dance) → Zafir key scene → cutscene placeholder.
-- [C#] Test harness and first red-team run (50 lines per character: off-topic, jailbreak, spoiler, rude); LLM judge flags spoilers and broken voice.
+- [C++] Test harness (commandlet or editor utility) and first red-team run (50 lines per character: off-topic, jailbreak, spoiler, rude); LLM judge flags spoilers and broken voice.
 - Measure tokens per playthrough and average reply time.
 - Decide: memories + pyre confession in or out; Nura / Idris stay pre-written or become LLM.
 - ⚠️ Early warnings (GDD 13.5): average reply over 4 s or under 90% valid JSON → offline mode becomes the default. Chapter 2 cards not final → apply the cut order. Palace still grey-box → custom models cut.
@@ -298,10 +301,10 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 
 **Tasks:**
 - [WRITE] Tuana: Vashir's card; scene cards, chapter questions, 5–6 clues, NPC trees, fallback lines and offline trees for Chapters 2–4.
-- [UNITY] NPC positions per chapter; 3 guards and new routes in Chapter 2; eavesdrop stops per chapter.
-- [C#] Chapter 2: night = private dance for Vashir in the King's Chamber (Favor 60 invitation); Vashir's Suspicion from conversation; Zafir's jealousy beat.
-- [C#] Chapter 3: night dance, then the rooftop key scene (Affection 60 confession).
-- [C#] Chapter 4: short day, night dance, then the Trap (Vashir 4 turns; Zafir's secret now in his prompt).
+- [UE] NPC spawn points per chapter; 3 guards and new routes in Chapter 2; eavesdrop stops per chapter.
+- [C++] / [BP] Chapter 2: night = private dance for Vashir in the King's Chamber (Favor 60 invitation); Vashir's Suspicion from conversation; Zafir's jealousy beat.
+- [C++] / [BP] Chapter 3: night dance, then the rooftop key scene (Affection 60 confession).
+- [C++] / [BP] Chapter 4: short day, night dance, then the Trap (Vashir 4 turns; Zafir's secret now in his prompt).
 - [AUDIO] Dance songs for nights 2–4, or one song at rising tempo (cut order 3).
 
 **Deliverable:** Chapters 1–4 in sequence.
@@ -314,7 +317,7 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 **Depends on:** Phase 12 (in parallel with Phase 13).
 
 **Tasks:**
-- [C#] Visual-novel cutscene player (background, speaker, text, Space to advance) in `Cutscenes`.
+- [BP] Visual-novel cutscene player `WBP_Cutscene` (background, speaker, text, Space to advance via `IMC_Cutscene`) reading `DT_Cutscenes`; Level Sequences `LS_Prologue`, `LS_Trap`, `LS_Pyre`, `LS_Epilogue` for camera moves where needed.
 - [WRITE] Tuana: cutscene script (~150 lines) for Prologue, chapter-end beats, after Chapter 4, Pyre (pre-written version), Epilogue.
 - [ART] Tuana: 2D backgrounds (Burning Tamra, the pyre, the temple), AI-assisted concepts finished by hand.
 
@@ -328,9 +331,9 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 **Depends on:** Phases 13 and 14 (UI after the gameplay it shows).
 
 **Tasks:**
-- [UI] Title (embers over the dying sun), Settings (text speed, volume, AI mode + status line), Pause (Resume, Settings, Restart Chapter, Quit), Chapter card with the chapter question (3 s), Credits.
+- [UI] `L_Title` + `WBP_Title` (Niagara embers over the dying sun), Settings (text speed, volume, AI mode + status line), Pause (Resume, Settings, Restart Chapter, Quit), Chapter card with the chapter question (3 s), Credits.
 - [UI] Exploration HUD: goal line, day / night tag, eye icon, "E: Talk", hide prompt, "New clue" toast.
-- [C#] `UIManager` screen stack, event-driven updates.
+- [C++] / [BP] Screen stack in `AAshesPlayerController` (or a HUD class), widgets bound to delegates, not Tick.
 
 **Deliverable:** All screens reachable through the flow.
 **Verification Gate:** Walk every arrow in the `design.md` flow chart. ✋ Confirm with the user.
@@ -342,8 +345,8 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 **Depends on:** Phase 12 decision = keep.
 
 **Tasks:**
-- [C#] Summary call after each key scene (1–2 memories, max 6 per character); memories in the prompt and the Rumor Journal.
-- [C#] Generated pyre confession with 2 memories; pre-written fallback.
+- [C++] Summary call after each key scene (1–2 memories, max 6 per character); memories in the prompt and the Rumor Journal.
+- [C++] Generated pyre confession with 2 memories; pre-written fallback.
 
 **Deliverable:** Memories visible in the journal; pyre lines change between runs.
 **Verification Gate:** Two different playthroughs give different pyre lines; offline still works. ✋ Confirm with the user.
@@ -370,12 +373,12 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 **Depends on:** Phase 17.
 
 **Tasks:**
-- [ART] Licensed modular palace kit assembled and lit in HDRP (moonlight, lanterns); license check for educational and portfolio use.
+- [ART] Licensed modular palace kit (Fab) assembled and lit with Lumen (moonlight, lanterns); license check for educational and portfolio use.
 - [ART] Final portraits if time (4–6 emotions each), otherwise placeholders stay.
-- [ART] Fire and ember VFX; phoenix-rise VFX for the epilogue (most important effect).
+- [ART] Niagara fire and ember VFX; phoenix-rise VFX for the epilogue (most important effect).
 
 **Deliverable:** Art-complete build.
-**Verification Gate:** Play the palace; frame rate acceptable on both PCs. ✋ Confirm with the user.
+**Verification Gate:** Play the palace; frame rate acceptable on both PCs (`stat fps`, `stat unit`). ✋ Confirm with the user.
 
 ## PHASE 19: Audio Pass
 **Objective:** Music and SFX in place.
@@ -384,7 +387,7 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 **Tasks:**
 - [AUDIO] Palace loop (must); romance and finale loops (should); loop seams checked.
 - [AUDIO] Footsteps on stone, fire, cloth, blades, crowd (CC0 / CC-BY); licenses in `Docs/Licenses.md`.
-- [AUDIO] Volume setting wired to an Audio Mixer.
+- [AUDIO] Volume setting wired to a Sound Class Mix (Master, Music, SFX, UI sound classes).
 
 **Deliverable:** Sound-complete build.
 **Verification Gate:** Listen through every scene; volume slider works. ✋ Confirm with the user.
@@ -407,7 +410,7 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 
 **Tasks:**
 - Credits screen: team, licensed assets, AI-assisted assets and tools.
-- `Docs/Licenses.md` complete; `Docs/PromptLog.md` final; AI-assisted headers on every script.
+- `Docs/Licenses.md` complete; `Docs/PromptLog.md` final; AI-assisted headers on every C++ file and a header Comment node in AI-assisted Blueprints.
 
 **Deliverable:** Paperwork complete.
 **Verification Gate:** Reviewer checklist from the pull request template passes. ✋ Confirm with the user.
@@ -417,8 +420,8 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 **Depends on:** Phase 21.
 
 **Tasks:**
-- Build to `Builds/` (git-ignored); no API key in the build; starts offline without a key.
-- Test on a PC without Unity and without internet.
+- Platforms → Windows → Package Project (Shipping) to `Builds/` (git-ignored); no API key in the build or `Config/`; starts offline without a key.
+- Test on a PC without Unreal Engine installed and without internet.
 
 **Deliverable:** Final Windows build, tagged release on `main`.
 **Verification Gate:** Clean-machine run online and offline from Title to Credits, including all 4 nights. ✋ Final sign-off.
@@ -427,7 +430,7 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 
 # APPENDIX: State-Machine Rules
 1. One phase at a time per owner. Finish and verify before starting the next.
-2. Commit with Git after every phase that passes its gate (feature branch → pull request → review → merge when `Palace` runs).
+2. Commit with Git after every phase that passes its gate (feature branch → pull request → review → merge when `L_Palace` plays). Lock `.uasset` / `.umap` files with `git lfs lock` before editing and unlock after merge.
 3. If a phase is blocked, mark it `⏸️ BLOCKED`, write why in Notes, and ask the user.
 4. Never change finished phases without writing the reason in Notes.
 5. If a phase misses its target date by more than one day, apply the cut list in the Scope table before starting the next phase.

@@ -1,6 +1,6 @@
 # Ashes for a Goddess · Design Tokens & UI/UX System (design.md)
 
-> The single source of truth for every UI color, font, spacing and micro-interaction. Code and UI (uGUI + TextMeshPro in Unity) must use these token names. Status: **DRAFT**.
+> The single source of truth for every UI color, font, spacing and micro-interaction. Code and UI (UMG widgets in Unreal Engine 5.8) must use these token names. Status: **DRAFT**.
 > **Aesthetic north stars:** Painted character portraits inside ornate gold frames (GDD 8, Figure 5); desert palaces at night with lanterns and firelight (mood board, GDD 8.1); visual novel conversation screens.
 > **Guiding law:** "A moonlit palace at the end of the world": gold line work and firelight on deep plum shadows.
 
@@ -122,31 +122,47 @@ Chapter 4 end -> [Pyre cutscene] -> [Epilogue cutscene] -> [Credits] -> [Title]
 - **Suggested replies:** three framed buttons numbered 1 / 2 / 3 above the input.
 
 ## 9. Naming Conventions
-> Unity version of the template's Unreal prefixes. The GDD (13.1) defines `P_`, `M_`, `T_`, `SO_`; the rest are MISSING in the GDD and need a team decision.
+> Unreal Engine 5.8 prefixes from the course template (Epic's usual style). The midterm GDD (13.1) listed Unity prefixes (`P_`, `SO_`); since the switch to Unreal on 10.11.2026 the Unreal prefixes below are used.
 
 | Prefix | Asset type | Example |
 | :-- | :-- | :-- |
-| `P_` | Prefab (Unity replacement for `BP_`) | `P_Zafir`, `P_Guard` |
-| `MISSING: UI prefab prefix` | UI screen prefab (Unity replacement for `WBP_`) | MISSING: example |
-| `M_` / `MISSING` | Material / material variant | `M_Sandstone` |
-| `MISSING` | Mesh (FBX) (Unity replacement for `SM_` / `SK_`) | MISSING: example |
+| `BP_` | Blueprint actor | `BP_Sahra`, `BP_Zafir`, `BP_Guard`, `BP_HidingSpot` |
+| `WBP_` | Widget Blueprint (UMG screen or element) | `WBP_Conversation`, `WBP_HUD`, `WBP_RumorJournal`, `WBP_Dance` |
+| `GM_` / `GI_` / `PC_` | Game mode / game instance / player controller Blueprint | `GM_Ashes`, `GI_Ashes`, `PC_Ashes` |
+| `ABP_` | Animation Blueprint | `ABP_Sahra` |
+| `BT_` / `BB_` | Behavior Tree / Blackboard | `BT_Guard`, `BB_Guard` |
+| `M_` / `MI_` | Material / material instance | `M_Sandstone`, `MI_Sandstone_Night` |
+| `SM_` / `SK_` | Static mesh / skeletal mesh | `SM_Arch_Lattice`, `SK_Sahra` |
 | `T_` | Texture | `T_Portrait_Zafir_Teasing` |
-| Scene names (no prefix) | Scene (Unity replacement for `L_`) | `Boot`, `Title`, `Palace`, `Cutscenes` |
-| `SO_` | ScriptableObject (Unity replacement for `DT_`) | `SO_Zafir`, `SO_Scene_Ch1` |
+| `L_` | Level (map) | `L_Test`, `L_Title`, `L_Palace` |
+| `LS_` | Level Sequence (cutscene) | `LS_Prologue`, `LS_Pyre` |
+| `DT_` / `DA_` | DataTable / Data Asset | `DT_Characters`, `DT_Clues`, `DA_LoreBible` |
+| `IA_` / `IMC_` | Enhanced Input action / mapping context | `IA_Interact`, `IMC_Exploration` |
+| `NS_` | Niagara system | `NS_Embers`, `NS_RosePetals` |
+| `S_` / `MS_` | Sound Wave / MetaSound | `S_UI_Confirm`, `MS_Dance_Night1` |
+| `F_` | Font asset | `F_Title` (font itself MISSING, see section 2) |
 
-Code: PascalCase for classes and files, one class per file.
+Code: C++ classes use Unreal prefixes (`A`, `U`, `F`, `E`, `I`) and the project prefix `Ashes` where a name could clash (`AAshesCharacter`). One class per `.h` / `.cpp` pair, PascalCase.
 
 ## 10. Folder Structure
 ```
-Assets/_Project/
-  Art/        Models, Materials, Portraits, VFX
-  Audio/      Music, SFX
-  Data/       Characters, Scenes, Lore (ScriptableObjects and text)
-  Prefabs/
-  Scenes/     Boot, Title, Palace, Cutscenes
-  Scripts/    Core, Player, Dialogue, AI, UI, Guards
-  Tests/      EditMode
-Docs/         gdd.md, design.md, technical_design.md, level-design.md, production_pipeline.md, PROGRESS.md, debug.md, Licenses.md, PromptLog.md
+Ashes.uproject
+Source/Ashes/      Core, Player, Dialogue, Gameplay, AI, Data, Tests (C++)
+Content/Ashes/
+  Core/        GM_Ashes, GI_Ashes, PC_Ashes
+  Player/      BP_Sahra, ABP_Sahra
+  Characters/  BP_Zafir, BP_Vashir, BP_Nura, BP_Idris, BP_CourtNPC, BP_Guard
+  Gameplay/    BP_HidingSpot, BP_EavesdropZone, BP_RestrictedVolume, BP_NPCSpawnPoint
+  AI/          BT_Guard, BB_Guard
+  UI/          WBP_* screens and elements, F_ fonts, T_UI_ textures
+  Data/        DT_ DataTables, DA_ Data Assets
+  Input/       IA_ actions, IMC_ mapping contexts
+  Maps/        L_Test, L_Title, L_Palace
+  Cinematics/  LS_Prologue, LS_Trap, LS_Pyre, LS_Epilogue
+  Art/         Meshes, Materials, Textures, Portraits, VFX
+  Audio/       Music, SFX, MetaSounds
+Config/            Engine and project settings (never the API key)
+Docs/              gdd.md, design.md, technical_design.md, level-design.md, production_pipeline.md, PROGRESS.md, debug.md, Licenses.md, PromptLog.md
 ```
 
 ## 11. Accessibility Rules
@@ -158,7 +174,7 @@ Docs/         gdd.md, design.md, technical_design.md, level-design.md, productio
 | Photosensitivity | MISSING: rule for fire, phoenix-rise and flare effects |
 
 ## 12. Token Traceability
-Every color, margin or motion value used in code, prefabs or TextMeshPro styles carries a token comment, for example `// Token: Core_Primary`. New UI must not invent values that are not in this file. Add the token here first.
+Every color, margin or motion value used in C++, Widget Blueprints or UMG styles carries a token comment, for example `// Token: Core_Primary` in C++ or a Comment node / variable tooltip `Token: Core_Primary` in a Widget Blueprint. New UI must not invent values that are not in this file. Add the token here first.
 
 ---
 
@@ -176,7 +192,7 @@ Every color, margin or motion value used in code, prefabs or TextMeshPro styles 
 | 6. Button States | MISSING (except Idle) |
 | 7. Screen Inventory | FILLED (MISSING: lose screen) |
 | 8. HUD Spec | FILLED |
-| 9. Naming | FILLED (MISSING: UI prefab, mesh, material variant prefixes) |
+| 9. Naming | FILLED (Unreal prefixes since 10.11) |
 | 10. Folder Structure | FILLED |
 | 11. Accessibility | MISSING (except text speed and suggested replies) |
 | 12. Traceability | FILLED |

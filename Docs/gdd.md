@@ -3,8 +3,8 @@
 
 > *"Some gods brighten the sky when they are born; others, when they die."*
 
-**Author:** Burnt Potato Games (BPG): Merve Özal, Tuana Tuna · **Version:** 1.2 (Markdown version of the midterm GDD dated 07.11.2026; 4-week schedule; "Court of Whispers" investigation concept added 09.11.2026; day/night loop, nightly dance and guard stealth added 10.11.2026) · **Date:** 10.11.2026
-**Genre:** Third-person narrative RPG and visual novel hybrid; dark fantasy romance · **Platform:** Windows PC, keyboard and mouse (Unity standalone build) · **Engine:** Unity 6.3 LTS (6000.3.27f2), C#, 3D, HDRP · **Players:** Single player
+**Author:** Burnt Potato Games (BPG): Merve Özal, Tuana Tuna · **Version:** 1.3 (Markdown version of the midterm GDD dated 07.11.2026; 4-week schedule; "Court of Whispers" investigation concept added 09.11.2026; day/night loop, nightly dance and guard stealth added 10.11.2026; engine changed to Unreal Engine 5.8 on 10.11.2026) · **Date:** 10.11.2026
+**Genre:** Third-person narrative RPG and visual novel hybrid; dark fantasy romance · **Platform:** Windows PC, keyboard and mouse (Unreal packaged build) · **Engine:** Unreal Engine 5.8, C++ and Blueprints, 3D, Lumen · **Players:** Single player
 
 | Field | Details |
 | :-- | :-- |
@@ -20,7 +20,7 @@
 
 > **Concept update (09.11.2026): "Court of Whispers".** The team chose to make the palace an **open palace** that the player explores freely, talking to **several NPCs to gather information (clues)**, with cutscenes as the story advances. On 10.11.2026 the team fixed the three active parts: **gather information (Rumor Journal)**, **avoid patrolling guards** and **dance every night** to keep Sahra's cover, in a **day / night loop** per chapter. The story, characters, AI conversation systems and ending from the midterm GDD stay the same. New parts are marked **(new 09.11)** or **(new 10.11)**; numbers marked *proposed* are starting values for playtests, not from the midterm GDD.
 
-> **Engine note.** The course templates assume Unreal Engine 5.8. This project uses **Unity 6.3 LTS with HDRP** (GDD 13.1, and the engine version both members agreed on 03.11.2026; the GDD text still says "Unity 6 LTS 6000.0.x"). Every document in `Docs/` uses Unity terms.
+> **Engine note (changed 10.11.2026).** The midterm GDD planned Unity 6 LTS. On 10.11.2026 the teacher approved the switch to **Unreal Engine 5.8** (C++ and Blueprints), which the course templates assume. Every document in `Docs/` now uses Unreal terms. The earlier Unity skeleton is kept in Git as the tag `unity-skeleton`.
 
 ---
 
@@ -205,15 +205,15 @@ Every AI feature has a fallback (timeout fallback lines, offline mode), and the 
 - **Elements:** Text speed, volume, AI mode (Online / Offline) and a status line: "AI: connected" or "AI: offline, pre-written dialogue". MISSING: video and control settings.
 
 ### Controls
-> Unity Input System (the Unreal template says Enhanced Input). Keyboard and mouse only.
+> Enhanced Input (Input Actions `IA_` and Mapping Contexts `IMC_`). Keyboard and mouse only.
 
 | Action | Keyboard / Mouse | Gamepad | Input Type | Notes |
 | :-- | :-- | :-- | :-- | :-- |
-| Move | W A S D | Not supported (keyboard and mouse only) | Value (Vector2) | Walk by default, 2.2 m/s |
+| Move | W A S D | Not supported (keyboard and mouse only) | Value (Vector2) | Walk by default, 2.2 m/s (220 cm/s) |
 | Look / Camera | Mouse | Not supported | Value (Vector2) | Orbits the third-person camera |
 | Jump | None | Not supported | None | The GDD has no jump |
 | Interact | E | Not supported | Button | Talk to or interact with a highlighted character or object |
-| Run | Shift (hold) | Not supported | Button | 4.5 m/s; raises Suspicion near guards |
+| Run | Shift (hold) | Not supported | Button | 4.5 m/s (450 cm/s); raises Suspicion near guards |
 | Say anything | Type + Enter | Not supported | Text input + Button | Max 200 characters; longer text is cut with a warning |
 | Pick suggested reply | 1 / 2 / 3 | Not supported | Button | Picks one of the 3 suggested replies instead of typing |
 | Rumor Journal | Tab | Not supported | Button | Opens the Rumor Journal: chapter question, clues, conversation log and memories |
@@ -223,7 +223,7 @@ Every AI feature has a fallback (timeout fallback lines, offline mode), and the 
 | Hide / leave hiding spot | E | Not supported | Button | Same key as Interact, near a hiding spot |
 
 ### Camera
-- **View:** Third person (Cinemachine).
+- **View:** Third person (Spring Arm + Camera from the Third Person template).
 - **Behaviour:** The mouse orbits the camera around Sahra. During conversations the 3D scene stays visible behind the conversation UI. MISSING: follow distance, height, orbit limits, collision behaviour and any special camera zones.
 
 ### Mechanics
@@ -234,7 +234,7 @@ Every AI feature has a fallback (timeout fallback lines, offline mode), and the 
 - **Edge cases:** Longer input is cut with a warning. Timeout or network error: "hesitates" animation, then a pre-written fallback line for this beat and emotion; values unchanged. Broken JSON: 1 silent retry, then fallback. Off-topic input: in-character reply ("A dancer who talks of 'phones'? The heat has got to you."). Spoiler leak: regenerate once, then fallback. Explicit or hateful content: the character refuses in character; after 3 times the scene closes politely. Jailbreak: in-character confused reply. No API key or no internet: offline mode with pre-written dialogue trees. (GDD Figure 2 says "5 s timeout"; the GDD text says 6 s, and 6 s is used here.)
 
 #### 2. Relationship Values
-- **Rule:** Each value is 0–100 and hidden. The LLM suggests a delta every turn; C# clamps it to the per-turn maximum and applies it.
+- **Rule:** Each value is 0–100 and hidden. The LLM suggests a delta every turn; our C++ code clamps it to the per-turn maximum and applies it.
 - **Numbers:** Zafir Trust start 20, ±8 per turn (50: admits he is also hunting Vashir; 70: shares the route to the king). Zafir Affection start 10, ±8 (moves tone from teasing to tender; 60: rooftop confession plays in full). Vashir Favor start 30, ±6 (60: invites Sahra to dance in his chamber; also unlocks the King's Chamber). Vashir Suspicion start 10, +10 / −5 (100: guards seize Sahra, chapter restarts).
 - **Edge cases:** An impossible change (for example +50 Trust) is cut to the per-turn maximum. Values are clamped to 0–100 (MISSING: confirmation of the 0 and 100 bounds behaviour). On fallback lines, values do not change. Unknown emotion: portrait falls back to Neutral (Zafir) or Serene (Vashir).
 
@@ -331,61 +331,69 @@ Difficulty grows through more guards (2 → 3), clues that need other clues firs
 ## 4. Development
 
 ### Abstract Classes
-> Unity C# (the Unreal template asks for C++ / Blueprint base classes). Class names come from GDD Figure 6; parents are the usual Unity bases.
+> Unreal Engine 5.8: C++ base classes for the testable core, Blueprints for glue, UI and animation. Class names come from GDD Figure 6, translated to Unreal (full spec in `technical_design.md`).
 
 | Class | Parent | Purpose |
 | :-- | :-- | :-- |
-| `ILLMProvider` | C# interface | The only way game code reaches the LLM; implemented by Cloud, Local and Offline script providers |
-| `GameManager` | MonoBehaviour | Chapters and checkpoints |
-| `PlayerController` | MonoBehaviour | Movement and camera |
-| `InteractionSystem` | MonoBehaviour | "E: Talk" starts a scene |
-| `SceneDirector` | MonoBehaviour (FSM) | Intro, talk, nudge, resolve, forced close; accepts beats and clues |
-| `ClueJournal` (new 09.11) | MonoBehaviour | Found clues per chapter, topic unlocks, key-scene gate |
-| `NPCBrain` | MonoBehaviour (one per character) | Profile, relationship values, memories |
-| `PromptBuilder` | Plain C# class | Builds the prompt from card, lore, scene, state and turns |
-| `ResponseValidator` | Plain C# class | JSON parse, lore, spoiler, safety checks and clamping |
-| `GuardFSM` | MonoBehaviour | Patrol, notice, investigate, alert |
-| `UIManager` | MonoBehaviour | Owns every screen |
-| `ConversationUI` | MonoBehaviour | Text, input, 3 replies |
-| `HUD` | MonoBehaviour | Goal, eye icon, prompts |
-| `PortraitAnimator` | MonoBehaviour | Emotion to portrait |
+| `ULLMProvider` | UObject (abstract, C++) | The only way game code reaches the LLM; implemented by Cloud, Local and Offline script providers |
+| `AAshesGameMode` | AGameModeBase (C++) | Rules: chapters, checkpoints, Caught → restart chapter |
+| `UAshesGameInstance` | UGameInstance (C++) | Current chapter, AI mode, relationship values and memories across level loads |
+| `AAshesCharacter` | ACharacter (C++) | Sahra's movement (walk / run), hide state, Spring Arm camera |
+| `AAshesPlayerController` | APlayerController (C++) | Enhanced Input mapping contexts, UI focus, pause |
+| `UInteractionComponent` | UActorComponent (C++) | "E: Talk" starts a scene; E enters a hiding spot |
+| `USceneDirectorSubsystem` | UWorldSubsystem (C++ state machine) | Intro, talk, nudge, resolve, forced close; accepts beats and clues |
+| `UClueJournalSubsystem` (new 09.11) | UGameInstanceSubsystem (C++) | Found clues per chapter, topic unlocks, key-scene gate |
+| `UDayNightSubsystem` (new 10.11) | UWorldSubsystem (C++) | Day → Night → Key scene per chapter; nightfall, lighting, NPC spawns |
+| `UDanceMinigameComponent` (new 10.11) | UActorComponent (C++) | Nightly dance timing (Quartz clock) and grading |
+| `UNPCBrainComponent` | UActorComponent (C++, one per character) | Character card, relationship values, memories |
+| `UPromptBuilder` | UBlueprintFunctionLibrary (C++) | Builds the prompt from card, lore, scene, state and turns |
+| `UResponseValidator` | UBlueprintFunctionLibrary (C++) | JSON parse, lore, spoiler, safety checks and clamping |
+| `USuspicionComponent` | UActorComponent (C++) | One Suspicion value fed by guards, Vashir and the dance; Caught at 100 |
+| `AGuardAIController` | AAIController (C++) | Patrol and notice through AI Perception (sight) and a Behavior Tree |
+| `AHidingSpot`, `AEavesdropZone` | AActor (C++) | Spots hidden from guards; timed overheard exchanges that give clues |
+| UI widgets | UUserWidget (UMG) | Every screen; conversation, HUD, Rumor Journal, dance, portraits by emotion |
 
 ### Derived Classes
-> Unity prefabs and implementations made from the base classes.
+> Blueprints and implementations made from the base classes.
 
 | Blueprint | Derives from | What it adds |
 | :-- | :-- | :-- |
-| `CloudProvider` | `ILLMProvider` | Cloud LLM API over UnityWebRequest with async/await, JSON output, 6 s timeout |
-| `OfflineScriptProvider` | `ILLMProvider` | Pre-written dialogue trees and fallback lines; offline mode |
-| `LocalProvider` | `ILLMProvider` | Local model through Ollama (nice to have, cut in the 4-week plan) |
-| `P_Zafir`, `P_Vashir`, `P_Nura`, `P_Idris` | `NPCBrain` on a character prefab | Character card, emotion set, values and memories per character |
-| `P_Guard` | `GuardFSM` on the guard prefab | Patrol route, 70° / 9 m view cone, NavMesh agent |
-| `P_Sahra` | `PlayerController` on the player prefab | Walk 2.2 m/s, run 4.5 m/s, Cinemachine orbit |
+| `UCloudLLMProvider` | `ULLMProvider` | Cloud LLM API over `FHttpModule`, JSON output, 6 s timeout, key from an environment variable |
+| `UOfflineLLMProvider` | `ULLMProvider` | Pre-written dialogue trees and fallback lines (DataTables); offline mode |
+| `ULocalLLMProvider` | `ULLMProvider` | Local model through Ollama (nice to have, cut in the 4-week plan) |
+| `GM_Ashes`, `GI_Ashes`, `PC_Ashes` | `AAshesGameMode`, `UAshesGameInstance`, `AAshesPlayerController` | Default classes, widget classes and input contexts set in the editor |
+| `BP_Sahra` (+ `ABP_Sahra`) | `AAshesCharacter` | Mesh, animation Blueprint (walk, run, hide, dance moves), walk 220 cm/s, run 450 cm/s, Spring Arm camera |
+| `BP_Zafir`, `BP_Vashir`, `BP_Nura`, `BP_Idris`, `BP_CourtNPC` | ACharacter + `UNPCBrainComponent` | Character card row, emotion set, values and memories per character |
+| `BP_Guard` (+ `BT_Guard`, `BB_Guard`) | ACharacter, controlled by `AGuardAIController` | Patrol route, 70° / 900 cm sight, NavMesh movement |
+| `BP_HidingSpot`, `BP_EavesdropZone` | `AHidingSpot`, `AEavesdropZone` | Curtain or lattice mesh; overheard lines and clue id |
+| `WBP_Conversation`, `WBP_HUD`, `WBP_RumorJournal`, `WBP_Dance`, `WBP_Title`, `WBP_Settings`, `WBP_Pause`, `WBP_ChapterCard`, `WBP_Cutscene`, `WBP_Credits` | UUserWidget | Screens from section 2 in the `design.md` style |
 
 ### Data
-> ScriptableObjects and text in `Assets/_Project/Data/` (Characters, Scenes, Lore).
+> DataTables (`DT_`, rows are C++ structs deriving from `FTableRowBase`, editable as CSV) and Data Assets (`DA_`) in `Content/Ashes/Data/`.
 
 | Data Table | Rows (examples) | Fields |
 | :-- | :-- | :-- |
-| Character cards (`SO_` per character) | Zafir, Vashir, Nura, Idris, Sahra | Voice, wants, fears, speech rules, what they know, what they must not say, emotion states, start values, max change per turn, unlock thresholds |
-| Scene cards (`SO_` per free-talk chapter) | Ch1 Garden of Ash, Ch2 Private Dance, Ch3 Rooftop of Smoke, Ch4 The Trap | Place, time, goal, beats and their rules, turn limit, characters, secrets added in this chapter, authored opener, closing lines |
-| Lore bible (text) | One ~600-word text | Kingdom and dying sun, cult of the Sun Goddess, palace rooms and routines, festival, dancers, guard |
-| Fallback lines | ~120 lines by scene, beat and emotion | Scene, beat, emotion, line, AI-assisted flag |
-| Cutscene script | ~150 lines (Prologue, Ch4–5, Epilogue) | Part, speaker, line, background |
-| Clue table (new 09.11) | 5–6 clues per chapter, e.g. `ch1_nura_contract_riders` | Id, chapter, holder NPC, authored journal text, topic text for the suggested reply, prompt hint, required (yes / no) |
-| Exploration settings | Walk 2.2, run 4.5, view cone 70° / 9 m, Suspicion rates | Speeds, cone angle and range, Suspicion per second per cause |
+| Character cards (`DT_Characters`) | Zafir, Vashir, Nura, Idris, Sahra | Voice, wants, fears, speech rules, what they know, what they must not say, emotion states, start values, max change per turn, unlock thresholds |
+| Scene cards (`DT_Scenes`) | Ch1 Garden of Ash, Ch2 Private Dance, Ch3 Rooftop of Smoke, Ch4 The Trap | Place, time, goal, beats and their rules, turn limit, characters, secrets added in this chapter, authored opener, closing lines |
+| Lore bible (`DA_LoreBible`) | One ~600-word text | Kingdom and dying sun, cult of the Sun Goddess, palace rooms and routines, festival, dancers, guard |
+| Fallback lines (`DT_FallbackLines`) | ~120 lines by scene, beat and emotion | Scene, beat, emotion, line, AI-assisted flag |
+| Offline dialogue trees (`DT_OfflineTrees`) | One tree per scene | Scene, node, 3 replies, character line, value changes, beats, clues |
+| Cutscene script (`DT_Cutscenes`) | ~150 lines (Prologue, Ch4–5, Epilogue) | Part, speaker, line, background |
+| Clue table (`DT_Clues`, new 09.11) | 5–6 clues per chapter, e.g. `ch1_nura_contract_riders` | Id, chapter, holder NPC, authored journal text, topic text for the suggested reply, prompt hint, required (yes / no) |
+| Dance charts (`DT_DanceCharts`, new 10.11) | One per night (4) | Song, BPM, tempo multiplier, length, notes (beat, lane), reward clue |
+| Exploration settings (`DA_ExplorationSettings`) | Walk 220 cm/s, run 450 cm/s, view cone 70° / 900 cm, Suspicion rates | Speeds, cone angle and range, Suspicion per second per cause |
 
 ### AI
-**Guards (must have since 10.11, simplified):** NavMesh agents on fixed, timed waypoint routes: Patrol → Notice (stop and look while Suspicion rises) → Patrol; no chasing; hiding spots block their sight; eavesdrop stops where two guards talk. They see Sahra inside a 70°, 9 m view cone. They raise Suspicion when she runs in view (+12/s), is in a restricted room in view (+20/s) or is seen with a weapon. The player escapes by leaving their view: Suspicion falls by 5 per second out of view. At 100 the chapter restarts. MISSING: hearing, Notice/Investigate timings and what Alert does before the restart.
+**Guards (must have since 10.11, simplified):** `BP_Guard` with a Behavior Tree on a NavMesh, following fixed, timed waypoint routes: Patrol → Notice (stop and look while Suspicion rises) → Patrol; no chasing; hiding spots block their sight; eavesdrop stops where two guards talk. They see Sahra through AI Perception sight: a 70°, 9 m (900 cm) view cone. They raise Suspicion when she runs in view (+12/s), is in a restricted room in view (+20/s) or is seen with a weapon. The player escapes by leaving their view: Suspicion falls by 5 per second out of view. At 100 the chapter restarts. MISSING: hearing, Notice/Investigate timings and what Alert does before the restart.
 
-**Conversation AI:** the LLM writes what characters say; our C# decides what changes. See Appendix 8.1.
+**Conversation AI:** the LLM writes what characters say; our C++ decides what changes. See Appendix 8.1.
 
 ---
 
 ## 5. Graphics
 
 ### Style Attributes
-- **Art style:** Stylized 3D palace (a licensed modular desert or palace kit, lit in HDRP) and licensed character base models; conversations use painted character portraits inside ornate gold frames; prologue, pyre and temple are painted 2D backgrounds. "A moonlit palace at the end of the world."
+- **Art style:** Stylized 3D palace (a licensed modular desert or palace kit, lit with Lumen) and licensed character base models; conversations use painted character portraits inside ornate gold frames; prologue, pyre and temple are painted 2D backgrounds. "A moonlit palace at the end of the world."
 - **Color palette:** Night plum `#2A1426` (backgrounds, night sky, UI panels); Burgundy `#6B1E2E` (Vashir's court, curtains, headings); Rose red `#9E1B32` (roses, danger, the King's Chamber); Old gold `#C9A25B` (UI frames, jewelry, Zafir); Ember orange `#E8642C` (fire, the phoenix, Sahra); Moon cream `#F1E3C8` (text on dark UI, moonlight).
 - **References:** Mood board from the team's own photos and free or licensed images (no named artist's style copied): desert palaces at night (sandstone arches, lattice screens, a huge pale moon); lanterns and firelight on dark cloth; smoke and red rose petals in the air; dancers' silks and veils in motion; gold jewelry catching the light; burnt villages and ash fields for Tamra; a phoenix of fire for the ending.
 - **Lighting:** Night: deep plum and burgundy shadows, moonlight, with gold and firelight (lanterns, fire) picking out the details.
@@ -483,15 +491,15 @@ Must have: 1 music loop (the palace loop); should have: all 3. Royalty-free libr
 ## 8. Appendix: GDD Content Not Covered by the Template
 
 ### 8.1 In-Game AI Design
-The LLM writes what the characters say, but our own C# code decides what actually changes. The model only makes suggestions; a state machine and a validator check them.
+The LLM writes what the characters say, but our own C++ code decides what actually changes. The model only makes suggestions; a state machine and a validator check them.
 
 | Part | Technique | Runs in |
 | :-- | :-- | :-- |
 | Zafir, Vashir and 2 court NPCs talk freely | LLM character with structured (JSON) output | Cloud LLM API; local model as backup |
-| Scene flow (nudge, end, fail) | Finite state machine (Scene Director) | Our C# |
-| Faces and gestures | Emotion state machine driven by the LLM's emotion tag | Our C# + Animator |
+| Scene flow (nudge, end, fail) | Finite state machine (Scene Director) | Our C++ |
+| Faces and gestures | Emotion state machine driven by the LLM's emotion tag | Our C++ + Animation Blueprint |
 | Memories between scenes | LLM summary call after each scene | Cloud LLM API |
-| Palace guards (must have since 10.11) | Simplified FSM + NavMesh: Patrol → Notice → Patrol | Our C# + Unity AI Navigation |
+| Palace guards (must have since 10.11) | Simplified Behavior Tree + NavMesh: Patrol → Notice → Patrol | Our C++ / Blueprint + Unreal AI Perception and Navigation |
 
 **Prompt order:** (1) character card, (2) lore bible (~600 words; nothing outside it exists), (3) scene card, (4) state (values as words, for example "Trust: wary", and up to 6 memories), (5) conversation (last 8 turns and the player's new line).
 
@@ -521,7 +529,7 @@ The LLM writes what the characters say, but our own C# code decides what actuall
 | Spoiler leak | Secret not in prompt + keyword check | Regenerate once, then fallback |
 | Explicit or hateful content | Provider moderation + word list | Refuses in character; after 3 times the scene closes politely |
 | Jailbreak | Pattern list; model told to stay in role | In-character confused reply |
-| Impossible value change | Limit in C# | Cut to the per-turn maximum |
+| Impossible value change | Limit in C++ | Cut to the per-turn maximum |
 | No API key or no internet | Check at startup | Offline mode with pre-written dialogue trees |
 | Scene goal never reached | Turn counter | Nudge, then forced close |
 
@@ -530,12 +538,12 @@ The LLM writes what the characters say, but our own C# code decides what actuall
 ### 8.2 AI Tool Plan (workflow)
 | Task area | Tool | Use | Check | Cost |
 | :-- | :-- | :-- | :-- | :-- |
-| Coding (C#) | GitHub Copilot; Claude for design questions and errors | Boilerplate, UnityWebRequest and JSON code, editor tools | Other member reviews every merge; Edit Mode tests for validator, parser and limits; AI-assisted header comment | Copilot via GitHub Student Developer Pack; Claude free tier |
-| Art and illustration | An image model or Unity's built-in generators | Portrait drafts, background concepts, GDD diagrams | Tuana checks palette and style, repaints; no artist names in prompts | Free tier or course credits |
+| Coding (C++ and Blueprints) | Claude Code through MCP + VibeUE (course setup); GitHub Copilot in the IDE; Claude for design questions and errors | Boilerplate, HTTP and JSON code, Blueprint setup in the editor | Other member reviews every merge; Automation tests for validator, parser and limits; AI-assisted header comment | Copilot via GitHub Student Developer Pack; Claude free tier |
+| Art and illustration | An image model | Portrait drafts, background concepts, GDD diagrams | Tuana checks palette and style, repaints; no artist names in prompts | Free tier or course credits |
 | Audio and music | Royalty-free libraries first; AI music only if terms fit | 3 loops, ambience | Listened in scene, loop seams, license in `Docs/Licenses.md` | Free |
 | Writing and dialogue | Claude | Brainstorming, fallback line variants, GDD draft | Tuana edits every line against the lore bible; lore bible and cards hand-written | Free tier |
 | Testing | Own test harness + LLM judge | Red-team: 50 lines per character (off-topic, jailbreak, spoiler, rude) | Read every flagged reply + 20 random; target 0 spoiler leaks, 95% valid JSON | Same API key, small cost |
-| In-game runtime | Fast low-cost hosted model (for example Claude Haiku 5.5); Ollama local model nice-to-have | Replies, memory summaries | C# validator; playtest logs reviewed weekly | Pay per token; spending cap; tokens per playthrough measured in week 2 |
+| In-game runtime | Fast low-cost hosted model (for example Claude Haiku 5.5); Ollama local model nice-to-have | Replies, memory summaries | C++ validator; playtest logs reviewed weekly | Pay per token; spending cap; tokens per playthrough measured in week 2 |
 
 **Not made with AI:** the lore bible, character cards and key story lines (final line, nickname); the twist and its pacing; Scene Director logic; final look of the portraits; level design.
 
@@ -549,13 +557,13 @@ The LLM writes what the characters say, but our own C# code decides what actuall
 | 3D art and animation take too long | End of week 2: palace still grey-box | Custom models; final portraits (placeholders stay) |
 
 ### 8.4 API Keys and Cost
-The key is never in the repository; it is read from an environment variable or a file outside `Assets/` that `.gitignore` excludes. A spending cap is set in the provider console. Turn limits keep each playthrough to a fixed number of calls. The submitted build starts in offline mode unless a key is present, so it always runs.
+The key is never in the repository; it is read from the environment variable `ASHES_LLM_API_KEY` or a file in `Secrets/` that `.gitignore` excludes; it is never put in `Config/*.ini` or the packaged build. A spending cap is set in the provider console. Turn limits keep each playthrough to a fixed number of calls. The submitted build starts in offline mode unless a key is present, so it always runs.
 
 ### 8.5 References
 - **Games:** Façade (Procedural Arts, 2005); Disco Elysium (ZA/UM, 2019); Hades (Supergiant Games, 2020); AI Dungeon (Latitude, 2019).
 - **Papers:** Mateas, M. and Stern, A. (2003). *Façade: An Experiment in Building a Fully-Realized Interactive Drama.* GDC. Park, J. S. et al. (2023). *Generative Agents: Interactive Simulacra of Human Behavior.* arXiv:2304.03442.
 - **Course materials:** state machines, believability, LLM-powered characters, local models.
-- **Tools:** Unity 6 manual (Input System, Cinemachine, AI Navigation, Timeline, TextMeshPro, HDRP); LLM provider docs (structured output, rate limits, usage policy); asset licenses in `Docs/Licenses.md`.
+- **Tools:** Unreal Engine 5.8 documentation (Enhanced Input, UMG, AI Perception, Behavior Trees, Navigation, Sequencer, Quartz, MetaSounds, Niagara, HTTP module, Automation tests); LLM provider docs (structured output, rate limits, usage policy); asset licenses in `Docs/Licenses.md`.
 
 ---
 
@@ -579,7 +587,7 @@ The key is never in the repository; it is read from an environment variable or a
 | 3. Level Design Philosophy | FILLED (MISSING: guidance cues) |
 | 3. Themes | FILLED |
 | 3. Game Flow | FILLED |
-| 4. Abstract / Derived Classes | FILLED |
+| 4. Abstract / Derived Classes | FILLED (Unreal 5.8 since 10.11) |
 | 4. Data | FILLED |
 | 4. AI | FILLED (MISSING: hearing, state timings) |
 | 5. Style Attributes | FILLED |

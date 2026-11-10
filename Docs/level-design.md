@@ -3,7 +3,7 @@
 > **Canonical design source:** `gdd.md` (Level Design, Themes, Game Flow). This document turns the GDD levels into buildable detail. **Where this document and the GDD disagree, the GDD wins.**
 > **Companion documents:** `technical_design.md` and `production_pipeline.md`.
 
-**World overview:** One 3D level, the palace (House of Embers), about 60 × 30 m: a hub (Garden of Ash) with five rooms around it (Dancers' Quarters, Guard Post, Throne Hall, King's Chamber, Rooftop Terrace). Played in order: Prologue: Ash (2D) → Chapter 1: The Garden of Ash → Chapter 2: The Private Dance → Chapter 3: Rooftop of Smoke → Chapter 4: The Trap → Chapter 5: The Pyre (2D) → Epilogue: The Long Flame (2D). In Unity, the palace is the `Palace` scene; the 2D parts play in `Cutscenes`.
+**World overview:** One 3D level, the palace (House of Embers), about 60 × 30 m: a hub (Garden of Ash) with five rooms around it (Dancers' Quarters, Guard Post, Throne Hall, King's Chamber, Rooftop Terrace). Played in order: Prologue: Ash (2D) → Chapter 1: The Garden of Ash → Chapter 2: The Private Dance → Chapter 3: Rooftop of Smoke → Chapter 4: The Trap → Chapter 5: The Pyre (2D) → Epilogue: The Long Flame (2D). In Unreal Engine 5.8, the palace is the level `L_Palace` (One File Per Actor, so both members can edit different actors at once; no World Partition streaming needed at this size). The 2D parts play as Level Sequences (`LS_Prologue`, `LS_Pyre`, `LS_Epilogue`) with `WBP_Cutscene` over them; the title screen is `L_Title` and mechanics are tested in `L_Test`.
 
 **Updated 09.11 and 10.11.2026:** the palace is **open** from Chapter 1 (everything except the restricted King's Chamber and the locked city gate). Each chapter is **a day and a night**: by day the player gathers clues for the Rumor Journal while avoiding guards (hiding spots, eavesdropping); at night Sahra dances in the Throne Hall (Chapter 2: the King's Chamber); then the key conversation and a cutscene. NPCs and guard routes change per chapter and per phase.
 
@@ -174,9 +174,9 @@ Whole palace open. Short day; night: dance 4 (45 s) in the Throne Hall; then Vas
 ---
 
 ## 9. Build Notes
-1. **Grey-box first** (pipeline Phase 8): block out the hub and all five rooms at 60 × 30 m with primitives in `Palace`; place doors, stairs, the dry fountain, start point and checkpoint; bake the NavMesh.
-2. **Mechanics next** (Phases 7–13): room unlocking per chapter, restricted volume for the King's Chamber, character spawn points per chapter, guard patrol routes. Every mechanic is proven in `Test` first.
-3. **Art last** (Phase 16): licensed modular palace kit, lantern lights, moonlight, HDRP volumes, fire VFX. Early warning: if the palace is still grey-box at the end of week 2, custom models are cut.
+1. **Grey-box first** (pipeline Phase 8): block out the hub and all five rooms at 60 × 30 m with BSP / Geometry Script or modeling-mode primitives in `L_Palace` (units in cm: about 6000 × 3000 cm); place doors, stairs, the dry fountain, Player Start and checkpoint; add a Nav Mesh Bounds Volume and check the green NavMesh with `P` in the viewport.
+2. **Mechanics next** (Phases 7–13): room unlocking per chapter, restricted volume for the King's Chamber, character spawn points per chapter, guard patrol routes. Every mechanic is proven in `L_Test` first. Restricted rooms are `BP_RestrictedVolume` triggers; spawn points are `BP_NPCSpawnPoint` actors tagged by chapter and phase; patrol routes are Target Point actors referenced by each `BP_Guard`.
+3. **Art last** (Phase 16): licensed modular palace kit (Fab), lantern lights, moonlight (Directional Light + Sky Atmosphere), Lumen global illumination, Post Process Volume per day and night, Niagara fire VFX. Early warning: if the palace is still grey-box at the end of week 2, custom models are cut.
 4. Chapter content table:
 
 | Chapter | Rooms open | Characters there |
