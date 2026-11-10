@@ -96,13 +96,13 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 
 **Tasks:**
 - ✅ [REPO] Remove `Assets/`, `Packages/`, `ProjectSettings/`; Unreal `.gitignore` (Binaries, Intermediate, Saved, DerivedDataCache, `.vs`, `Secrets/`) and `.gitattributes` (Git LFS, `*.uasset` / `*.umap` lockable).
-- [REPO] Merve: tag the last Unity commit on `main` (`2090454`) as `unity-skeleton`: `git tag unity-skeleton 2090454` then `git push origin unity-skeleton` (or GitHub → Releases → Draft a new release → new tag `unity-skeleton` on that commit).
-- [UE] Merve: create the project from the **Third Person** template, **C++**, named `Ashes`, in the repository folder; Starter Content off; Lumen on (default).
-- [UE] Enable plugins: Enhanced Input (default), Gameplay Debugger, Functional Testing (Automation); add the C++ modules `HTTP`, `Json`, `JsonUtilities`, `UMG`, `AIModule`, `NavigationSystem`, `GameplayTasks` to `Ashes.Build.cs` (derived).
-- [UE] Create `Content/Ashes/` (folders from `design.md` section 10), `L_Test` (floor, walls, a ramp, night sky, Nav Mesh Bounds Volume) and an empty `L_Palace`; set `L_Test` as the editor startup map and `GM_Ashes` as the default game mode.
-- [UE] Project Settings → Editor → Source Control: Git with LFS; turn on "One File Per Actor" for `L_Palace` (World Settings → Use External Actors).
+- ✅ [REPO] Merve: tag the last Unity commit on `main` (`2090454`) as `unity-skeleton`: `git tag unity-skeleton 2090454` then `git push origin unity-skeleton` (or GitHub → Releases → Draft a new release → new tag `unity-skeleton` on that commit).
+- ✅ [UE] Merve: create the project from the **Third Person** template, **C++**, named `Ashes`, in the repository folder; Starter Content off; Lumen on (default).
+- [UE] Enable plugins: Enhanced Input (default), Gameplay Debugger, Functional Testing (Automation) (MISSING: Functional Testing not enabled yet); ✅ add the C++ modules `HTTP`, `Json`, `JsonUtilities`, `UMG`, `AIModule`, `NavigationSystem`, `GameplayTasks` to `Ashes.Build.cs` (derived).
+- ✅ [UE] Create `Content/Ashes/` (folders from `design.md` section 10), `L_Test` (floor, walls, a ramp, night sky, Nav Mesh Bounds Volume) and an empty `L_Palace`; set `L_Test` as the editor startup map and `GM_Ashes` as the default game mode.
+- [UE] Project Settings → Editor → Source Control: Git with LFS (MISSING: each PC sets this in the editor); ✅ "One File Per Actor" is on for `L_Palace` (World Settings → Use External Actors).
 - [UE] Both members clone with Git LFS, build in Visual Studio 2022 (or Rider), and open the project on the same engine version; `git lfs lock` before editing any `.uasset` / `.umap`.
-- [TOOLS] Install MCP + VibeUE (course setup) so the AI agent can reach the editor; confirm both PCs have it.
+- [TOOLS] Install MCP + VibeUE (course setup) so the AI agent can reach the editor; confirm both PCs have it. ✅ PC 1 (Merve, 10.11.2026); MISSING: Tuana's PC.
 - [WRITE] Tuana: start the GitHub Projects task board (To Do, Doing, Review, Done) with this tracker's phases.
 
 **Deliverable:** `main` opens the Unreal project and `L_Test` plays with no errors on both PCs.
