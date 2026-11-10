@@ -18,7 +18,12 @@ public class Ashes : ModuleRules
 			"StateTreeModule",
 			"GameplayStateTreeModule",
 			"UMG",
-			"Slate"
+			"Slate",
+			"HTTP",
+			"Json",
+			"JsonUtilities",
+			"NavigationSystem",
+			"GameplayTasks"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] { });
