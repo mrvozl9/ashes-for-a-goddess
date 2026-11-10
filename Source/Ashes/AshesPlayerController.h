@@ -1,4 +1,5 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+// AI-assisted: Claude Code, 10.11.2026, IMC_Exploration slot and camera pitch limits (Phase 1). Reviewed by <pending>.
+// Based on the UE 5.8 Third Person template player controller (Copyright Epic Games, Inc.).
 
 #pragma once
 
@@ -19,6 +20,18 @@ class AAshesPlayerController : public APlayerController
 	GENERATED_BODY()
 	
 protected:
+
+	/** Exploration controls (IMC_Exploration: move, look, run, interact, journal, pause) */
+	UPROPERTY(EditAnywhere, Category="Input|Input Mappings")
+	TObjectPtr<UInputMappingContext> ExplorationMappingContext;
+
+	/** Lowest camera pitch in degrees (looking down) */
+	UPROPERTY(EditAnywhere, Category="Camera")
+	float CameraPitchMin = -60.f;
+
+	/** Highest camera pitch in degrees (looking up) */
+	UPROPERTY(EditAnywhere, Category="Camera")
+	float CameraPitchMax = 25.f;
 
 	/** Input Mapping Contexts */
 	UPROPERTY(EditAnywhere, Category ="Input|Input Mappings")
