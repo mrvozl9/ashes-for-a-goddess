@@ -1,0 +1,368 @@
+<title>Ashes Work Plan</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,500;0,700;1,500&family=Inter:wght@400;500;600&display=swap">
+<style>
+/* Layout: one reading column; weeks as bands, each day a row of owner-tagged tasks. Palette from Docs/design.md (night plum, burgundy, old gold, ember, moon cream). */
+:root {
+  --bg: #F6EEDF;
+  --surface: #FFF9EE;
+  --fg: #2A1426;
+  --muted: #6E5A62;
+  --line: #E2D3BC;
+  --gold: #9A7426;
+  --ember: #C2481A;
+  --rose: #9E1B32;
+  --plum: #4A2342;
+  --merve: #8A3A1C;
+  --merve-bg: #F7E1D4;
+  --tuana: #4E2E6E;
+  --tuana-bg: #E9DFF3;
+  --both: #6B5418;
+  --both-bg: #F1E6C8;
+  --done: #3F6B3A;
+  --today: #FBE9C6;
+  --display: "Spectral", Georgia, "Times New Roman", serif;
+  --body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1E0E1B; --surface: #2A1426; --fg: #F1E3C8; --muted: #B9A3A0; --line: #44293F;
+    --gold: #C9A25B; --ember: #E8642C; --rose: #D2485F; --plum: #F1E3C8;
+    --merve: #F0A07A; --merve-bg: #4A2219; --tuana: #CDB2EC; --tuana-bg: #36234A;
+    --both: #E3C680; --both-bg: #3F3317; --done: #8CC583; --today: #3A2230;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #1E0E1B; --surface: #2A1426; --fg: #F1E3C8; --muted: #B9A3A0; --line: #44293F;
+  --gold: #C9A25B; --ember: #E8642C; --rose: #D2485F; --plum: #F1E3C8;
+  --merve: #F0A07A; --merve-bg: #4A2219; --tuana: #CDB2EC; --tuana-bg: #36234A;
+  --both: #E3C680; --both-bg: #3F3317; --done: #8CC583; --today: #3A2230;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 860px; margin: 0 auto; padding-block: 28px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+header h1 { font-family: var(--display); font-weight: 700; font-size: clamp(30px, 6vw, 42px); line-height: 1.1; margin: 0; text-wrap: balance; }
+header .sub { color: var(--muted); margin: 8px 0 0; max-width: 62ch; }
+.eyebrow { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--gold); font-weight: 600; margin: 0 0 6px; }
+.summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 24px 0 16px; }
+.stat { border-top: 2px solid var(--line); padding-top: 10px; }
+.stat .k { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+.stat .v { font-family: var(--display); font-size: 26px; font-variant-numeric: tabular-nums; }
+.stat .bar { height: 4px; background: var(--line); border-radius: 2px; margin-top: 6px; overflow: hidden; }
+.stat .bar i { display: block; height: 100%; background: var(--gold); width: 0; transition: width .3s; }
+.stat.m .bar i { background: var(--merve); } .stat.t .bar i { background: var(--tuana); }
+.controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 8px; }
+.chip { font: inherit; font-size: 13px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); padding: 5px 12px; border-radius: 999px; cursor: pointer; }
+.chip[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+.chip:focus-visible, .task input:focus-visible { outline: 2px solid var(--ember); outline-offset: 2px; }
+.sync { font-size: 12px; color: var(--muted); margin-left: auto; }
+.week { margin-top: 36px; }
+.week-head { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; border-bottom: 1px solid var(--line); padding-bottom: 8px; }
+.week-head h2 { font-family: var(--display); font-size: 24px; margin: 0; font-weight: 700; }
+.week-head .dates { color: var(--muted); font-variant-numeric: tabular-nums; }
+.week-head .goal { flex-basis: 100%; color: var(--muted); font-size: 14px; }
+.day { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 12px; padding: 12px 8px; border-bottom: 1px solid var(--line); }
+.day.is-today { background: var(--today); border-radius: 6px; }
+.day .date { font-variant-numeric: tabular-nums; }
+.day .date b { display: block; font-family: var(--display); font-size: 18px; }
+.day .date span { font-size: 12px; color: var(--muted); }
+.day .date em { display: inline-block; margin-top: 4px; font-style: normal; font-size: 11px; color: var(--ember); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
+.gate { display: inline-block; font-size: 12px; font-weight: 600; color: var(--rose); margin-bottom: 4px; letter-spacing: .03em; }
+.tasks { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.task { display: grid; grid-template-columns: 20px auto minmax(0, 1fr); gap: 10px; align-items: start; }
+.task input { width: 18px; height: 18px; margin: 2px 0 0; accent-color: var(--done); cursor: pointer; }
+.who { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; white-space: nowrap; margin-top: 1px; }
+.who.M { color: var(--merve); background: var(--merve-bg); }
+.who.T { color: var(--tuana); background: var(--tuana-bg); }
+.who.B { color: var(--both); background: var(--both-bg); }
+.task label { cursor: pointer; }
+.task .ph { color: var(--gold); font-size: 12px; font-weight: 600; margin-right: 6px; white-space: nowrap; text-decoration: none; }
+.task .ph:hover { text-decoration: underline; }
+header a { color: var(--ember); }
+.task.done label { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--line); }
+.empty-filter { color: var(--muted); font-size: 13px; font-style: italic; }
+footer { margin-top: 40px; color: var(--muted); font-size: 13px; max-width: 65ch; }
+@media (max-width: 520px) {
+  .summary { grid-template-columns: 1fr 1fr; }
+  .summary .stat:first-child { grid-column: 1 / -1; }
+  .day { grid-template-columns: 1fr; gap: 6px; }
+  .day .date b { display: inline; margin-right: 6px; }
+  .sync { margin-left: 0; flex-basis: 100%; }
+}
+@media (prefers-reduced-motion: reduce) { .stat .bar i { transition: none; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Burnt Potato Games · 9 Nov – 6 Dec 2026</p>
+    <h1>Ashes for a Goddess work plan</h1>
+    <p class="sub">Day-by-day tasks for Merve and Tuana in Unreal Engine 5.8, following the 23 phases in <code>Docs/production_pipeline.md</code>. Tick a task when it's done; both of you see the same ticks. Each phase is a <a href="https://github.com/mrvozl9/ashes-for-a-goddess/issues" target="_blank" rel="noopener">GitHub issue</a> on the project board: tap a phase tag to open it, tick the same box there, and close the issue when its gate passes.</p>
+  </header>
+
+  <section class="summary" aria-label="Progress">
+    <div class="stat"><div class="k">All tasks</div><div class="v" id="s-all">0 / 0</div><div class="bar"><i id="b-all"></i></div></div>
+    <div class="stat m"><div class="k">Merve</div><div class="v" id="s-M">0 / 0</div><div class="bar"><i id="b-M"></i></div></div>
+    <div class="stat t"><div class="k">Tuana</div><div class="v" id="s-T">0 / 0</div><div class="bar"><i id="b-T"></i></div></div>
+  </section>
+
+  <div class="controls" role="group" aria-label="Filter tasks">
+    <button class="chip" id="f-all" data-f="all" aria-pressed="true">Everyone</button>
+    <button class="chip" id="f-M" data-f="M" aria-pressed="false">Merve</button>
+    <button class="chip" id="f-T" data-f="T" aria-pressed="false">Tuana</button>
+    <button class="chip" id="f-open" data-open="1" aria-pressed="false">Hide done</button>
+    <button class="chip" id="f-today">Jump to today</button>
+    <span class="sync" id="sync">Loading saved ticks…</span>
+  </div>
+
+  <main id="plan"></main>
+
+  <footer>
+    "Both" tasks count toward Merve and Tuana. If a day slips by more than one day, apply the cut order in the pipeline: AI pyre scene first, then fewer Chapter 3 clues, one dance song at rising tempo, fewer eavesdrop spots, placeholder art.
+  </footer>
+</div>
+
+<script>
+const WEEKS = [
+  { n: 1, title: "Week 1 · Prototype", dates: "9–15 Nov", goal: "Sahra walks and talks; one Zafir conversation works online and offline." },
+  { n: 2, title: "Week 2 · All systems", dates: "16–22 Nov", goal: "Every system built and proven on Chapter 1: Scene Director, open palace, clues, guards, nightly dance." },
+  { n: 3, title: "Week 3 · All content", dates: "23–29 Nov", goal: "Chapters 2–4, cutscenes, menus. Ends with the first outside playtest." },
+  { n: 4, title: "Week 4 · Polish and ship", dates: "30 Nov – 6 Dec", goal: "Art, audio, tuning, red-team pass, final Windows build on 5 Dec." }
+];
+// who: M = Merve, T = Tuana, B = both
+const DAYS = [
+  { d: "2026-11-09", w: 1, tasks: [
+    ["w1-mon-m1","M","P0","Create the UE 5.8 Third Person C++ project \"Ashes\" in the repo folder; L_Test and L_Palace levels"],
+    ["w1-mon-m2","M","P0","Add HTTP, Json, UMG and AI modules to Ashes.Build.cs; Content/Ashes folders; GM_Ashes as default"],
+    ["w1-mon-t1","T","P0","Set up the GitHub Projects board (To Do, Doing, Review, Done) with the phases"],
+    ["w1-mon-b1","B","P0","Both clone with Git LFS, build in Visual Studio and open the project on UE 5.8; install MCP + VibeUE"]]},
+  { d: "2026-11-10", w: 1, tasks: [
+    ["w1-tue-m1","M","P1","Enhanced Input: IA_ actions and IMC_Exploration, Conversation, Cutscene, Dance contexts"],
+    ["w1-tue-m2","M","P1","AAshesCharacter: walk 220 cm/s, run 450 cm/s, no jump; BP_Sahra placeholder"],
+    ["w1-tue-t1","T","P4","Write the lore bible (about 600 words, by hand)"]]},
+  { d: "2026-11-11", w: 1, tasks: [
+    ["w1-wed-m1","M","P1","Spring Arm orbit camera; record arm length and limits in technical_design.md"],
+    ["w1-wed-m2","M","P2","UInteractionComponent + \"E: Talk\" prompt widget on a placeholder BP_Zafir"],
+    ["w1-wed-t1","T","P4","Zafir's character card (add when he turns cold or angry)"],
+    ["w1-wed-b1","B","P3","Pick the LLM provider and model; set a spending cap"]]},
+  { d: "2026-11-12", w: 1, tasks: [
+    ["w1-thu-m1","M","P3","ULLMProvider, UCloudLLMProvider (FHttpModule, 6 s timeout), UOfflineLLMProvider, key from env or Secrets/"],
+    ["w1-thu-t1","T","P4","Chapter 1 scene card: question, beats, turn limit, 5–6 clues"]]},
+  { d: "2026-11-13", w: 1, tasks: [
+    ["w1-fri-m1","M","P4","DT_Characters, DT_Scenes, DA_LoreBible; UPromptBuilder (card, lore, scene, state, last 8 turns)"],
+    ["w1-fri-m2","M","P4","UResponseValidator + Automation tests (bad JSON, unknown emotion, clamp)"],
+    ["w1-fri-t1","T","P5","WBP_Conversation per design.md, placeholder portraits"]]},
+  { d: "2026-11-14", w: 1, tasks: [
+    ["w1-sat-m1","M","P5","Wire WBP_Conversation: portrait swap, typing indicator, 1/2/3 replies, turn counter"],
+    ["w1-sat-t1","T","P5","Chapter 1 fallback lines and Zafir's offline dialogue tree"]]},
+  { d: "2026-11-15", w: 1, gate: "Prototype gate", tasks: [
+    ["w1-sun-b1","B","P6","Play the Zafir scene online and offline; fix blockers"],
+    ["w1-sun-b2","B","P6","Measure reply time and valid-JSON rate; decide on the early warning"],
+    ["w1-sun-b3","B","P6","Update the tracker and PROGRESS.md"]]},
+
+  { d: "2026-11-16", w: 2, tasks: [
+    ["w2-mon-m1","M","P7","USceneDirectorSubsystem: intro, talk, nudge, resolve, forced close, caught"],
+    ["w2-mon-t1","T","P11","Dance minigame in L_Test: DT_DanceCharts, Quartz timing, 4 lanes, 0.25 s windows"]]},
+  { d: "2026-11-17", w: 2, tasks: [
+    ["w2-tue-m1","M","P7","UNPCBrainComponent values, clamps, thresholds + Automation tests"],
+    ["w2-tue-t1","T","P7","Hint lines per value change and nudge notes"],
+    ["w2-tue-t2","T","P11","Dance grading and WBP_Dance result screen"]]},
+  { d: "2026-11-18", w: 2, tasks: [
+    ["w2-wed-m1","M","P8","L_Palace grey-box: hub + 5 rooms, stairs, restricted King's Chamber, Nav Mesh Bounds"],
+    ["w2-wed-m2","M","P8","Mark hiding spots and eavesdrop stops in the grey-box"],
+    ["w2-wed-t1","T","P11","Night 1 song (MetaSound) and chart; Sahra's dance montages hooked up"]]},
+  { d: "2026-11-19", w: 2, tasks: [
+    ["w2-thu-m1","M","P8","UDayNightSubsystem day / night flow, USaveGame checkpoint, Continue"],
+    ["w2-thu-m2","M","P9","UClueJournalSubsystem + DT_Clues; add clues to the LLM JSON and validator"],
+    ["w2-thu-t1","T","P9","WBP_RumorJournal and \"New clue\" toast"],
+    ["w2-thu-t2","T","P9","Pre-written trees for Nura, Idris and Chapter 1 minor NPCs"]]},
+  { d: "2026-11-20", w: 2, tasks: [
+    ["w2-fri-m1","M","P10","BP_Guard + BT_Guard: timed patrols, AI Perception 70° / 900 cm, USuspicionComponent"],
+    ["w2-fri-t1","T","P13","Vashir's character card; Chapter 2 question and clues"]]},
+  { d: "2026-11-21", w: 2, tasks: [
+    ["w2-sat-m1","M","P10","Hiding spots, eavesdrop zones, eye icon; place 2 guards in Chapter 1"],
+    ["w2-sat-t1","T","P11","Dance rewards wired: Favor, Suspicion, reward clue"],
+    ["w2-sat-t2","T","P13","Portraits v1 for Zafir and Vashir"]]},
+  { d: "2026-11-22", w: 2, gate: "Chapter 1 complete + risk check", tasks: [
+    ["w2-sun-b1","B","P12","Play Chapter 1 end to end: day, night dance, Zafir key scene"],
+    ["w2-sun-b2","B","P12","Red-team run (50 lines per character) and token cost"],
+    ["w2-sun-b3","B","P12","Decide: memories and AI pyre scene in or out; NPCs stay pre-written"]]},
+
+  { d: "2026-11-23", w: 3, tasks: [
+    ["w3-mon-m1","M","P14","WBP_Cutscene visual-novel player reading DT_Cutscenes; Level Sequences"],
+    ["w3-mon-t1","T","P13","Chapter 2 scene card, NPC trees, fallback lines"]]},
+  { d: "2026-11-24", w: 3, tasks: [
+    ["w3-tue-m1","M","P13","Chapter 2: Vashir scene, Favor 60 invitation, private dance, 3 guards"],
+    ["w3-tue-t1","T","P13","Chapter 3 question, clues, trees, scene card"],
+    ["w3-tue-t2","T","P14","Prologue cutscene script"]]},
+  { d: "2026-11-25", w: 3, tasks: [
+    ["w3-wed-m1","M","P13","Chapter 3 rooftop and Chapter 4 trap logic"],
+    ["w3-wed-t1","T","P13","Chapter 4 scene card"],
+    ["w3-wed-t2","T","P14","Cutscene scripts: chapter ends, pyre, epilogue (~150 lines total)"]]},
+  { d: "2026-11-26", w: 3, tasks: [
+    ["w3-thu-m1","M","P13","Dance charts for nights 2–4; NPC spawn points per chapter"],
+    ["w3-thu-t1","T","P15","Title, Settings, Pause, chapter cards, HUD (day / night tag, hide prompt)"]]},
+  { d: "2026-11-27", w: 3, tasks: [
+    ["w3-fri-m1","M","P16","Memories and AI pyre confession, if kept on 22 Nov (otherwise bug fixes)"],
+    ["w3-fri-t1","T","P14","2D backgrounds: Burning Tamra, the pyre, the temple"],
+    ["w3-fri-t2","T","P15","Credits screen"]]},
+  { d: "2026-11-28", w: 3, tasks: [
+    ["w3-sat-b1","B","P17","Full playthrough online and offline; fix blockers"],
+    ["w3-sat-b2","B","P17","Make a playtest build"]]},
+  { d: "2026-11-29", w: 3, gate: "Content gate", tasks: [
+    ["w3-sun-b1","B","P17","Playtest with 5 outside players; write the fix list"],
+    ["w3-sun-b2","B","P17","Feature freeze"]]},
+
+  { d: "2026-11-30", w: 4, tasks: [
+    ["w4-mon-m1","M","P19","Audio: palace loop, dance songs, footsteps, fire, cloth, crowd"],
+    ["w4-mon-t1","T","P18","Art: assemble the palace kit and light it with Lumen"]]},
+  { d: "2026-12-01", w: 4, tasks: [
+    ["w4-tue-m1","M","P19","Sound Class Mix and volume setting; fixes from playtest 1"],
+    ["w4-tue-t1","T","P18","Final portraits if time; Niagara fire, ember and phoenix-rise VFX"]]},
+  { d: "2026-12-02", w: 4, tasks: [
+    ["w4-wed-b1","B","P20","Tune clue counts, patrol timing, dance difficulty, turn limits"],
+    ["w4-wed-b2","B","P20","Red-team pass: 0 spoiler leaks, 95% valid JSON"]]},
+  { d: "2026-12-03", w: 4, tasks: [
+    ["w4-thu-b1","B","P20","Second playtest and fixes"]]},
+  { d: "2026-12-04", w: 4, tasks: [
+    ["w4-fri-m1","M","P22","Fixes; Windows packaging settings (Shipping, no key in Config)"],
+    ["w4-fri-t1","T","P21","Credits, Licenses.md, PromptLog.md, AI-assisted headers check"]]},
+  { d: "2026-12-05", w: 4, gate: "Final build", tasks: [
+    ["w4-sat-m1","M","P22","Package the Windows build; test on a clean PC online and offline"],
+    ["w4-sat-t1","T","P22","Final playthrough check and submission package"]]},
+  { d: "2026-12-06", w: 4, label: "Buffer", tasks: [
+    ["w4-sun-b1","B","—","Buffer day: only fixes for anything that slipped"]]}
+];
+const ALL = DAYS.flatMap(day => day.tasks.map(t => ({ id: t[0], who: t[1] })));
+const WHO = { M: "Merve", T: "Tuana", B: "Both" };
+const REPO = "https://github.com/mrvozl9/ashes-for-a-goddess";
+const DOW = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+let done = {};
+let filter = "all";
+let hideDone = false;
+let db = null;
+const LS = "ashes-workplan-done";
+
+function todayIso() {
+  const n = new Date();
+  return n.getFullYear() + "-" + String(n.getMonth() + 1).padStart(2, "0") + "-" + String(n.getDate()).padStart(2, "0");
+}
+
+function render() {
+  const plan = document.getElementById("plan");
+  plan.textContent = "";
+  const today = todayIso();
+  for (const wk of WEEKS) {
+    const sec = document.createElement("section");
+    sec.className = "week";
+    const head = document.createElement("div");
+    head.className = "week-head";
+    head.innerHTML = "<h2></h2><span class=\"dates\"></span><span class=\"goal\"></span>";
+    head.querySelector("h2").textContent = wk.title;
+    head.querySelector(".dates").textContent = wk.dates;
+    head.querySelector(".goal").textContent = wk.goal;
+    sec.appendChild(head);
+    for (const day of DAYS.filter(x => x.w === wk.n)) {
+      const dt = new Date(day.d + "T12:00:00");
+      const row = document.createElement("div");
+      row.className = "day" + (day.d === today ? " is-today" : "");
+      row.id = "d-" + day.d;
+      const date = document.createElement("div");
+      date.className = "date";
+      const b = document.createElement("b"); b.textContent = dt.getDate() + " " + MON[dt.getMonth()];
+      const s = document.createElement("span"); s.textContent = DOW[dt.getDay()];
+      date.append(b, s);
+      if (day.d === today) { const e = document.createElement("em"); e.textContent = "Today"; date.append(document.createElement("br"), e); }
+      row.appendChild(date);
+      const list = document.createElement("div");
+      list.className = "tasks";
+      if (day.gate) { const g = document.createElement("span"); g.className = "gate"; g.textContent = "Gate · " + day.gate; list.appendChild(g); }
+      let shown = 0;
+      for (const [id, who, ph, text] of day.tasks) {
+        const isDone = !!done[id];
+        if (filter !== "all" && who !== filter && who !== "B") continue;
+        if (hideDone && isDone) continue;
+        shown++;
+        const t = document.createElement("div");
+        t.className = "task" + (isDone ? " done" : "");
+        const cb = document.createElement("input");
+        cb.type = "checkbox"; cb.id = "t-" + id; cb.checked = isDone;
+        cb.addEventListener("change", () => toggle(id, cb.checked));
+        const pill = document.createElement("span"); pill.className = "who " + who; pill.textContent = WHO[who];
+        const lab = document.createElement("label"); lab.htmlFor = cb.id;
+        if (ph !== "—") { const p = document.createElement("a"); p.className = "ph"; p.textContent = ph + " #" + (Number(ph.slice(1)) + 2); p.href = REPO + "/issues/" + (Number(ph.slice(1)) + 2); p.target = "_blank"; p.rel = "noopener"; p.title = "Open the GitHub issue for phase " + ph.slice(1); lab.appendChild(p); }
+        lab.appendChild(document.createTextNode(text));
+        t.append(cb, pill, lab);
+        list.appendChild(t);
+      }
+      if (!shown) { const e = document.createElement("span"); e.className = "empty-filter"; e.textContent = hideDone ? "All done for this filter" : "Nothing for this person"; list.appendChild(e); }
+      row.appendChild(list);
+      sec.appendChild(row);
+    }
+    plan.appendChild(sec);
+  }
+  renderStats();
+}
+
+function renderStats() {
+  const count = pred => { const xs = ALL.filter(pred); return [xs.filter(x => done[x.id]).length, xs.length]; };
+  const set = (key, [a, n]) => {
+    document.getElementById("s-" + key).textContent = a + " / " + n;
+    document.getElementById("b-" + key).style.width = (n ? Math.round(100 * a / n) : 0) + "%";
+  };
+  set("all", count(() => true));
+  set("M", count(x => x.who === "M" || x.who === "B"));
+  set("T", count(x => x.who === "T" || x.who === "B"));
+}
+
+function saveLocal() { try { localStorage.setItem(LS, JSON.stringify(done)); } catch (e) {} }
+function loadLocal() { try { return JSON.parse(localStorage.getItem(LS) || "{}") || {}; } catch (e) { return {}; } }
+
+async function toggle(id, value) {
+  if (value) done[id] = true; else delete done[id];
+  render();
+  if (db) {
+    try { await db.doc("progress/" + id).set({ done: value, at: new Date().toISOString() }); }
+    catch (e) { setSync("Couldn't save that tick. Check that you have edit access."); }
+  } else {
+    saveLocal();
+  }
+}
+
+function setSync(text) { document.getElementById("sync").textContent = text; }
+
+document.querySelectorAll(".chip[data-f]").forEach(btn => btn.addEventListener("click", () => {
+  filter = btn.dataset.f;
+  document.querySelectorAll(".chip[data-f]").forEach(b => b.setAttribute("aria-pressed", String(b === btn)));
+  render();
+}));
+document.getElementById("f-open").addEventListener("click", e => {
+  hideDone = !hideDone; e.currentTarget.setAttribute("aria-pressed", String(hideDone)); render();
+});
+document.getElementById("f-today").addEventListener("click", () => {
+  const el = document.getElementById("d-" + todayIso()) || document.getElementById("d-" + DAYS[0].d);
+  el.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "center" });
+});
+
+done = loadLocal();
+render();
+
+(async () => {
+  let timer = setTimeout(() => setSync("Ticks are saved in this browser only."), 10000);
+  try {
+    db = window.claude ? await window.claude.use("db") : null;
+  } catch (e) { db = null; }
+  if (!db) { clearTimeout(timer); setSync("Ticks are saved in this browser only."); return; }
+  db.collection("progress").onSnapshot(snap => {
+    clearTimeout(timer);
+    const next = {};
+    snap.docs.forEach(doc => { const v = doc.data(); if (v && v.done) next[doc.id] = true; });
+    done = next;
+    setSync("Ticks are shared with everyone who opens this page.");
+    render();
+  }, () => { clearTimeout(timer); db = null; setSync("Ticks are saved in this browser only."); });
+})();
+</script>
