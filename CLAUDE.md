@@ -16,7 +16,7 @@
 - One pipeline step at a time.
 - Follow the names in `Docs/design.md`.
 - After a step works: update the tracker and `Docs/PROGRESS.md`, and tell me to commit.
-- After each finished task: add one row for its important prompt to the prompt log (Google Sheet linked in `Docs/PromptLog.md`, shared with the instructor). Only important prompts, not every message. If you cannot edit the sheet, add the row to the waiting table in `Docs/PromptLog.md` and tell me to copy it.
+- Prompt log (Google Sheet linked in `Docs/PromptLog.md`, shared with the instructor): add a short row only for a key prompt (a big design decision, a new document or asset, a new way of using AI), not for every phase or message. If you cannot edit the sheet, add the row to the waiting table in `Docs/PromptLog.md` and tell me to copy it.
 - Never change things outside the current step.
 - When you fill or update a document: fill it COMPLETELY. Never skip or shorten sections to save tokens.
 - Never put an API key in the repo, `Config/*.ini` or the build; the game must run in offline mode without one.
