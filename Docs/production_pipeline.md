@@ -62,9 +62,9 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 
 | # | Phase | Stage | Owner | Target | Status | Last update | Notes |
 | :-- | :-- | :-- | :-- | :-- | :-- | :-- | :-- |
-| 0 | Project setup & test level | 1 | Merve | Tue 10.11 | 🔄 IN PROGRESS | 10.11.2026 | Engine switched to Unreal 5.8; Unity tagged `unity-skeleton` and removed; UE project not created yet |
-| 1 | Player movement & camera | 1 | Merve | Tue 10.11 | ⬜ NOT STARTED | | |
-| 2 | Interaction system (E: Talk) | 1 | Merve | Wed 11.11 | ⬜ NOT STARTED | | |
+| 0 | Project setup & test level | 1 | Merve | Tue 10.11 | 🔄 IN PROGRESS | 10.11.2026 | UE 5.8 project, modules, `Content/Ashes`, `L_Test`, `L_Palace`, `GM_Ashes`, MCP + VibeUE done on PC 1 (merged to `main`); open: Functional Testing plugin, Git source control setting, Tuana's PC check, task board |
+| 1 | Player movement & camera | 1 | Merve | Tue 10.11 | ✅ DONE | 10.11.2026 | Walk 220 / run 450 cm/s, no jump, orbit camera; tested by Merve; PR #26 merged |
+| 2 | Interaction system (E: Talk) | 1 | Merve | Wed 11.11 | 🔄 IN PROGRESS | 10.11.2026 | Built and auto-tested in PIE on `feature/merve-phase2-interaction`; waiting for Merve's test, then PR |
 | 3 | LLM provider (cloud + offline) | 1 | Merve | Wed 11.11 | ⬜ NOT STARTED | | |
 | 4 | Prompt builder & validator + lore and Zafir's card | 1 | Merve + Tuana | Fri 13.11 | ⬜ NOT STARTED | | |
 | 5 | Conversation UI + Chapter 1 Zafir scene | 1 | Tuana + Merve | Sat 14.11 | ⬜ NOT STARTED | | |
@@ -130,9 +130,9 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 **Depends on:** Phase 1.
 
 **Tasks:**
-- [C++] `UInteractionComponent` (sphere trace on a 0.1 s timer, not Tick) + `IAshesInteractable` interface; delegate `OnInteract`.
-- [UI] "E: Talk" prompt as a Widget Component (`WBP_InteractPrompt`, placeholder style).
-- [BP] Placeholder `BP_Zafir` (mannequin) in `L_Test`.
+- ✅ [C++] `UInteractionComponent` (sphere trace on a 0.1 s timer, not Tick) + `IAshesInteractable` interface; delegate `OnInteract` (radius 200 cm).
+- ✅ [UI] "E: Talk" prompt as a Widget Component (`WBP_InteractPrompt`, placeholder style: Old gold frame, Night plum panel, Moon cream text).
+- ✅ [BP] Placeholder `BP_Zafir` (mannequin, child of `AAshesNPC`) in `L_Test`.
 
 **Deliverable:** E on the placeholder Zafir prints "Start scene: Zafir" to the Output Log and disables movement.
 **Verification Gate:** Walk up to Zafir, prompt appears, E starts the event, walking away hides the prompt. ✋ Confirm with the user.

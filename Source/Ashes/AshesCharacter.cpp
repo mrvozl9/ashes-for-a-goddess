@@ -1,4 +1,4 @@
-// AI-assisted: Claude Code, 10.11.2026, walk/run, gameplay input gate, no jump, camera values (Phase 1). Reviewed by <pending>.
+// AI-assisted: Claude Code, 10.11.2026, walk/run, gameplay input gate, no jump, camera values (Phase 1); interaction component and E (Phase 2). Reviewed by <pending>.
 // Based on the UE 5.8 Third Person template character (Copyright Epic Games, Inc.).
 
 #include "AshesCharacter.h"
@@ -11,6 +11,7 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
+#include "InteractionComponent.h"
 #include "Ashes.h"
 
 AAshesCharacter::AAshesCharacter()
@@ -53,6 +54,9 @@ AAshesCharacter::AAshesCharacter()
 	FollowCamera->bUsePawnControlRotation = false;
 	FollowCamera->SetFieldOfView(80.f);
 
+	// Interaction: nearest interactable in front, 200 cm, scanned every 0.1 s
+	InteractionComponent = CreateDefaultSubobject<UInteractionComponent>(TEXT("Interaction"));
+
 	// Note: the skeletal mesh and anim Blueprint are set in BP_Sahra (no content references in C++)
 }
 
@@ -79,6 +83,9 @@ void AAshesCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 		EnhancedInputComponent->BindAction(RunAction, ETriggerEvent::Started, this, &AAshesCharacter::StartRun);
 		EnhancedInputComponent->BindAction(RunAction, ETriggerEvent::Completed, this, &AAshesCharacter::StopRun);
 		EnhancedInputComponent->BindAction(RunAction, ETriggerEvent::Canceled, this, &AAshesCharacter::StopRun);
+
+		// Interacting (E)
+		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &AAshesCharacter::InteractPressed);
 	}
 	else
 	{
@@ -132,6 +139,14 @@ void AAshesCharacter::StopRun()
 {
 	bIsRunning = false;
 	UpdateMovementSpeed();
+}
+
+void AAshesCharacter::InteractPressed()
+{
+	if (InteractionComponent)
+	{
+		InteractionComponent->TryInteract();
+	}
 }
 
 void AAshesCharacter::UpdateMovementSpeed()

@@ -77,6 +77,8 @@ Three layers (GDD Figure 6). Gameplay sends the chapter to Conversation AI; Conv
 | `AAshesPlayerController` → `PC_Ashes` | APlayerController | Enhanced Input contexts, UI focus, pause |
 | `AAshesCharacter` → `BP_Sahra` | ACharacter | Walk / run, hide state, dance animations |
 | `UInteractionComponent` → `AC_Interaction` | UActorComponent | Finds the highlighted character or object; E starts a conversation or enters a hiding spot |
+| `IAshesInteractable` | UInterface | Prompt text, can-interact, interact, focus on / off; implemented by talkable characters and (later) hiding spots **(derived)** |
+| `AAshesNPC` → `BP_Zafir`, `BP_Vashir`, `BP_Nura`, `BP_Idris`, `BP_CourtNPC` | ACharacter + `IAshesInteractable` | Display name, "E: Talk" prompt (`WBP_InteractPrompt` as a screen-space Widget Component); starts the scene on E (Phase 2 placeholder logs "Start scene: <name>") **(derived)** |
 | `USceneDirectorSubsystem` | UWorldSubsystem | Conversation FSM: intro, free talk, nudge, resolve, forced close, caught; accepts beats and clues |
 | `UNPCBrainComponent` | UActorComponent (one per character) | Character card row, relationship values, memories |
 | `UPromptBuilder` | UBlueprintFunctionLibrary | Assembles card, lore, scene, state and turns into one request |
@@ -132,7 +134,7 @@ Three layers (GDD Figure 6). Gameplay sends the chapter to Conversation AI; Conv
 ## 3. Player System
 - **GDD basis:** 2 Controls, 2 Camera, 2 Mechanics 5 (Exploration).
 - **Architecture:** start from the UE 5.8 **Third Person (C++)** template. `AAshesCharacter` (ACharacter) with a Spring Arm + Camera, `UInteractionComponent`, `USuspicionComponent`; `BP_Sahra` sets the mesh and `ABP_Sahra`. Input through Enhanced Input (`IMC_Exploration`).
-- **Class spec:** `AAshesCharacter`: `WalkSpeed = 220`, `RunSpeed = 450` (cm/s on `CharacterMovement->MaxWalkSpeed`), `bIsRunning` (read by guards), `bIsHidden`, `SetGameplayInputEnabled(bool)` (off during conversations, cutscenes, the dance and pause). `UInteractionComponent`: sphere trace each 0.1 s timer (not Tick), detection radius (MISSING), current target, delegate `OnInteract`.
+- **Class spec:** `AAshesCharacter`: `WalkSpeed = 220`, `RunSpeed = 450` (cm/s on `CharacterMovement->MaxWalkSpeed`), `bIsRunning` (read by guards), `bIsHidden`, `SetGameplayInputEnabled(bool)` (off during conversations, cutscenes, the dance and pause). `UInteractionComponent`: sphere overlap (Pawn + WorldDynamic) on a 0.1 s timer (not Tick), detection radius **200 cm** (decided 10.11.2026, Phase 2), only targets in front of Sahra (dot ≥ 0), nearest wins; current target, delegates `OnFocusChanged` and `OnInteract`; E (`IA_Interact`) calls `TryInteract()`. Interactables implement `IAshesInteractable` (`GetInteractPrompt`, `CanInteract`, `Interact`, `SetInteractionFocus`).
 - **Movement values:** walk 2.2 m/s = 220 cm/s, run 4.5 m/s = 450 cm/s (hold Left Shift). Jump: none (no jump binding; `CanJumpInternal` returns false). Gravity: engine default. Turn rate 540°/s, orient rotation to movement.
 - **Camera values (decided 10.11.2026, Phase 1):** Spring Arm length 350 cm, socket offset (0, 50, 60) cm (over the right shoulder), camera lag on at speed 12, probe size 12 cm, FOV 80°; pitch limits −60° (look down) to +25° (look up) on `PC_Ashes` (`CameraPitchMin` / `CameraPitchMax`); mouse Y inverted in `IMC_Exploration` like the template (move the mouse up = look up).
 - **Current state:** 🔲 Not started.
@@ -298,7 +300,7 @@ Text entry uses a UMG Editable Text box; `IMC_Exploration` is removed while typi
 | 0. Meta & Conventions | FILLED |
 | 1. Project Architecture | FILLED |
 | 2. Core Types & Data | FILLED (MISSING: Nura/Idris emotions, Vashir JSON fields) |
-| 3. Player System | FILLED (MISSING: interaction radius) |
+| 3. Player System | FILLED |
 | 4. Mechanic systems (4–4.6) | FILLED (MISSING items listed per system) |
 | 5. Input | FILLED (dance keys proposed) |
 | 6. AI | FILLED (MISSING: Notice duration) |
