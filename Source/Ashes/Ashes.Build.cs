@@ -30,6 +30,8 @@ public class Ashes : ModuleRules
 
 		PublicIncludePaths.AddRange(new string[] {
 			"Ashes",
+			"Ashes/Player",
+			"Ashes/Gameplay",
 			"Ashes/Variant_Platforming",
 			"Ashes/Variant_Platforming/Animation",
 			"Ashes/Variant_Combat",

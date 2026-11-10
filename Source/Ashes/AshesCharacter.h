@@ -1,4 +1,4 @@
-// AI-assisted: Claude Code, 10.11.2026, walk/run, gameplay input gate, no jump, camera values (Phase 1). Reviewed by <pending>.
+// AI-assisted: Claude Code, 10.11.2026, walk/run, gameplay input gate, no jump, camera values (Phase 1); interaction component and E (Phase 2). Reviewed by <pending>.
 // Based on the UE 5.8 Third Person template character (Copyright Epic Games, Inc.).
 
 #pragma once
@@ -11,6 +11,7 @@
 class USpringArmComponent;
 class UCameraComponent;
 class UInputAction;
+class UInteractionComponent;
 struct FInputActionValue;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
@@ -32,6 +33,10 @@ class AAshesCharacter : public ACharacter
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
 	UCameraComponent* FollowCamera;
 
+	/** Finds the character or object Sahra faces and handles E */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInteractionComponent> InteractionComponent;
+
 protected:
 
 	/** Move Input Action (IA_Move) */
@@ -49,6 +54,10 @@ protected:
 	/** Run Input Action (IA_Run, hold Left Shift) */
 	UPROPERTY(EditAnywhere, Category="Input")
 	UInputAction* RunAction;
+
+	/** Interact Input Action (IA_Interact, E) */
+	UPROPERTY(EditAnywhere, Category="Input")
+	UInputAction* InteractAction;
 
 	/** Walk speed in cm/s (technical_design.md section 3) */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Movement", meta=(ClampMin="0", Units="cm/s"))
@@ -101,6 +110,9 @@ protected:
 	void StartRun();
 	void StopRun();
 
+	/** E pressed: talk to / use the focused target (not blocked by SetGameplayInputEnabled, so E can also end a scene) */
+	void InteractPressed();
+
 	/** Applies WalkSpeed or RunSpeed to CharacterMovement->MaxWalkSpeed */
 	void UpdateMovementSpeed();
 
@@ -129,4 +141,7 @@ public:
 
 	/** Returns FollowCamera subobject **/
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+
+	/** Returns the InteractionComponent subobject **/
+	FORCEINLINE UInteractionComponent* GetInteractionComponent() const { return InteractionComponent; }
 };
