@@ -79,7 +79,7 @@ Follow `Docs/design.md` section 9. C++: `A` actor, `U` object / component / subs
 ## 14. Session Handoff
 - At the end of every session, update the Progress Tracker in `Docs/production_pipeline.md` and write a short note in `Docs/PROGRESS.md`: what was done, what is next, open problems.
 - Tick the matching tasks on the phase's GitHub issue (Phase N = issue #N+2) and on the work plan page.
-- Record only key prompts in the prompt log: the Google Sheet linked in `Docs/PromptLog.md` (shared with the instructor). A short row for a big design decision, a new document or asset, or a new way of using AI; not every phase or message (repeated work such as the next phase shares one row). Main prompt as sent with only spelling fixed, one or two sentences per cell. If you cannot edit the sheet, put the row in the waiting table in `Docs/PromptLog.md`.
+- Record only key prompts in the prompt log: the Google Sheet linked in `Docs/PromptLog.md` (shared with the instructor). About once a day, one short row for that day's big change (a big design decision, a new document or asset, or a new way of using AI); not every phase or message (repeated work such as the next phase shares one row). Main prompt as sent with only spelling fixed, one or two sentences per cell. If you cannot edit the sheet, put the row in the waiting table in `Docs/PromptLog.md`.
 - When the user says "continue where we left off": read `Docs/PROGRESS.md` and the tracker, then start the first open phase.
 
 ## 15. Live Editor Control
