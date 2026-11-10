@@ -56,6 +56,7 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 ## PROGRESS TRACKER
 > Update this table after every work session. Status: `⬜ NOT STARTED` · `🔄 IN PROGRESS` · `✅ DONE` · `⏸️ BLOCKED`.
 > When you resume, start from the first row that is not `✅`.
+> **GitHub:** every phase is an issue on the project board: Phase N = issue #(N+2) (Phase 0 = #2 … Phase 22 = #24), labelled by week and owner, with the day-by-day tasks as checkboxes. Close the issue when its gate passes (or put `Closes #N` in the PR). The day-by-day view is `Docs/workplan/index.html`.
 
 | # | Phase | Stage | Owner | Target | Status | Last update | Notes |
 | :-- | :-- | :-- | :-- | :-- | :-- | :-- | :-- |

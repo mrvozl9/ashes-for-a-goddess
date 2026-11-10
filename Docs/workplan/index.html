@@ -78,7 +78,9 @@ header .sub { color: var(--muted); margin: 8px 0 0; max-width: 62ch; }
 .who.T { color: var(--tuana); background: var(--tuana-bg); }
 .who.B { color: var(--both); background: var(--both-bg); }
 .task label { cursor: pointer; }
-.task .ph { color: var(--gold); font-size: 12px; font-weight: 600; margin-right: 4px; white-space: nowrap; }
+.task .ph { color: var(--gold); font-size: 12px; font-weight: 600; margin-right: 6px; white-space: nowrap; text-decoration: none; }
+.task .ph:hover { text-decoration: underline; }
+header a { color: var(--ember); }
 .task.done label { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--line); }
 .empty-filter { color: var(--muted); font-size: 13px; font-style: italic; }
 footer { margin-top: 40px; color: var(--muted); font-size: 13px; max-width: 65ch; }
@@ -96,7 +98,7 @@ footer { margin-top: 40px; color: var(--muted); font-size: 13px; max-width: 65ch
   <header>
     <p class="eyebrow">Burnt Potato Games · 9 Nov – 6 Dec 2026</p>
     <h1>Ashes for a Goddess work plan</h1>
-    <p class="sub">Day-by-day tasks for Merve and Tuana, following the 23 phases in <code>Docs/production_pipeline.md</code>. Tick a task when it's done; both of you see the same ticks.</p>
+    <p class="sub">Day-by-day tasks for Merve and Tuana, following the 23 phases in <code>Docs/production_pipeline.md</code>. Tick a task when it's done; both of you see the same ticks. Each phase is a <a href="https://github.com/mrvozl9/ashes-for-a-goddess/issues" target="_blank" rel="noopener">GitHub issue</a> on the project board: tap a phase tag to open it, tick the same box there, and close the issue when its gate passes.</p>
   </header>
 
   <section class="summary" aria-label="Progress">
@@ -234,6 +236,7 @@ const DAYS = [
 ];
 const ALL = DAYS.flatMap(day => day.tasks.map(t => ({ id: t[0], who: t[1] })));
 const WHO = { M: "Merve", T: "Tuana", B: "Both" };
+const REPO = "https://github.com/mrvozl9/ashes-for-a-goddess";
 const DOW = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
@@ -290,7 +293,7 @@ function render() {
         cb.addEventListener("change", () => toggle(id, cb.checked));
         const pill = document.createElement("span"); pill.className = "who " + who; pill.textContent = WHO[who];
         const lab = document.createElement("label"); lab.htmlFor = cb.id;
-        if (ph !== "—") { const p = document.createElement("span"); p.className = "ph"; p.textContent = ph; lab.appendChild(p); }
+        if (ph !== "—") { const p = document.createElement("a"); p.className = "ph"; p.textContent = ph + " #" + (Number(ph.slice(1)) + 2); p.href = REPO + "/issues/" + (Number(ph.slice(1)) + 2); p.target = "_blank"; p.rel = "noopener"; p.title = "Open the GitHub issue for phase " + ph.slice(1); lab.appendChild(p); }
         lab.appendChild(document.createTextNode(text));
         t.append(cb, pill, lab);
         list.appendChild(t);
