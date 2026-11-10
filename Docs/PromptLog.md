@@ -6,8 +6,8 @@ Our AI prompt log (GDD 8.2) is a Google Sheet that is shared with the instructor
 
 The sheet is the only real log. This file only links to it and holds rows that still have to be copied into it.
 
-## Rule: log every AI session
-At the end of every AI session that produced code, text, art, assets or a decision, add one row per task to the sheet, before the commit. Merve and Tuana both log their own sessions, including tools outside Claude (ChatGPT, Copilot, image models).
+## Rule: log the important prompts
+Log only the prompts that mattered, not every message: one row per task or decision that produced code, text, art, assets or a design choice (for example a pipeline phase, a design decision, a document, an illustration). Put the main prompt word for word and add only the follow-ups that changed the result. Skip small talk, quick questions, status checks and setup help. Add the row at the end of the task, before the commit. Merve and Tuana both log their own sessions, including tools outside Claude (ChatGPT, Copilot, image models).
 
 Columns (section "2. Prompt Log Entries"; one section row per course week, e.g. "WEEK 10: ..."):
 

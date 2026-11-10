@@ -8,6 +8,6 @@
 ## AI disclosure
 - [ ] Any AI-assisted C++ file starts with `// AI-assisted: <tool>, <date>, <what>. Reviewed by <name>.` (Comment node in Blueprints)
 - [ ] New third-party or AI-assisted assets are listed in `Docs/Licenses.md`
-- [ ] AI prompts used for this PR are in the prompt log (sheet linked in `Docs/PromptLog.md`)
+- [ ] The important AI prompts for this PR are in the prompt log (sheet linked in `Docs/PromptLog.md`)
 
 ## Reviewer
