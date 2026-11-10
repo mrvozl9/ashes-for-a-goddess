@@ -16,6 +16,7 @@
 - One pipeline step at a time.
 - Follow the names in `Docs/design.md`.
 - After a step works: update the tracker and `Docs/PROGRESS.md`, and tell me to commit.
+- After every AI session: add a row per task to the prompt log (Google Sheet linked in `Docs/PromptLog.md`, shared with the instructor). If you cannot edit the sheet, add the rows to the waiting table in `Docs/PromptLog.md` and tell me to copy them.
 - Never change things outside the current step.
 - When you fill or update a document: fill it COMPLETELY. Never skip or shorten sections to save tokens.
 - Never put an API key in the repo, `Config/*.ini` or the build; the game must run in offline mode without one.
