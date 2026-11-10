@@ -1,4 +1,5 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+// AI-assisted: Claude Code, 10.11.2026, IMC_Exploration slot and camera pitch limits (Phase 1). Reviewed by <pending>.
+// Based on the UE 5.8 Third Person template player controller (Copyright Epic Games, Inc.).
 
 
 #include "AshesPlayerController.h"
@@ -12,6 +13,13 @@
 void AAshesPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// Orbit camera pitch limits (technical_design.md section 3)
+	if (PlayerCameraManager)
+	{
+		PlayerCameraManager->ViewPitchMin = CameraPitchMin;
+		PlayerCameraManager->ViewPitchMax = CameraPitchMax;
+	}
 
 	// only spawn touch controls on local player controllers
 	if (IsLocalPlayerController() && ShouldUseTouchControls())
@@ -43,6 +51,11 @@ void AAshesPlayerController::SetupInputComponent()
 		// Add Input Mapping Contexts
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer()))
 		{
+			if (ExplorationMappingContext)
+			{
+				Subsystem->AddMappingContext(ExplorationMappingContext, 0);
+			}
+
 			for (UInputMappingContext* CurrentContext : DefaultMappingContexts)
 			{
 				Subsystem->AddMappingContext(CurrentContext, 0);

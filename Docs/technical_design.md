@@ -133,7 +133,8 @@ Three layers (GDD Figure 6). Gameplay sends the chapter to Conversation AI; Conv
 - **GDD basis:** 2 Controls, 2 Camera, 2 Mechanics 5 (Exploration).
 - **Architecture:** start from the UE 5.8 **Third Person (C++)** template. `AAshesCharacter` (ACharacter) with a Spring Arm + Camera, `UInteractionComponent`, `USuspicionComponent`; `BP_Sahra` sets the mesh and `ABP_Sahra`. Input through Enhanced Input (`IMC_Exploration`).
 - **Class spec:** `AAshesCharacter`: `WalkSpeed = 220`, `RunSpeed = 450` (cm/s on `CharacterMovement->MaxWalkSpeed`), `bIsRunning` (read by guards), `bIsHidden`, `SetGameplayInputEnabled(bool)` (off during conversations, cutscenes, the dance and pause). `UInteractionComponent`: sphere trace each 0.1 s timer (not Tick), detection radius (MISSING), current target, delegate `OnInteract`.
-- **Movement values:** walk 2.2 m/s = 220 cm/s, run 4.5 m/s = 450 cm/s. Jump: none (unbind the template's jump). Gravity: engine default. Spring Arm length, pitch limits and camera lag: MISSING.
+- **Movement values:** walk 2.2 m/s = 220 cm/s, run 4.5 m/s = 450 cm/s (hold Left Shift). Jump: none (no jump binding; `CanJumpInternal` returns false). Gravity: engine default. Turn rate 540°/s, orient rotation to movement.
+- **Camera values (decided 10.11.2026, Phase 1):** Spring Arm length 350 cm, socket offset (0, 50, 60) cm (over the right shoulder), camera lag on at speed 12, probe size 12 cm, FOV 80°; pitch limits −60° (look down) to +25° (look up) on `PC_Ashes` (`CameraPitchMin` / `CameraPitchMax`); mouse Y inverted in `IMC_Exploration` like the template (move the mouse up = look up).
 - **Current state:** 🔲 Not started.
 - **Required work:** project from template, input actions, character, camera, interaction prompt, test in `L_Test`.
 
@@ -297,7 +298,7 @@ Text entry uses a UMG Editable Text box; `IMC_Exploration` is removed while typi
 | 0. Meta & Conventions | FILLED |
 | 1. Project Architecture | FILLED |
 | 2. Core Types & Data | FILLED (MISSING: Nura/Idris emotions, Vashir JSON fields) |
-| 3. Player System | FILLED (MISSING: camera values, interaction radius) |
+| 3. Player System | FILLED (MISSING: interaction radius) |
 | 4. Mechanic systems (4–4.6) | FILLED (MISSING items listed per system) |
 | 5. Input | FILLED (dance keys proposed) |
 | 6. AI | FILLED (MISSING: Notice duration) |

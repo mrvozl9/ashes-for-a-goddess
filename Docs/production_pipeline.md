@@ -115,10 +115,10 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 **Depends on:** Phase 0.
 
 **Tasks:**
-- [BP] Enhanced Input: `IA_Move`, `IA_Look`, `IA_Run`, `IA_Interact`, `IA_OpenJournal`, `IA_Pause` in `IMC_Exploration`; `IMC_Conversation`, `IMC_Cutscene`, `IMC_Dance` (keys in `technical_design.md` section 5); remove the template's jump.
-- [C++] `AAshesCharacter` (from the template character): walk 220 cm/s, run 450 cm/s (Shift), `bIsRunning`, `SetGameplayInputEnabled`; `AAshesPlayerController` adds the mapping contexts.
-- [BP] `BP_Sahra` with the template mannequin or a licensed base model + `ABP_Sahra` (idle, walk, run).
-- [BP] Spring Arm + Camera orbit (MISSING in GDD: arm length and pitch limits; pick and record in `technical_design.md`).
+- ✅ [BP] Enhanced Input: `IA_Move`, `IA_Look`, `IA_Run`, `IA_Interact`, `IA_OpenJournal`, `IA_Pause` in `IMC_Exploration`; `IMC_Conversation`, `IMC_Cutscene`, `IMC_Dance` (keys in `technical_design.md` section 5); remove the template's jump.
+- ✅ [C++] `AAshesCharacter` (from the template character): walk 220 cm/s, run 450 cm/s (Shift), `bIsRunning`, `SetGameplayInputEnabled`; `AAshesPlayerController` adds the mapping contexts.
+- ✅ [BP] `BP_Sahra` with the template mannequin or a licensed base model + `ABP_Sahra` (idle, walk, run).
+- ✅ [BP] Spring Arm + Camera orbit (arm 350 cm, pitch −60° to +25°; recorded in `technical_design.md` section 3).
 
 **Deliverable:** `BP_Sahra` moving in `L_Test`.
 **Verification Gate:** In PIE, W A S D walks at about 2.2 m/s, Shift runs at about 4.5 m/s, mouse orbits the camera, no jump. ✋ Confirm with the user.
