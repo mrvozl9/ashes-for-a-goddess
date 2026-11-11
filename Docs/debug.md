@@ -3,6 +3,16 @@
 > One block per bug. Newest on top. Write the member's name in each block.
 > Unreal Engine 5.8 project since 10.11.2026.
 
+## Bug 2: first AI request after a cold start fails with HTTP 500 ("No user query found in messages")
+- **Found by:** Claude Code while testing `Ashes.TalkZafir` (11.11.2026)
+- **When I:** ran `Ashes.TalkZafir <line>` with the built-in model stopped, so the command started it and sent the line when it was ready.
+- **I expected:** Zafir's reply.
+- **But:** the first request always failed in 0.02 s with HTTP 500 and the fallback line answered; later requests worked.
+- **Error from the Output Log:** `LLM request failed after 0.04 s: http 500: ... Jinja Exception: No user query found in messages`; with `log LogAshes Verbose` the request body showed garbage text in every message.
+- **My prompt:** (found during testing)
+- **The fix:** the "send when the model is ready" lambda removed itself from `OnStateChanged` and then used its own captured request, which `Remove()` had already destroyed (use after free). Now it copies what it needs before `Remove()` (`ConversationDebugCommands.cpp`, same fix in `LLMDebugCommands.cpp`). HTTP errors now include the server's message; the request body is logged at Verbose level.
+- **Did it work?** Yes: two cold-start runs in a row both got Zafir's reply (21 s and 24 s on the laptop).
+
 ## Bug 1: AI reply still times out after raising the timeout to 30 s
 - **Found by:** Merve (11.11.2026)
 - **When I:** ran `Ashes.TestLLM` with the 6 s limit (fallback, fine), raised Request Timeout Seconds to 30 and ran it again.

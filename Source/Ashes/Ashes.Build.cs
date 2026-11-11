@@ -34,6 +34,7 @@ public class Ashes : ModuleRules
 			"Ashes/Gameplay",
 			"Ashes/Dialogue",
 			"Ashes/Core",
+			"Ashes/Data",
 			"Ashes/Variant_Platforming",
 			"Ashes/Variant_Platforming/Animation",
 			"Ashes/Variant_Combat",

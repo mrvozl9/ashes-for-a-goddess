@@ -221,14 +221,15 @@ void UOpenAICompatibleLLMProvider::SendAsync(const FLLMRequest& Request, FOnLLMR
 	{
 		Http->SetHeader(TEXT("Authorization"), FString::Printf(TEXT("Bearer %s"), *ApiKey));
 	}
-	Http->SetContentAsString(BuildRequestBody(Request));
+	const FString Body = BuildRequestBody(Request);
+	Http->SetContentAsString(Body);
 	Http->SetTimeout(TimeoutSeconds);
 
 	const double StartTime = FPlatformTime::Seconds();
 
 	// Completion runs on the game thread; the game never waits for the model
 	Http->OnProcessRequestComplete().BindLambda(
-		[Callback, StartTime](FHttpRequestPtr /*Req*/, FHttpResponsePtr Response, bool bConnected)
+		[Callback, StartTime, Body](FHttpRequestPtr /*Req*/, FHttpResponsePtr Response, bool bConnected)
 		{
 			FLLMReply Reply;
 			Reply.LatencySeconds = static_cast<float>(FPlatformTime::Seconds() - StartTime);
@@ -239,7 +240,9 @@ void UOpenAICompatibleLLMProvider::SendAsync(const FLLMRequest& Request, FOnLLMR
 			}
 			else if (Response->GetResponseCode() != 200)
 			{
-				Reply.Error = FString::Printf(TEXT("http %d"), Response->GetResponseCode());
+				// Include the server's message (e.g. llama-server's error JSON) for the log
+				Reply.Error = FString::Printf(TEXT("http %d: %s"), Response->GetResponseCode(), *Response->GetContentAsString().Left(300).Replace(TEXT("\n"), TEXT(" ")));
+				UE_LOG(LogAshes, Verbose, TEXT("LLM request body was: %s"), *Body);
 			}
 			else
 			{
