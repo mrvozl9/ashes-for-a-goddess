@@ -85,7 +85,7 @@ Three layers (GDD Figure 6). Gameplay sends the chapter to Conversation AI; Conv
 | `UPromptBuilder` | UBlueprintFunctionLibrary | Assembles card, lore, scene, state and turns into one request |
 | `ULLMProvider` | UObject (abstract) | `UOpenAICompatibleLLMProvider` (built-in llama-server, or an optional external OpenAI-compatible endpoint such as Ollama) and `UOfflineLLMProvider` (pre-written fallback) |
 | `ULocalModelSubsystem` | UEngineSubsystem | Starts the bundled llama-server hidden on 127.0.0.1 (free port, Windows job object so it dies with the game), polls `/health`, reports Ready / Failed **(derived)** |
-| `UAshesAISettings` | UDeveloperSettings (Project Settings > Game > Ashes AI) | Model folder (`ASHES_LLM_DIR` overrides), model file, port, context, device, GPU layers, timeouts, optional external endpoint **(derived)** |
+| `UAshesAISettings` | UDeveloperSettings (Project Settings > Game > Ashes AI) | Model folder (`ASHES_LLM_DIR` overrides), model file, port, context, device, GPU layers, timeouts, optional external endpoint; per-PC device override: console variable `Ashes.LLM.Device` (e.g. `none` = CPU only, set in the PC's own `Saved/Config/<Platform>/Engine.ini`, never committed) **(derived)** |
 | `UResponseValidator` | UBlueprintFunctionLibrary | JSON, lore, spoiler, safety checks; clamps value changes; checks claimed clue ids |
 | `UClueJournalSubsystem` | UGameInstanceSubsystem | Found clues per chapter, topic unlocks, key-scene gate; feeds the Rumor Journal |
 | `UDayNightSubsystem` | UWorldSubsystem | Chapter phases Day → Night → KeyScene; nightfall trigger, lighting and NPC spawns per phase |

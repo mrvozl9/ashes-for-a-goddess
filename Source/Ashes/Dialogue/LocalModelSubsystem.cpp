@@ -1,4 +1,4 @@
-// AI-assisted: Claude Code, 10.11.2026, starts / stops the built-in llama-server and reports when the model is ready (Phase 3). Reviewed by <pending>.
+// AI-assisted: Claude Code, 10.11.2026, starts / stops the built-in llama-server and reports when the model is ready (Phase 3); per-PC device override (11.11.2026). Reviewed by <pending>.
 
 #include "LocalModelSubsystem.h"
 #include "AshesAISettings.h"
@@ -11,6 +11,14 @@
 #include "SocketSubsystem.h"
 #include "Sockets.h"
 #include "IPAddress.h"
+#include "HAL/IConsoleManager.h"
+
+// Per-PC override of UAshesAISettings::Device (never committed): set it in Saved/Config/<Platform>/Engine.ini
+// [ConsoleVariables] Ashes.LLM.Device=none   (e.g. on a laptop whose small GPU is busy rendering the editor or game)
+static TAutoConsoleVariable<FString> CVarAshesLLMDevice(
+	TEXT("Ashes.LLM.Device"), TEXT(""),
+	TEXT("llama.cpp --device for the built-in AI on this PC: empty = project setting, none = CPU only, Vulkan1 = a specific GPU. Takes effect on the next server start."),
+	ECVF_Default);
 
 #if PLATFORM_WINDOWS
 #include "Windows/AllowWindowsPlatformTypes.h"
@@ -106,9 +114,11 @@ void ULocalModelSubsystem::StartServer()
 	FString Args = FString::Printf(
 		TEXT("-m \"%s\" --host 127.0.0.1 --port %d -c %d -np 1 --no-webui --reasoning off -a %s"),
 		*ModelPath, Port, Settings->ContextSize, *Settings->ModelAlias);
-	if (!Settings->Device.IsEmpty())
+	const FString DeviceOverride = CVarAshesLLMDevice.GetValueOnGameThread();
+	const FString Device = DeviceOverride.IsEmpty() ? Settings->Device : DeviceOverride;
+	if (!Device.IsEmpty())
 	{
-		Args += FString::Printf(TEXT(" --device %s"), *Settings->Device);
+		Args += FString::Printf(TEXT(" --device %s"), *Device);
 	}
 	if (Settings->GpuLayers >= 0)
 	{
