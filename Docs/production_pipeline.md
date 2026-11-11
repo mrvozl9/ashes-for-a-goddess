@@ -66,9 +66,9 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 | :-- | :-- | :-- | :-- | :-- | :-- | :-- | :-- |
 | 0 | Project setup & test level | 1 | Merve | Tue 10.11 | 🔄 IN PROGRESS | 10.11.2026 | UE 5.8 project, modules, `Content/Ashes`, `L_Test`, `L_Palace`, `GM_Ashes`, MCP + VibeUE done on PC 1 (merged to `main`); open: Functional Testing plugin, Git source control setting, Tuana's PC check, task board |
 | 1 | Player movement & camera | 1 | Merve | Tue 10.11 | ✅ DONE | 10.11.2026 | Walk 220 / run 450 cm/s, no jump, orbit camera; tested by Merve; PR #26 merged |
-| 2 | Interaction system (E: Talk) | 1 | Merve | Wed 11.11 | 🔄 IN PROGRESS | 10.11.2026 | Built and auto-tested in PIE on `feature/merve-phase2-interaction`; waiting for Merve's test, then PR |
-| 3 | LLM provider (cloud + offline) | 1 | Merve | Wed 11.11 | ⬜ NOT STARTED | | |
-| 4 | Prompt builder & validator + lore and Zafir's card | 1 | Merve + Tuana | Fri 13.11 | ⬜ NOT STARTED | | |
+| 2 | Interaction system (E: Talk) | 1 | Merve | Wed 11.11 | ✅ DONE | 10.11.2026 | `UInteractionComponent` (200 cm, 0.1 s timer), `AAshesNPC`, `WBP_InteractPrompt`, placeholder `BP_Zafir`; tested by Merve; PR #27 merged |
+| 3 | LLM provider (built-in model + fallback) | 1 | Merve | Wed 11.11 | ✅ DONE | 11.11.2026 | Built-in model (llama-server + Qwen3.5-4B, no key); streamed requests; 30 s editor / 6 s game timeout; PR #29 merged. Open: speed test on the stronger PC |
+| 4 | Prompt builder & validator + lore and Zafir's card | 1 | Merve + Tuana | Fri 13.11 | 🔄 IN PROGRESS | 11.11.2026 | C++ done on `feature/merve-phase4-prompt` (8 tests green, `Ashes.TalkZafir` works); waiting for Tuana's lore bible, Zafir's card and Chapter 1 scene card |
 | 5 | Conversation UI + Chapter 1 Zafir scene | 1 | Tuana + Merve | Sat 14.11 | ⬜ NOT STARTED | | |
 | 6 | 🏁 Prototype gate | 1 | Both | Sun 15.11 | ⬜ NOT STARTED | | user sign-off |
 | 7 | Scene Director & relationship values | 2 | Merve | Tue 17.11 | ⬜ NOT STARTED | | |
@@ -163,9 +163,9 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 
 **Tasks:**
 - [WRITE] Tuana: lore bible (~600 words, hand-written); Zafir's character card (add the line on when he turns cold or angry, from the 03.11 test); Chapter 1 scene card with beats and turn limit 10.
-- [C++] Row structs `FCharacterCardRow`, `FSceneCardRow` and DataTables `DT_Characters`, `DT_Scenes`, Data Asset `DA_LoreBible`; `UPromptBuilder` (card, lore, scene, state words, last 8 turns + new line).
-- [C++] `UResponseValidator`: `FJsonObjectConverter` parse, 1 silent retry, emotion whitelist with fallback, 80-word limit, `off_topic`, spoiler keywords (regenerate once), safety word list, delta clamp.
-- [C++] Automation tests: valid JSON, broken JSON, unknown emotion, +50 Trust clamped to +8, over-long reply.
+- ✅ [C++] Row structs `FCharacterCardRow`, `FSceneCardRow` (`Source/Ashes/Data/AshesTypes.h`) and DataTables `DT_Characters`, `DT_Scenes`, Data Asset `DA_LoreBible` (class `UAshesLoreBible`) in `Content/Ashes/Data`, filled with placeholder text from the GDD until Tuana's hand-written versions; `UPromptBuilder` (card, lore, scene, state words, last 8 turns + new line).
+- ✅ [C++] `UResponseValidator`: JSON parse (also inside code fences), 1 silent retry, emotion whitelist with fallback, 80-word limit, `off_topic`, spoiler keywords (regenerate once), safety word list (placeholder), delta clamp, beat / clue ids only.
+- ✅ [C++] Automation tests: valid JSON, broken JSON, unknown emotion, +50 Trust clamped to +8, over-long reply, plus free-sentence beats, spoiler / safety and prompt order / secrets / history (8 tests, all green 11.11.2026). Console `Ashes.TalkZafir <line>` talks through the real prompt and validator.
 
 **Deliverable:** Output Log conversation with Zafir through the real prompt; all Automation tests green.
 **Verification Gate:** Session Frontend → Automation all green; the 5 lines from GDD 12.4 pass again through the API; reply times measured. ✋ Confirm with the user.

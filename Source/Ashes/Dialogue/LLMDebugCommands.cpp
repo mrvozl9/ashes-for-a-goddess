@@ -108,8 +108,10 @@ static FAutoConsoleCommandWithWorldAndArgs GAshesTestLLM(
 		{
 			if (NewState == ELocalModelState::Ready || NewState == ELocalModelState::Failed)
 			{
+				// Copy first: Remove() destroys this lambda and its captures while it is still running
+				const FString LineCopy = Line;
 				Local->OnStateChanged.Remove(*Handle);
-				AshesLLMDebug::SendDirect(Line);
+				AshesLLMDebug::SendDirect(LineCopy);
 			}
 		});
 	}));
