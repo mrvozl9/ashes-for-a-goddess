@@ -103,7 +103,7 @@ FString UPromptBuilder::BuildSystemPrompt(const FCharacterCardRow& Card, const F
 	Out += FString::Printf(TEXT(
 		"## Reply format\n"
 		"Answer in 1-4 sentences, at most 80 words. Reply ONLY with one JSON object with these keys: "
-		"\"reply\" (what you say), \"emotion\" (one of: %s), \"gesture\" (a few words), %s"
+		"\"reply\" (what you say), \"emotion\" (one of: %s), \"gesture\" (a few words in third person, e.g. leans closer), %s"
 		"\"beats\" (array; only these ids: %s; usually empty), "
 		"\"suggestions\" (array of exactly 3 short things Sahra could say next), "
 		"\"off_topic\" (true if Sahra talks about things outside this world).\n"),

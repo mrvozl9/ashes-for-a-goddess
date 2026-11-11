@@ -114,7 +114,11 @@ void ULocalModelSubsystem::StartServer()
 	FString Args = FString::Printf(
 		TEXT("-m \"%s\" --host 127.0.0.1 --port %d -c %d -np 1 --no-webui --reasoning off -a %s"),
 		*ModelPath, Port, Settings->ContextSize, *Settings->ModelAlias);
-	const FString DeviceOverride = CVarAshesLLMDevice.GetValueOnGameThread();
+	FString DeviceOverride = CVarAshesLLMDevice.GetValueOnGameThread();
+	if (DeviceOverride.IsEmpty())
+	{
+		DeviceOverride = FPlatformMisc::GetEnvironmentVariable(TEXT("ASHES_LLM_DEVICE"));
+	}
 	const FString Device = DeviceOverride.IsEmpty() ? Settings->Device : DeviceOverride;
 	if (!Device.IsEmpty())
 	{

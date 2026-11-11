@@ -80,12 +80,12 @@ Three layers (GDD Figure 6). Gameplay sends the chapter to Conversation AI; Conv
 | `UInteractionComponent` → `AC_Interaction` | UActorComponent | Finds the highlighted character or object; E starts a conversation or enters a hiding spot |
 | `IAshesInteractable` | UInterface | Prompt text, can-interact, interact, focus on / off; implemented by talkable characters and (later) hiding spots **(derived)** |
 | `AAshesNPC` → `BP_Zafir`, `BP_Vashir`, `BP_Nura`, `BP_Idris`, `BP_CourtNPC` | ACharacter + `IAshesInteractable` | Display name, "E: Talk" prompt (`WBP_InteractPrompt` as a screen-space Widget Component); starts the scene on E (Phase 2 placeholder logs "Start scene: <name>") **(derived)** |
-| `USceneDirectorSubsystem` | UWorldSubsystem | Conversation FSM: intro, free talk, nudge, resolve, forced close, caught; accepts beats and clues |
+| `USceneDirectorSubsystem` | UWorldSubsystem | Conversation FSM: intro, free talk, nudge, resolve, forced close, caught; accepts beats and clues (Phase 5, 11.11.2026: minimal version: StartScene / SubmitLine / PickSuggestion / EndScene, 1 retry then fallback, turn limit, prompt warm-up; delegates OnLinePosted, OnReplyReady, OnThinkingChanged, OnTurnsChanged, OnSceneEnded) |
 | `UNPCBrainComponent` | UActorComponent (one per character) | Character card row, relationship values, memories |
 | `UPromptBuilder` | UBlueprintFunctionLibrary | Assembles card, lore, scene, state and turns into one request |
 | `ULLMProvider` | UObject (abstract) | `UOpenAICompatibleLLMProvider` (built-in llama-server, or an optional external OpenAI-compatible endpoint such as Ollama) and `UOfflineLLMProvider` (pre-written fallback) |
 | `ULocalModelSubsystem` | UEngineSubsystem | Starts the bundled llama-server hidden on 127.0.0.1 (free port, Windows job object so it dies with the game), polls `/health`, reports Ready / Failed **(derived)** |
-| `UAshesAISettings` | UDeveloperSettings (Project Settings > Game > Ashes AI) | Model folder (`ASHES_LLM_DIR` overrides), model file, port, context, device, GPU layers, timeouts, optional external endpoint; per-PC device override: console variable `Ashes.LLM.Device` (e.g. `none` = CPU only, set in the PC's own `Saved/Config/<Platform>/Engine.ini`, never committed) **(derived)** |
+| `UAshesAISettings` | UDeveloperSettings (Project Settings > Game > Ashes AI) | Model folder (`ASHES_LLM_DIR` overrides), model file, port, context, device, GPU layers, timeouts, optional external endpoint; per-PC device override: user environment variable `ASHES_LLM_DEVICE` (e.g. `none` = CPU only; never committed) or the console variable `Ashes.LLM.Device` for one session **(derived)** |
 | `UResponseValidator` | UBlueprintFunctionLibrary | JSON, lore, spoiler, safety checks; clamps value changes; checks claimed clue ids |
 | `UClueJournalSubsystem` | UGameInstanceSubsystem | Found clues per chapter, topic unlocks, key-scene gate; feeds the Rumor Journal |
 | `UDayNightSubsystem` | UWorldSubsystem | Chapter phases Day → Night → KeyScene; nightfall trigger, lighting and NPC spawns per phase |
@@ -93,7 +93,7 @@ Three layers (GDD Figure 6). Gameplay sends the chapter to Conversation AI; Conv
 | `AHidingSpot` / `AEavesdropZone` → `BP_HidingSpot` / `BP_EavesdropZone` | AActor | Invisible-to-guards spots; timed overheard exchanges that award clues |
 | `USuspicionComponent` **(derived)** | UActorComponent (on the player) | One Suspicion value fed by guards, Vashir and the dance; Caught at 100 |
 | `AGuardAIController` → `BP_Guard` + `BT_Guard` | AAIController | Patrol and notice via AI Perception (sight) and a Behavior Tree |
-| `WBP_HUD`, `WBP_Conversation`, `WBP_RumorJournal`, `WBP_Dance` | UUserWidget | Presentation; portrait swap by emotion inside `WBP_Conversation` |
+| `WBP_HUD`, `WBP_Conversation`, `WBP_RumorJournal`, `WBP_Dance` | UUserWidget | Presentation; portrait swap by emotion inside `WBP_Conversation`. `WBP_Conversation` derives from C++ `UConversationWidget` (BindWidget names: NameText, DialogueScroll, DialogueText, ThinkingText, TurnsText, Reply1–3 + Reply1Text–3, InputBox, SendButton, LeaveButton, PortraitImage, EmotionText) |
 
 ---
 

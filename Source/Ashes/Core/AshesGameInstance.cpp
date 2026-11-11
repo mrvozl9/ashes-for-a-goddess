@@ -1,4 +1,4 @@
-// AI-assisted: Claude Code, 10.11.2026, AI mode and the single entry point for model requests with automatic fallback (Phase 3). Reviewed by <pending>.
+// AI-assisted: Claude Code, 10.11.2026, AI mode and the single entry point for model requests with automatic fallback (Phase 3); prompt warm-up (Phase 5, 11.11.2026). Reviewed by <pending>.
 
 #include "AshesGameInstance.h"
 #include "Ashes.h"
@@ -103,5 +103,26 @@ void UAshesGameInstance::RequestReply(const FLLMRequest& Request, FOnLLMReply Ca
 			Out.LatencySeconds = Latency;
 			Callback.ExecuteIfBound(Out);
 		}));
+	}));
+}
+
+void UAshesGameInstance::RequestFallback(const FLLMRequest& Request, FOnLLMReply Callback)
+{
+	FallbackProvider->SendAsync(Request, Callback);
+}
+
+void UAshesGameInstance::PrimeModel(const FLLMRequest& Request)
+{
+	if (GetAIMode() != EAIMode::Online)
+	{
+		return;
+	}
+	// llama-server keeps the processed prompt in its cache; the real first request then only adds the new line
+	FLLMRequest Prime = Request;
+	Prime.MaxTokens = 1;
+	Prime.bJsonOutput = false;
+	ModelProvider->SendAsync(Prime, FOnLLMReply::CreateLambda([](const FLLMReply& Reply)
+	{
+		UE_LOG(LogAshes, Log, TEXT("AI prompt cached in %.1f s%s"), Reply.LatencySeconds, Reply.bSuccess ? TEXT("") : *(TEXT(" (") + Reply.Error + TEXT(")")));
 	}));
 }

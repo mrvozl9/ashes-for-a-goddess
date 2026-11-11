@@ -69,7 +69,7 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 | 2 | Interaction system (E: Talk) | 1 | Merve | Wed 11.11 | ✅ DONE | 10.11.2026 | `UInteractionComponent` (200 cm, 0.1 s timer), `AAshesNPC`, `WBP_InteractPrompt`, placeholder `BP_Zafir`; tested by Merve; PR #27 merged |
 | 3 | LLM provider (built-in model + fallback) | 1 | Merve | Wed 11.11 | ✅ DONE | 11.11.2026 | Built-in model (llama-server + Qwen3.5-4B, no key); streamed requests; 30 s editor / 6 s game timeout; PR #29 merged. Open: speed test on the stronger PC |
 | 4 | Prompt builder & validator + lore and Zafir's card | 1 | Merve + Tuana | Fri 13.11 | 🔄 IN PROGRESS | 11.11.2026 | C++ done on `feature/merve-phase4-prompt` (8 tests green, `Ashes.TalkZafir` works); waiting for Tuana's lore bible, Zafir's card and Chapter 1 scene card |
-| 5 | Conversation UI + Chapter 1 Zafir scene | 1 | Tuana + Merve | Sat 14.11 | ⬜ NOT STARTED | | |
+| 5 | Conversation UI + Chapter 1 Zafir scene | 1 | Tuana + Merve | Sat 14.11 | 🔄 IN PROGRESS | 11.11.2026 | Placeholder `WBP_Conversation` + `UConversationWidget` + minimal `USceneDirectorSubsystem` on `feature/merve-phase5-conversation`; E → 10-turn scene works in PIE; open: Tuana's UI style, fallback lines, portraits |
 | 6 | 🏁 Prototype gate | 1 | Both | Sun 15.11 | ⬜ NOT STARTED | | user sign-off |
 | 7 | Scene Director & relationship values | 2 | Merve | Tue 17.11 | ⬜ NOT STARTED | | |
 | 8 | Open palace grey-box & day / night flow | 2 | Merve | Wed 18.11 | ⬜ NOT STARTED | | |
@@ -177,13 +177,13 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 **Depends on:** Phases 2 and 4.
 
 **Tasks:**
-- [UI] Tuana: `WBP_Conversation` per `design.md` (dialogue panel, small portraits, hint line, large portrait, 3 reply buttons, 200-character input, Send, turns left) with placeholder portraits.
-- [BP] `WBP_Conversation` logic and portrait swap (emotion → portrait texture within 1 s), typing indicator ≥ 0.4 s, input cut at 200 with a warning, 1 / 2 / 3 picks.
-- [WRITE] Tuana: Chapter 1 fallback lines and the offline dialogue tree for Zafir.
-- [C++] Turn counter and simple end at 10 turns (full Director comes in Phase 7).
+- [UI] Tuana: `WBP_Conversation` per `design.md` (dialogue panel, small portraits, hint line, large portrait, 3 reply buttons, 200-character input, Send, turns left) with placeholder portraits. ✅ Placeholder version built 11.11.2026 (design.md colours; widget names fixed by `UConversationWidget`); Tuana restyles it (keep the widget names).
+- ✅ [C++] `WBP_Conversation` logic in `UConversationWidget` (C++ instead of Blueprint): portrait swap (emotion → `T_Portrait_<Name>_<Emotion>` if it exists, else a placeholder colour), typing indicator ≥ 0.4 s, input cut at 200 (MISSING: warning text), 1 / 2 / 3 picks (typed into the empty box or clicked), Send, Leave.
+- [WRITE] Tuana: Chapter 1 fallback lines for Zafir (the full offline dialogue tree is skipped: team decision 11.11.2026, the built-in model is always there; fallback lines only).
+- ✅ [C++] Turn counter and simple end at 10 turns in `USceneDirectorSubsystem` (minimal; full Director comes in Phase 7); E on an `AAshesNPC` with a card + scene row opens the screen; prompt warm-up when the scene opens; console `Ashes.Scene.Say / Pick / End`.
 
 **Deliverable:** A playable Zafir conversation from E to the 10th turn.
-**Verification Gate:** Play online: type, pick suggestions, portrait changes, fallback on timeout. Play offline: the whole scene is playable with the 3 pre-written replies. ✋ Confirm with the user.
+**Verification Gate:** Play online: type, pick suggestions, portrait changes, fallback on timeout. With the model stopped (`Ashes.LLM.Stop`): every turn answers with a fallback line and the scene can still be left. (Offline trees skipped, see above.) ✋ Confirm with the user.
 
 ---
 
