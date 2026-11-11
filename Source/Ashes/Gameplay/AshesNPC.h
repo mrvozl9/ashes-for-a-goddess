@@ -1,4 +1,4 @@
-// AI-assisted: Claude Code, 10.11.2026, talkable character base with "E: Talk" prompt; placeholder scene start (Phase 2). Reviewed by <pending>.
+// AI-assisted: Claude Code, 10.11.2026, talkable character base with "E: Talk" prompt; placeholder scene start (Phase 2); opens the conversation scene (Phase 5, 11.11.2026). Reviewed by <pending>.
 
 #pragma once
 
@@ -31,6 +31,14 @@ public:
 	/** Prompt text while focused */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="NPC")
 	FText PromptText;
+
+	/** Row in DT_Characters (empty = Phase 2 placeholder scene) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="NPC")
+	FName CharacterRowName;
+
+	/** Row in DT_Scenes for the conversation started with E */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="NPC")
+	FName SceneRowName;
 
 	// IAshesInteractable
 	virtual FText GetInteractPrompt_Implementation() const override;

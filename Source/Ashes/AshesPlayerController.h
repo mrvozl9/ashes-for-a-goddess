@@ -1,4 +1,4 @@
-// AI-assisted: Claude Code, 10.11.2026, IMC_Exploration slot and camera pitch limits (Phase 1). Reviewed by <pending>.
+// AI-assisted: Claude Code, 10.11.2026, IMC_Exploration slot and camera pitch limits (Phase 1); conversation widget class (Phase 5). Reviewed by <pending>.
 // Based on the UE 5.8 Third Person template player controller (Copyright Epic Games, Inc.).
 
 #pragma once
@@ -8,6 +8,7 @@
 #include "AshesPlayerController.generated.h"
 
 class UInputMappingContext;
+class UConversationWidget;
 class UUserWidget;
 
 /**
@@ -24,6 +25,10 @@ protected:
 	/** Exploration controls (IMC_Exploration: move, look, run, interact, journal, pause) */
 	UPROPERTY(EditAnywhere, Category="Input|Input Mappings")
 	TObjectPtr<UInputMappingContext> ExplorationMappingContext;
+
+	/** WBP_Conversation, opened by the Scene Director */
+	UPROPERTY(EditAnywhere, Category="UI")
+	TSubclassOf<UConversationWidget> ConversationWidgetClass;
 
 	/** Lowest camera pitch in degrees (looking down) */
 	UPROPERTY(EditAnywhere, Category="Camera")
@@ -61,5 +66,9 @@ protected:
 
 	/** Returns true if the player should use UMG touch controls */
 	bool ShouldUseTouchControls() const;
+
+public:
+
+	TSubclassOf<UConversationWidget> GetConversationWidgetClass() const { return ConversationWidgetClass; }
 
 };

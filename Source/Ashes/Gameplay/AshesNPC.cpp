@@ -1,7 +1,9 @@
-// AI-assisted: Claude Code, 10.11.2026, talkable character base with "E: Talk" prompt; placeholder scene start (Phase 2). Reviewed by <pending>.
+// AI-assisted: Claude Code, 10.11.2026, talkable character base with "E: Talk" prompt; placeholder scene start (Phase 2); opens the conversation scene (Phase 5, 11.11.2026). Reviewed by <pending>.
 
 #include "AshesNPC.h"
 #include "AshesCharacter.h"
+#include "SceneDirectorSubsystem.h"
+#include "Engine/World.h"
 #include "Ashes.h"
 #include "Components/WidgetComponent.h"
 #include "Components/TextBlock.h"
@@ -39,6 +41,19 @@ bool AAshesNPC::CanInteract_Implementation(AActor* Interactor) const
 void AAshesNPC::Interact_Implementation(AActor* Interactor)
 {
 	AAshesCharacter* Sahra = Cast<AAshesCharacter>(Interactor);
+
+	// Real conversation (Phase 5) when this NPC has a card and a scene
+	if (!CharacterRowName.IsNone() && !SceneRowName.IsNone() && Sahra)
+	{
+		if (USceneDirectorSubsystem* Director = GetWorld() ? GetWorld()->GetSubsystem<USceneDirectorSubsystem>() : nullptr)
+		{
+			if (!Director->IsSceneActive() && Director->StartScene(this, Sahra))
+			{
+				PromptWidget->SetHiddenInGame(true);
+			}
+			return;
+		}
+	}
 
 	// Placeholder until the Scene Director exists: E starts, E again ends
 	bPlaceholderSceneActive = !bPlaceholderSceneActive;
