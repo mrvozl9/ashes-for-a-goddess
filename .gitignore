@@ -55,3 +55,7 @@ desktop.ini
 /Secrets/
 *.apikey
 apikey.txt
+
+# ---- Built-in AI (llama.cpp server + model, ~2.8 GB): downloaded by Tools/GetLocalLLM.ps1, never committed ----
+/ThirdParty/LLM/
+*.gguf

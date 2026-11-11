@@ -26,12 +26,14 @@ public class Ashes : ModuleRules
 			"GameplayTasks"
 		});
 
-		PrivateDependencyModuleNames.AddRange(new string[] { });
+		PrivateDependencyModuleNames.AddRange(new string[] { "DeveloperSettings", "Sockets" });
 
 		PublicIncludePaths.AddRange(new string[] {
 			"Ashes",
 			"Ashes/Player",
 			"Ashes/Gameplay",
+			"Ashes/Dialogue",
+			"Ashes/Core",
 			"Ashes/Variant_Platforming",
 			"Ashes/Variant_Platforming/Animation",
 			"Ashes/Variant_Combat",

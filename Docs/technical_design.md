@@ -42,7 +42,7 @@ Source/Ashes/
   Core/        AshesGameMode, AshesGameInstance, AshesSaveGame, DayNightSubsystem
   Player/      AshesCharacter, AshesPlayerController, InteractionComponent
   Dialogue/    SceneDirectorSubsystem, NPCBrainComponent, PromptBuilder, ResponseValidator,
-               LLMProvider, CloudLLMProvider, OfflineLLMProvider
+               LLMProvider, OpenAICompatibleLLMProvider, OfflineLLMProvider, LocalModelSubsystem, AshesAISettings
   Gameplay/    ClueJournalSubsystem, SuspicionComponent, HidingSpot, EavesdropZone, DanceMinigameComponent
   AI/          GuardAIController
   Data/        AshesTypes.h (structs and enums for DataTables)
@@ -64,7 +64,8 @@ Content/Ashes/
   Audio/       Music, SFX, MetaSounds
 Config/        (committed; never holds the API key)
 Docs/
-Secrets/       (git-ignored) API key file, if not using the environment variable
+ThirdParty/LLM/  (git-ignored) built-in AI: llama-server + GGUF model, downloaded by Tools/GetLocalLLM.ps1; shipped in the packaged game
+Secrets/       (git-ignored) only for an optional external endpoint key; the built-in AI needs no key
 ```
 
 ### 1.2 Core classes
@@ -82,7 +83,9 @@ Three layers (GDD Figure 6). Gameplay sends the chapter to Conversation AI; Conv
 | `USceneDirectorSubsystem` | UWorldSubsystem | Conversation FSM: intro, free talk, nudge, resolve, forced close, caught; accepts beats and clues |
 | `UNPCBrainComponent` | UActorComponent (one per character) | Character card row, relationship values, memories |
 | `UPromptBuilder` | UBlueprintFunctionLibrary | Assembles card, lore, scene, state and turns into one request |
-| `ULLMProvider` | UObject (abstract) | `Cloud` / `Local` / `Offline script` implementations |
+| `ULLMProvider` | UObject (abstract) | `UOpenAICompatibleLLMProvider` (built-in llama-server, or an optional external OpenAI-compatible endpoint such as Ollama) and `UOfflineLLMProvider` (pre-written fallback) |
+| `ULocalModelSubsystem` | UEngineSubsystem | Starts the bundled llama-server hidden on 127.0.0.1 (free port, Windows job object so it dies with the game), polls `/health`, reports Ready / Failed **(derived)** |
+| `UAshesAISettings` | UDeveloperSettings (Project Settings > Game > Ashes AI) | Model folder (`ASHES_LLM_DIR` overrides), model file, port, context, device, GPU layers, timeouts, optional external endpoint **(derived)** |
 | `UResponseValidator` | UBlueprintFunctionLibrary | JSON, lore, spoiler, safety checks; clamps value changes; checks claimed clue ids |
 | `UClueJournalSubsystem` | UGameInstanceSubsystem | Found clues per chapter, topic unlocks, key-scene gate; feeds the Rumor Journal |
 | `UDayNightSubsystem` | UWorldSubsystem | Chapter phases Day → Night → KeyScene; nightfall trigger, lighting and NPC spawns per phase |
@@ -145,10 +148,10 @@ Three layers (GDD Figure 6). Gameplay sends the chapter to Conversation AI; Conv
 ## 4. Conversation System (Free Conversation)
 - **GDD basis:** 1 Mechanics 1, 2 Mechanics 1, 8.1.
 - **Architecture:** `UInteractionComponent` → `USceneDirectorSubsystem::StartScene(SceneRow)` → per turn: `WBP_Conversation` gets text → `UPromptBuilder::Build(card, lore, scene, state, last 8 turns, line)` → `ULLMProvider::SendAsync(request)` (6 s) → `UResponseValidator::Validate` → `USceneDirectorSubsystem::ApplyTurn` → `WBP_Conversation` shows the reply and swaps the portrait.
-- **Class spec:** `ULLMProvider::SendAsync(const FLLMRequest&, FOnLLMReply Callback)` (abstract). `UCloudLLMProvider`: `FHttpModule` request, `SetTimeout(6.0f)`, JSON body, key from the environment variable `ASHES_LLM_API_KEY` or `Secrets/llm_key.txt` (never in `Config/*.ini`). `UOfflineLLMProvider`: answers from `DT_OfflineTrees` and `DT_FallbackLines`. `UResponseValidator::Validate(const FString& Json, const FValidationContext&) → FValidationResult` (parse with `FJsonObjectConverter`, known emotion, ≤ 80 words, off-topic, spoiler keywords, safety word list, clamp deltas, clue ids).
+- **Class spec:** `ULLMProvider::SendAsync(const FLLMRequest&, FOnLLMReply Callback)` (abstract). `UOpenAICompatibleLLMProvider`: `FHttpModule` POST to `<BaseUrl>/chat/completions` (OpenAI-compatible JSON), `SetTimeout(6.0f)` (6 s in the game; `EditorRequestTimeoutSeconds` = 30 s in the editor and PIE only, for slow development PCs; packaged builds always use 6 s), streamed so a timed-out answer stops on the server, `response_format: json_object`, thinking off (`chat_template_kwargs.enable_thinking = false`), completion on the game thread. Built-in model: `BaseUrl = http://127.0.0.1:<port>/v1`, no API key. `UOfflineLLMProvider`: pre-written fallback line in the same JSON (values unchanged); later from `DT_FallbackLines`. `UAshesGameInstance::RequestReply` always answers: model reply, or the fallback on timeout / error / model not ready. Debug: `Ashes.TestLLM [line]`, `Ashes.LLM.Start`, `Ashes.LLM.Stop`, `Ashes.LLM.Status`. `UResponseValidator::Validate(const FString& Json, const FValidationContext&) → FValidationResult` (parse with `FJsonObjectConverter`, known emotion, ≤ 80 words, off-topic, spoiler keywords, safety word list, clamp deltas, clue ids).
 - **Numbers & formulas:** 200 characters input; 3 suggestions; 1–4 sentences / 80 words; 6 s timeout; 1 silent retry on broken JSON; regenerate once on spoiler; 3 unsafe inputs close the scene; typing indicator ≥ 0.4 s; portrait change ≤ 1 s.
 - **Current state:** 🔲 Not started.
-- **Required work:** provider base + cloud + offline providers; prompt builder; validator with Automation tests; `WBP_Conversation`; choose the LLM provider and model (GDD: a fast low-cost hosted model, for example Claude Haiku 5.5).
+- **Required work:** provider base + cloud + offline providers; prompt builder; validator with Automation tests; `WBP_Conversation`; built-in model shipped with the game (decided 10.11.2026, see section 12).
 
 ## 4.1 Relationship Values System
 - **GDD basis:** 1 Mechanics 2, 2 Mechanics 2.
@@ -271,7 +274,7 @@ Text entry uses a UMG Editable Text box; `IMC_Exploration` is removed while typi
 - **How each mechanic is tested:**
   - Validator, JSON parsing, clamping, Scene Director transitions, clue gate, dance grading: C++ Automation specs in `Source/Ashes/Tests/`, run from Session Frontend → Automation (filter `Ashes`).
   - LLM characters: test harness (editor utility or console command) that sends scripted player lines; red-team 50 lines per character (off-topic, jailbreak, spoiler, rude); LLM judge flags spoilers and broken voice; read every flagged reply + 20 random. Targets: 0 spoiler leaks, 95% valid JSON.
-  - Offline mode: play every chapter with no key and no internet.
+  - No internet: the built-in model needs none; play every chapter offline. Fallback lines: stop the model (`Ashes.LLM.Stop`) and check every scene still completes.
   - Movement, guards, UI: Play In Editor in `L_Test`, then a full run of `L_Palace`.
   - Playtests: 5 outside players (end of week 3), second playtest in week 4.
 
@@ -284,7 +287,8 @@ Text entry uses a UMG Editable Text box; `IMC_Exploration` is removed while typi
 | What happens to the Unity skeleton in the repo | Replace in the same repo / new repo / keep for now | Decided 10.11.2026: replace in the same repo; the Unity version is kept as the Git tag `unity-skeleton` |
 | C++ vs Blueprint split | All Blueprint / C++ core + Blueprint glue | C++ core + Blueprint glue (section 0.3) |
 | Timeout | 6 s (GDD text) / 5 s (Figure 2) | 6 s (text wins) |
-| LLM provider and model | Hosted low-cost model (for example Claude Haiku 5.5) | MISSING: final choice |
+| LLM provider and model | Hosted API (e.g. Claude Haiku, no free tier) / free cloud tier (Groq, Gemini) / AI model shipped inside the game | **Built-in model shipped with the game** (decided 10.11.2026 with Merve: free, no account, no key, no internet; players download nothing else): llama.cpp `llama-server` b12138 (Vulkan, MIT) + Qwen3.5-4B Q4_K_M GGUF (Apache 2.0, 2.7 GB). Optional external OpenAI-compatible endpoint (Ollama / cloud) as a setting. MISSING: speed check on the stronger PC (laptop RTX 3050 Ti 4 GB: 7–12 tokens/s, 13–30 s per reply; target 6 s) |
+| Full offline dialogue trees (`DT_OfflineTrees`) | Write a pre-written tree per scene / only fallback lines | Proposed 10.11.2026: no full trees (the built-in model is always available); keep ~120 fallback lines. MISSING: team confirmation |
 | Editor access for the AI agent | MCP + VibeUE / user does editor work | MCP + VibeUE (course template); installed as submodule `Plugins/VibeUE`, working on PC 1 (10.11.2026); MISSING: confirm on PC 2 |
 | Court NPCs (Nura, Idris) as LLM | LLM / pre-written | Pre-written first; LLM if the week-2 risk check passes |
 | Dance minigame | Minigame / cutscene | Minigame every night (10.11) |
@@ -309,4 +313,4 @@ Text entry uses a UMG Editable Text box; `IMC_Exploration` is removed while typi
 | 9. Audio | FILLED (derived) |
 | 10. Performance | FILLED (MISSING: fps target) |
 | 11. Testing | FILLED |
-| 12. Open Decisions | FILLED (MISSING: LLM provider) |
+| 12. Open Decisions | FILLED (MISSING: speed on PC 2, offline trees confirmation) |

@@ -2,6 +2,25 @@
 
 > Newest entry on top. Write one entry at the end of every work session.
 
+## 11.11.2026 (Phase 3: editor-only AI timeout)
+- **Done:** New setting `EditorRequestTimeoutSeconds` (30 s) used only in the editor and Play-in-Editor, so real replies show up on the slow laptop while developing; packaged builds always use `RequestTimeoutSeconds` (6 s), nothing to switch back before packaging. Tested: two `Ashes.TestLLM` runs in the editor answered in 8.7 s and 7.7 s (26–28 tok/s). GDD 8.1 and technical_design updated.
+- **Next:** Speed test on the stronger PC; then Phase 4.
+- **Problems:** None.
+- **Commit:** `[phase 3]: 30 s AI timeout in the editor, 6 s in the game`
+
+## 11.11.2026 (Phase 3 fix: cancel timed-out AI requests)
+- **Done:** Fixed the second-request delay (debug.md Bug 1): AI requests are now streamed, so when the game gives up after the timeout the server stops writing that answer. Verified: two back-to-back `Ashes.TestLLM` runs with 6 s both fall back after ~6 s with the server idle right after; with 30 s Zafir's reply came in 9.0 s (221 tokens, 26 tok/s on a freshly opened editor). Closing the editor also stops llama-server (job object).
+- **Next:** Merve decides on compact answers (fix B); word-by-word display planned for Phase 5; speed test on the stronger PC.
+- **Problems:** The model fills `beats` with free text instead of beat ids; the prompt builder and validator (Phase 4) handle that.
+- **Commit:** `[phase 3]: cancel timed-out AI requests`
+
+## 10.11.2026 (Phase 3: built-in AI model)
+- **Done:** Decision with Merve: the AI model ships inside the game (free, no account, no key, no internet; players download nothing else). Chosen: llama.cpp `llama-server` b12138 (Windows, Vulkan, MIT) + Qwen3.5-4B Q4_K_M GGUF (Apache 2.0, 2.7 GB); `Tools/GetLocalLLM.ps1` downloads both pinned with SHA-256 checks into git-ignored `ThirdParty/LLM` (or `ASHES_LLM_DIR`; on PC 1: `C:\Users\aliio\Projects\AshesLLM`). C++: `ULLMProvider`, `UOpenAICompatibleLLMProvider` (FHttpModule, 6 s timeout, JSON output, thinking off), `UOfflineLLMProvider` (fallback JSON), `ULocalModelSubsystem` (hidden llama-server on a free 127.0.0.1 port, `/health` polling, Windows job object), `UAshesAISettings` (Project Settings > Game > Ashes AI), `UAshesGameInstance` (AI mode, `RequestReply` with automatic fallback; set as GameInstanceClass), console commands `Ashes.TestLLM`, `Ashes.LLM.Start/Stop/Status`. Docs: GDD 8.1–8.4, technical_design (classes, section 12 decision), pipeline (Phase 3, scope), Licenses.md.
+- **Tests (PC 1, laptop RTX 3050 Ti 4 GB + Intel UHD):** server ready in 13.6 s; `Ashes.TestLLM` → valid in-character JSON from Zafir in 9.7 s (154 tokens, 18.1 tok/s); 6 s timeout → fallback after 6.3 s, no freeze; model file missing in PIE → game instance answers with a fallback at once. Manual runs: 7–12 tok/s with the editor open; CPU-only 11.8 tok/s faster than the laptop GPU.
+- **Next:** Speed test on Merve's stronger PC (target: reply under 6 s). Team confirms dropping the full offline dialogue trees. Then Phase 4 (prompt builder, validator, lore + Zafir's card).
+- **Problems:** Too slow on the laptop for the 6 s target (10–30 s per reply). If the stronger PC is also slow: smaller model, shorter replies or word-by-word streaming (decide at the Phase 12 risk check). Not yet tested: the server being killed when the game crashes (job object).
+- **Commit:** `Phase 3: built-in AI model (llama.cpp + Qwen3.5-4B) with fallback`
+
 ## 10.11.2026 (Phase 2: interaction system)
 - **Done:** C++ `IAshesInteractable` (prompt text, can-interact, interact, focus), `UInteractionComponent` on Sahra (sphere overlap every 0.1 s on a timer, radius 200 cm, nearest target in front, `OnFocusChanged` / `OnInteract`; E = `IA_Interact` → `TryInteract`), `AAshesNPC` (talkable character base with a screen-space "E: Talk" Widget Component; Phase 2 placeholder: E logs "Start scene: <name>" and freezes Sahra, E again logs "End scene" and unfreezes). Through VibeUE: `WBP_InteractPrompt` (Old gold frame, Night plum panel, Moon cream text), `BP_Zafir` (Manny mannequin, idle) placed in `L_Test` at (−900, 0); `BP_Sahra` got `IA_Interact`. Radius recorded in `technical_design.md` section 3; `IAshesInteractable` and `AAshesNPC` added to the class table (derived). Scripted PIE test in `L_Test`: no prompt at 600 cm, prompt at 180 cm, E → "Start scene: Zafir" and W no longer moves Sahra, E again → "End scene: Zafir" and movement back, prompt hidden at 700 cm; no errors in the Output Log.
 - **Next:** Merve tests the Phase 2 gate in PIE by hand, then pull request → review → merge. Then Phase 3 (LLM provider, cloud + offline): needs the provider / model choice and a spending cap.
