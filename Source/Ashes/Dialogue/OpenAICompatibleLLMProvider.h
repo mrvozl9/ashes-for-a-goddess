@@ -1,4 +1,4 @@
-// AI-assisted: Claude Code, 10.11.2026, HTTP provider for OpenAI-compatible chat endpoints (built-in llama-server, Ollama, cloud) (Phase 3). Reviewed by <pending>.
+// AI-assisted: Claude Code, 10.11.2026, HTTP provider for OpenAI-compatible chat endpoints (built-in llama-server, Ollama, cloud) (Phase 3); streamed so a timed-out answer stops on the server (11.11.2026). Reviewed by <pending>.
 
 #pragma once
 
