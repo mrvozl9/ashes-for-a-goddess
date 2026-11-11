@@ -51,7 +51,7 @@ namespace AshesLLMDebug
 		static TStrongObjectPtr<UOfflineLLMProvider> Fallback(NewObject<UOfflineLLMProvider>());
 		Provider->BaseUrl = Local->GetBaseUrl();
 		Provider->Model = Settings->ModelAlias;
-		Provider->TimeoutSeconds = Settings->RequestTimeoutSeconds;
+		Provider->TimeoutSeconds = Settings->GetEffectiveRequestTimeout();
 
 		const FLLMRequest Request = MakeZafirTestRequest(PlayerLine);
 		Provider->SendAsync(Request, FOnLLMReply::CreateLambda([Request](const FLLMReply& Reply)

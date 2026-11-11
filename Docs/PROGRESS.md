@@ -2,6 +2,12 @@
 
 > Newest entry on top. Write one entry at the end of every work session.
 
+## 11.11.2026 (Phase 3: editor-only AI timeout)
+- **Done:** New setting `EditorRequestTimeoutSeconds` (30 s) used only in the editor and Play-in-Editor, so real replies show up on the slow laptop while developing; packaged builds always use `RequestTimeoutSeconds` (6 s), nothing to switch back before packaging. Tested: two `Ashes.TestLLM` runs in the editor answered in 8.7 s and 7.7 s (26–28 tok/s). GDD 8.1 and technical_design updated.
+- **Next:** Speed test on the stronger PC; then Phase 4.
+- **Problems:** None.
+- **Commit:** `[phase 3]: 30 s AI timeout in the editor, 6 s in the game`
+
 ## 11.11.2026 (Phase 3 fix: cancel timed-out AI requests)
 - **Done:** Fixed the second-request delay (debug.md Bug 1): AI requests are now streamed, so when the game gives up after the timeout the server stops writing that answer. Verified: two back-to-back `Ashes.TestLLM` runs with 6 s both fall back after ~6 s with the server idle right after; with 30 s Zafir's reply came in 9.0 s (221 tokens, 26 tok/s on a freshly opened editor). Closing the editor also stops llama-server (job object).
 - **Next:** Merve decides on compact answers (fix B); word-by-word display planned for Phase 5; speed test on the stronger PC.

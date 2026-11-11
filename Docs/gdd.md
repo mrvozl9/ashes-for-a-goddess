@@ -524,7 +524,7 @@ The LLM writes what the characters say, but our own C++ code decides what actual
 
 | Failure | Detection | What the player sees |
 | :-- | :-- | :-- |
-| Timeout (over 6 s) or network error | Request timeout or error code | "Hesitates" animation, then a pre-written line for this beat and emotion; values unchanged |
+| Timeout (over 6 s in the game; 30 s in the editor while developing) or network error | Request timeout or error code | "Hesitates" animation, then a pre-written line for this beat and emotion; values unchanged |
 | Broken JSON | Parser fails | 1 silent retry, then the fallback line |
 | Off-topic input | `off_topic` flag + keyword list | In-character reply |
 | Spoiler leak | Secret not in prompt + keyword check | Regenerate once, then fallback |

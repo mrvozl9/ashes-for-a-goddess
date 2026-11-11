@@ -15,7 +15,7 @@ void UAshesGameInstance::Init()
 	const UAshesAISettings* Settings = GetDefault<UAshesAISettings>();
 
 	ModelProvider = NewObject<UOpenAICompatibleLLMProvider>(this);
-	ModelProvider->TimeoutSeconds = Settings->RequestTimeoutSeconds;
+	ModelProvider->TimeoutSeconds = Settings->GetEffectiveRequestTimeout();
 	FallbackProvider = NewObject<UOfflineLLMProvider>(this);
 
 	if (!Settings->ExternalBaseUrl.IsEmpty())
