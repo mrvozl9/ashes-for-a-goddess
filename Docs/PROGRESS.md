@@ -2,10 +2,16 @@
 
 > Newest entry on top. Write one entry at the end of every work session.
 
+## 12.11.2026 (GDD and all docs updated: course, team of four, 7 chapters)
+- **Done:** Course name changed to **Advanced Game Programming** everywhere. GDD Word file updated (`BurntPotatoGames_GDD_updated.docx` in the project files: course row, team of four, built-in AI as a must, 142 fallback lines, offline trees, 36 clues, barks, sections 12–13). `Docs/gdd.md` rebuilt as version 1.4 (7 chapters, turn limits Zafir 11 / Vashir 7 / others 5, minor characters, the king's servant, ambient NPCs, mechanics 9 Living Palace and 10 Spirit Chapter, Themes 1–9). `Docs/level-design.md` rewritten for 7 chapters (rooms, who is where per chapter, guards, clues, hiding and eavesdrop spots, Chapter 7 embers; patrol details marked *proposed*). `Docs/technical_design.md`: new classes and data (`DT_Barks`, `DT_OfflineTrees`, fallback pick order, `UFollowerComponent`, `UBarkComponent`, `USpiritWalkSubsystem` *proposed*, `ClosingRomance` *proposed*), offline trees decided, statuses for Phases 0–5. `Docs/production_pipeline.md`: scope, cut order and Phases 7–22 rewritten for 7 chapters and four owners (old-plan note removed). `Docs/design.md`: names to use, Chapters 6–7 flow, "do" objectives, bark bubble, ember counter. README, SKILL, CLAUDE, debug, PromptLog and Licenses updated for the course and the team.
+- **Next:** Merve reviews the docs and the lines in the Master Lore doc and decides the Chapter 1 title (Garden of Ash or Dusk) and the *proposed* level values. Tala and Baha set up their PCs. Phase 6 prototype gate on Sun 15.11.
+- **Problems:** Code defaults still say `TurnLimit = 10`; the data rows set the real limits (Baha may change the default in Phase 7). The Google Doc version of the GDD cannot be edited from here (connector not connected); the Word file is the updated copy.
+- **Commit:** `Docs: course rename, team of four and 7-chapter story in every document`
+
 ## 12.11.2026 (team of four: work split again)
 - **Done:** Tala and Baha joined Merve and Tuana. Work split by role: Merve level design (plus story, lines and data entry), Tuana art, Tala audio, VFX and other work (dance songs, charts and animations, cutscene sequences, credits, playtests), Baha code from Phase 7 on. `production_pipeline.md` tracker owners updated (Phases 13 and 14 renamed for the 7-chapter story); `Docs/workplan/index.html` rewritten from 12.11 with four people and seven chapters (earlier days kept as they were).
 - **Next:** Tala and Baha set up their PCs (clone, LFS, VibeUE submodule, Visual Studio build, `Tools/GetLocalLLM.ps1`). Merve reviews the lines in the Master Lore doc; then the remaining docs (gdd, level-design, technical_design, pipeline phase tasks) move to 7 chapters.
-- **Problems:** The pipeline's Phase 13–14 task lists still describe the old 4-chapter plan (see the note there).
+- **Problems:** The pipeline's Phase 13–14 task lists still describe the old 4-chapter plan (see the note there). (Fixed later on 12.11, see the entry above.)
 - **Commit:** `Split the work plan for four people`
 
 ## 11.11.2026 (Phase 5: conversation screen)

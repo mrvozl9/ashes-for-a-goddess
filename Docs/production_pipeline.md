@@ -8,7 +8,9 @@
 >
 > **Engine (10.11.2026):** Unreal Engine 5.8, C++ for the testable core and Blueprints for glue, UI and animation (see `technical_design.md`). The earlier Unity skeleton is kept as the Git tag `unity-skeleton`.
 >
-> **Updated 10.11.2026 for the agreed gameplay:** each chapter is a day and a night in the open palace. Day = gather clues into the **Rumor Journal** while **avoiding patrolling guards** (hiding spots, eavesdropping). Night = the **nightly dance** minigame to keep Sahra's cover. Then the key conversation and a cutscene. Guards and the dance are now must-haves.
+> **Updated 10.11.2026 for the agreed gameplay:** each chapter is a day and a night in the open palace. Day = gather clues into the **Rumor Journal** while **avoiding patrolling guards** (hiding spots, eavesdropping). Night = the **nightly dance** minigame to keep Sahra's cover. Then the key conversation and an in-engine ending. Guards and the dance are now must-haves.
+>
+> **Updated 12.11.2026 for the 7-chapter story (course: Advanced Game Programming):** Prologue (2D) → Chapters 1–6 in the palace (1 The Garden of Ash, 2 The Practice Room, 3 The Private Dance, 4 The King's Favor, 5 Rooftop of Smoke, 6 The Trap) → Chapter 7 The Pyre (3D spirit walk in the ghost palace) → Epilogue (2D). Each palace chapter has a main quest, 2 "do" objectives, 6 clues (any 3 open the key scene), a night dance (30 → 45 s) and an in-engine ending. Turn limits: Zafir 11, Vashir 7, Nura, Idris and the 4 minor characters (Omar, Ilyas, Tariq, Aisha) 5 at most, about 10 ambient NPCs 1 line. All game texts (cards, 36 clues, 60 barks + 7 eavesdrops, 142 fallback lines, full offline trees) are in the Master Lore document. Where Phase 0–6 tasks below mention the old plan (10 turns, fallback lines only), they are kept as written at the time.
 
 **Legend:** `[C++]` C++ code · `[BP]` Blueprint / editor work · `[UE]` project, level or editor setup · `[REPO]` Git · `[TOOLS]` tool setup · `[ART]` assets · `[UI]` interface · `[AUDIO]` sound · `[WRITE]` lore, cards, lines · `⚠️` risk / decision
 
@@ -25,35 +27,38 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 ```
 
 **Stage 1 goal:** Sahra walks and talks in the test level; one conversation with Zafir (Chapter 1) works end to end, online through the LLM and offline through pre-written lines, with the validator in between.
-**Stage 2 goal:** Week 2 builds every gameplay system and finishes Chapter 1 as a complete day and night (clues and Rumor Journal, guards with hiding spots and eavesdropping, nightly dance, key scene, cutscene). Week 3 fills Chapters 2–4, the cutscenes (prologue, pyre, epilogue), HUD and menus, offline mode for every scene. First playtest with outside players.
-**Stage 3 goal:** Art and audio pass, tuning from playtests (dance difficulty, patrol timing, clue counts), red-team pass with 0 spoiler leaks, Windows build that starts in offline mode without a key, credits and AI disclosure.
+**Stage 2 goal:** Week 2 builds every gameplay system and finishes Chapter 1 as a complete day and night (clues and Rumor Journal, guards with hiding spots and eavesdropping, nightly dance, key scene, in-engine ending). Week 3 fills Chapters 2–6, the Chapter 7 spirit walk, the 2D Prologue and Epilogue, HUD and menus, offline mode (trees and fallback lines) for every scene. First playtest with outside players.
+**Stage 3 goal:** Art, VFX and audio pass, tuning from playtests (dance difficulty, patrol timing, clue counts, turn limits), red-team pass with 0 spoiler leaks, Windows build that runs the built-in model without a key and falls back to offline mode, credits and AI disclosure.
 
 ### Scope for 4 weeks
 | Priority | Feature | In the 4-week plan |
 | :-- | :-- | :-- |
-| Must | Open palace (hub + 5 rooms), third-person movement and camera | Yes (grey-box week 2, art week 4) |
-| Must | LLM conversations with Zafir and Vashir (prompt builder, validator, clamped values) | Yes (weeks 1–2) |
-| Must | Scene Director with nudge and forced close | Yes (week 2) |
-| Must (new 09.11) | Clues and Rumor Journal; key scene locked until enough clues | Yes (week 2) |
-| Must (raised 10.11) | Guards on timed routes, Suspicion, hiding spots, eavesdropping | Yes (week 2), simplified: no chasing |
-| Must (raised 10.11) | Nightly dance minigame, one per chapter, rewards and Suspicion | Yes (week 2 system, week 3 songs) |
-| Must | Day / night chapter flow; every scene completes with fallback lines when the AI fails | Yes (weeks 2–3) |
+| Must | Open palace Sama'zar (Garden of Dusk hub + 5 rooms, practice room, servants' passage, City Gate), third-person movement and camera | Yes (grey-box week 2, art week 4) |
+| Must | LLM conversations with Zafir (11 turns) and Vashir (7 turns) (prompt builder, validator, clamped values) | Yes (weeks 1–2) |
+| Must (decided 11.11) | Nura, Idris and the 4 minor characters (Omar, Ilyas, Tariq, Aisha) as LLM characters, 5 turns at most | Yes (week 3 content); offline nodes for every clue |
+| Must | Scene Director with nudge, forced close and forced beats (Chapter 6) | Yes (week 2) |
+| Must (new 09.11) | Clues and Rumor Journal; 36 clues, key scene locked until 3 of 6 | Yes (week 2 system, week 3 content) |
+| Must (raised 10.11) | Guards on timed routes, Suspicion, hiding spots, eavesdropping (7 eavesdrops) | Yes (week 2), simplified: no chasing |
+| Must (new 11.11) | Following (Chapter 4 tail) and being followed (Chapter 5 king's servant) | Yes (week 3) |
+| Must (raised 10.11) | Nightly dance minigame, 6 nights (30 → 45 s), rewards and Suspicion | Yes (week 2 system, week 3 songs and charts) |
+| Must | Day / night chapter flow; the palace's look per chapter (moon, banners, blossoms) | Yes (weeks 2–3) |
+| Must (decided 12.11) | Offline mode: full offline trees for 7 key scenes and every side character's clue + 142 fallback lines | Yes (week 2 code, week 3 data) |
 | Must (new 10.11) | Built-in AI model shipped inside the game (llama-server + Qwen3.5-4B, no key, no internet) | Yes (week 1 connection, week 4 packaging) |
-| Must | 4 chapters + prologue, pyre, epilogue cutscenes | Yes (week 3) |
-| Must | Conversation UI, exploration HUD, title, pause, chapter cards | Yes (weeks 1–3) |
-| Must | Placeholder portraits, basic fire VFX, 1 music loop + 1 dance song per night | Yes |
-| Should | Memories + generated pyre confession | Week 3 if the Phase 12 risk check passes |
-| Should | Nura and Idris as LLM characters | ⚠️ Pre-written by default (minor NPCs always pre-written) |
-| Should | Final portraits, 3 music loops, phoenix-rise VFX | Week 4 if time |
+| Must | 7 chapters: 6 palace chapters + Chapter 7 spirit walk (6 embers); 2D Prologue and Epilogue; in-engine chapter endings; `LS_Trap` | Yes (week 3) |
+| Must | Conversation UI, exploration HUD, title, pause, chapter cards, Rumor Journal | Yes (weeks 1–3) |
+| Must | Placeholder portraits, basic fire VFX, 1 music loop + 1 dance song per night (or one song at rising tempo) | Yes |
+| Should (new 11.11) | About 10 ambient NPCs with 60 barks | Yes (week 3) if Phase 12 passes; else 5 NPCs |
+| Should | Memories + generated Chapter 7 confession (6 pieces; pre-written fallback always there) | Week 3 if the Phase 12 risk check passes |
+| Should | Final portraits, 3 music loops, phoenix-rise and ghost-palace VFX | Week 4 if time |
 | Nice | TTS for Zafir, varying epilogue lines, optional external AI endpoint setting | ⚠️ Cut (varying epilogue lines only if memories land early) |
-| Proposed cut (10.11) | Full pre-written offline dialogue trees for every scene | ⚠️ Not built while the built-in model works; ~120 fallback lines stay (MISSING: team confirmation) |
 
 ### Cut order if a phase slips more than one day
-1. Generated pyre confession and memories (pre-written pyre).
-2. Chapter 3 clue count from 3 required to 2; Chapter 4 day phase shortened to a walk to the King's Chamber.
-3. Dance songs: reuse one song with a faster tempo each night instead of 4 songs.
+1. Generated memories and the generated Chapter 7 confession (the pre-written 6-piece confession plays).
+2. Ambient NPCs from 10 to 5 (barks for the rest are dropped).
+3. Dance songs: reuse one song with a faster tempo each night instead of 6 songs.
 4. Eavesdrop zones: keep 1 per chapter.
-5. Final portraits and custom models (placeholders stay).
+5. Side characters' clue count: Chapters 4–5 required clues from 3 to 2.
+6. Final portraits and custom models (placeholders stay).
 
 ---
 
@@ -80,7 +85,7 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 | 13 | Chapters 2–6 content | 2 | Merve (levels, data), Baha (chapter logic), Tala (dance songs), Tuana (portraits) | Wed 25.11 | ⬜ NOT STARTED | | |
 | 14 | Cutscene system, 2D parts + Chapter 7 spirit walk | 2 | Baha (player, spirit walk), Tala (sequences, VFX), Tuana (2D art), Merve (ghost palace) | Wed 25.11 | ⬜ NOT STARTED | | |
 | 15 | HUD, menus, chapter cards | 2 | Tuana (art) + Baha (wiring) | Thu 26.11 | ⬜ NOT STARTED | | |
-| 16 | Memories + pyre confession (should) | 2 | Baha | Fri 27.11 | ⬜ NOT STARTED | | |
+| 16 | Memories + Chapter 7 confession (should) | 2 | Baha | Fri 27.11 | ⬜ NOT STARTED | | |
 | 17 | 🏁 Content gate + playtest 1 | 2 | All (Tala runs the playtest) | Sun 29.11 | ⬜ NOT STARTED | | user sign-off |
 | 18 | Art pass (palace kit, portraits, VFX) | 3 | Tuana (art), Tala (VFX), Merve (lighting) | Tue 01.12 | ⬜ NOT STARTED | | |
 | 19 | Audio pass | 3 | Tala | Tue 01.12 | ⬜ NOT STARTED | | |
@@ -93,7 +98,7 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 # STAGE 1: PROTOTYPE (Week 1 · 09.11 – 15.11)
 
 ## PHASE 0: Project Setup & Test Level
-**Objective:** An Unreal Engine 5.8 C++ project both members open, with `L_Test` and `L_Palace` levels that run. Replaces the earlier Unity skeleton (decided 10.11.2026: same repository, Unity kept as the tag `unity-skeleton`).
+**Objective:** An Unreal Engine 5.8 C++ project every team member opens, with `L_Test` and `L_Palace` levels that run. Replaces the earlier Unity skeleton (decided 10.11.2026: same repository, Unity kept as the tag `unity-skeleton`).
 **Depends on:** none.
 
 **Tasks:**
@@ -103,13 +108,13 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 - [UE] Enable plugins: Enhanced Input (default), Gameplay Debugger, Functional Testing (Automation) (MISSING: Functional Testing not enabled yet); ✅ add the C++ modules `HTTP`, `Json`, `JsonUtilities`, `UMG`, `AIModule`, `NavigationSystem`, `GameplayTasks` to `Ashes.Build.cs` (derived).
 - ✅ [UE] Create `Content/Ashes/` (folders from `design.md` section 10), `L_Test` (floor, walls, a ramp, night sky, Nav Mesh Bounds Volume) and an empty `L_Palace`; set `L_Test` as the editor startup map and `GM_Ashes` as the default game mode.
 - [UE] Project Settings → Editor → Source Control: Git with LFS (MISSING: each PC sets this in the editor); ✅ "One File Per Actor" is on for `L_Palace` (World Settings → Use External Actors).
-- [UE] Both members clone with Git LFS, build in Visual Studio 2022 (or Rider), and open the project on the same engine version; `git lfs lock` before editing any `.uasset` / `.umap`.
+- [UE] Every team member clones with Git LFS, build in Visual Studio 2022 (or Rider), and open the project on the same engine version; `git lfs lock` before editing any `.uasset` / `.umap`.
 - [TOOLS] Install MCP + VibeUE (course setup) so the AI agent can reach the editor; confirm every PC has it. ✅ PC 1 (Merve, 10.11.2026); MISSING: Tuana's, Tala's and Baha's PCs.
 - [UE] Tala and Baha (joined 12.11.2026): clone with Git LFS, `git submodule update --init`, build in Visual Studio, open on UE 5.8, run `Tools/GetLocalLLM.ps1`; Baha reads `CLAUDE.md`, `SKILL.md` and `technical_design.md` before taking over the code.
 - ✅ [WRITE] Task board: GitHub Projects board started (Merve keeps it).
 
 **Deliverable:** `main` opens the Unreal project and `L_Test` plays with no errors on both PCs.
-**Verification Gate:** Open the project on both PCs, press Play In Editor (PIE) in `L_Test`, the Output Log shows no errors and the C++ build succeeds. ✋ Confirm with the user before the next phase.
+**Verification Gate:** Open the project on every team member's PC, press Play In Editor (PIE) in `L_Test`, the Output Log shows no errors and the C++ build succeeds. ✋ Confirm with the user before the next phase.
 
 ---
 
@@ -163,7 +168,7 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 **Depends on:** Phase 3.
 
 **Tasks:**
-- [WRITE] Merve (Tuana reviews): lore bible (~600 words, hand-written); Zafir's character card (add the line on when he turns cold or angry, from the 03.11 test); Chapter 1 scene card with beats and turn limit 10.
+- [WRITE] Merve (Tuana reviews): lore bible (~600 words, hand-written); Zafir's character card (add the line on when he turns cold or angry, from the 03.11 test); Chapter 1 scene card with beats and turn limit 10 (12.11: now 11; all cards drafted in the Master Lore doc, waiting for the team's review and data entry).
 - ✅ [C++] Row structs `FCharacterCardRow`, `FSceneCardRow` (`Source/Ashes/Data/AshesTypes.h`) and DataTables `DT_Characters`, `DT_Scenes`, Data Asset `DA_LoreBible` (class `UAshesLoreBible`) in `Content/Ashes/Data`, filled with placeholder text from the GDD until Tuana's hand-written versions; `UPromptBuilder` (card, lore, scene, state words, last 8 turns + new line).
 - ✅ [C++] `UResponseValidator`: JSON parse (also inside code fences), 1 silent retry, emotion whitelist with fallback, 80-word limit, `off_topic`, spoiler keywords (regenerate once), safety word list (placeholder), delta clamp, beat / clue ids only.
 - ✅ [C++] Automation tests: valid JSON, broken JSON, unknown emotion, +50 Trust clamped to +8, over-long reply, plus free-sentence beats, spoiler / safety and prompt order / secrets / history (8 tests, all green 11.11.2026). Console `Ashes.TalkZafir <line>` talks through the real prompt and validator.
@@ -180,7 +185,7 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 **Tasks:**
 - [UI] Tuana (style): `WBP_Conversation` per `design.md` (dialogue panel, small portraits, hint line, large portrait, 3 reply buttons, 200-character input, Send, turns left) with placeholder portraits. ✅ Placeholder version built 11.11.2026 (design.md colours; widget names fixed by `UConversationWidget`); Tuana restyles it (keep the widget names).
 - ✅ [C++] `WBP_Conversation` logic in `UConversationWidget` (C++ instead of Blueprint): portrait swap (emotion → `T_Portrait_<Name>_<Emotion>` if it exists, else a placeholder colour), typing indicator ≥ 0.4 s, input cut at 200 (MISSING: warning text), 1 / 2 / 3 picks (typed into the empty box or clicked), Send, Leave.
-- [WRITE] Merve: Chapter 1 fallback lines for Zafir (the full offline dialogue tree is skipped: team decision 11.11.2026, the built-in model is always there; fallback lines only).
+- [WRITE] Merve: Chapter 1 fallback lines for Zafir (11.11: fallback lines only. **Changed 12.11.2026:** full offline trees are back in scope and written in the Master Lore doc together with 142 fallback lines; the tree walker is built in Phase 7).
 - ✅ [C++] Turn counter and simple end at 10 turns in `USceneDirectorSubsystem` (minimal; full Director comes in Phase 7); E on an `AAshesNPC` with a card + scene row opens the screen; prompt warm-up when the scene opens; console `Ashes.Scene.Say / Pick / End`.
 
 **Deliverable:** A playable Zafir conversation from E to the 10th turn.
@@ -193,8 +198,8 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 **Depends on:** Phases 0–5.
 
 **Tasks:**
-- Both: play `L_Test` end to end, online and offline.
-- ⚠️ Early warning check (GDD 13.5): average reply over 4 s, or under 90% valid JSON? If yes → offline mode becomes the default and court NPCs and the pyre confession become pre-written.
+- All: play `L_Test` end to end, online and offline.
+- ⚠️ Early warning check (GDD 13.5): average reply over 4 s, or under 90% valid JSON? If yes → offline mode becomes the default and the side characters and the Chapter 7 confession use their pre-written trees and lines.
 - Update this tracker, `PROGRESS.md` and the task board.
 
 **Deliverable:** Signed-off prototype; risk decision recorded in Notes.
@@ -212,12 +217,14 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 
 **Tasks:**
 - [C++] `USceneDirectorSubsystem` state machine: Intro → FreeTalk → Nudge (2 turns left or 3 stalled) → Resolve / ForcedClose → NextChapter; Caught at Suspicion 100.
-- [C++] `UNPCBrainComponent` with Trust 20 / Affection 10 (±8), Favor 30 (±6), Suspicion 10 (+10 / −5); thresholds 50, 60, 70; value-to-word bands for the prompt.
-- [WRITE] Merve: hint lines ("Zafir looks at you a moment too long.") per value change; nudge notes per scene.
-- [C++] Automation tests for transitions and thresholds.
+- [C++] Baha: `UNPCBrainComponent` with Trust 20 / Affection 10 (±8), Favor 30 (±6), Suspicion 10 (+10 / −5); unlocks Trust 30, 50, 60 (romance route), Affection 40, 60, Favor 60, Suspicion 100; value-to-word bands for the prompt; route (romance / comrade).
+- [C++] Baha: turn limits per scene row (Zafir 11, Vashir 7, others 5); forced beats for `Ch6_VashirTrap`; `ClosingRomance` field in `FSceneCardRow` (proposed).
+- [C++] Baha: offline mode: `FOfflineNodeRow` / `DT_OfflineTrees` tree walker in `UOfflineLLMProvider`, `FFallbackLineRow` / `DT_FallbackLines` with the pick order (scene + beat + emotion → clue → scene → any; never the same line twice in a row).
+- [WRITE] Merve: enter the Master Lore cards, scene rows, hint lines, nudge notes, 142 fallback lines and the offline trees into the DataTables (CSV import).
+- [C++] Automation tests for transitions, thresholds and offline trees (every key-scene path reaches its required beats).
 
-**Deliverable:** The Zafir scene resolves with full or weaker outcome; hints instead of numbers.
-**Verification Gate:** Reach the goal → Resolve; stall → Nudge; hit the limit → Forced close; tests green. ✋ Confirm with the user.
+**Deliverable:** The Zafir scene resolves with full or weaker outcome, online and offline; hints instead of numbers.
+**Verification Gate:** Reach the goal → Resolve; stall → Nudge; hit the limit → Forced close; with the model stopped the Chapter 1 tree reaches `uneasy_truce`; tests green. ✋ Confirm with the user.
 
 ---
 
@@ -226,13 +233,13 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 **Depends on:** Phase 7.
 
 **Tasks:**
-- [UE] Grey-box hub + 5 rooms at about 6000 × 3000 cm in `L_Palace` (see `level-design.md` section 9); stairs to the Rooftop; Player Start and checkpoint in the Dancers' Quarters; King's Chamber as a `BP_RestrictedVolume`; locked city gate; Nav Mesh Bounds Volume (check with `P`).
-- [UE] Mark hiding spots (curtains, lattice screens, alcoves) and eavesdrop stops in the grey-box, even before they work.
-- [C++] `UDayNightSubsystem` and `AAshesGameMode`: chapters, phases of the day (Day, Night, KeyScene), checkpoint save at chapter start (`UAshesSaveGame`, USaveGame), `BP_NPCSpawnPoint` per chapter and per phase; Continue loads the save.
-- [C++] Nightfall trigger: when the required clues are found or the player chooses "Go to perform" (*proposed*), the goal line switches to "Perform in the Throne Hall"; lighting switches to night (Directional Light, Sky Atmosphere and Post Process Volume).
+- [UE] Merve: grey-box the Garden of Dusk hub (running fountain) + 5 rooms at about 6000 × 3000 cm in `L_Palace` (see `level-design.md` sections 3 and 13), the practice room, the servants' passage behind the King's Chamber curtain and the locked City Gate; stairs to the Rooftop; Player Start and checkpoint in the Dancers' Quarters; King's Chamber as a `BP_RestrictedVolume`; Nav Mesh Bounds Volume (check with `P`).
+- [UE] Merve: mark hiding spots (curtains, lattice screens, alcoves), eavesdrop stops and chapter spawn points (`Ch<N>.Day` / `Ch<N>.Night`) in the grey-box, even before they work.
+- [C++] Baha: `UDayNightSubsystem` and `AAshesGameMode`: chapters 1–7, phases of the day (Day, Night, KeyScene, Ending), checkpoint save at chapter start (`UAshesSaveGame`, USaveGame), `BP_NPCSpawnPoint` per chapter and per phase, chapter-tagged dressing (moon, lanterns, banners, blossoms); Continue loads the save.
+- [C++] Baha: nightfall trigger: when the required clues are found or the player chooses "Go to perform" (*proposed*), a bell rings and the goal line switches to "Perform in the Throne Hall"; lighting switches to night (Directional Light, Sky Atmosphere and Post Process Volume; Merve sets the lights).
 
 **Deliverable:** Walk the whole palace; Chapter 1 phases advance with placeholder triggers.
-**Verification Gate:** Every room except the King's Chamber is reachable; Day → Night → Key scene → Chapter 2 card works; quit and Continue returns to the checkpoint. ✋ Confirm with the user.
+**Verification Gate:** Every room except the King's Chamber and the City Gate is reachable; Day → Night → Key scene → in-engine ending → Chapter 2 card works; quit and Continue returns to the checkpoint. ✋ Confirm with the user.
 
 ---
 
@@ -241,10 +248,10 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 **Depends on:** Phase 8.
 
 **Tasks:**
-- [C++] `FClueRow` / `DT_Clues` and `UClueJournalSubsystem`: accept a clue only if the NPC holds it this chapter; ignore duplicates; required-clue gate for the key scene; clue → extra suggested reply and prompt hint for later NPCs.
-- [C++] Add `clues` to the LLM JSON and to the validator; pre-written NPC trees give clues directly.
+- [C++] Baha: `FClueRow` / `DT_Clues` and `UClueJournalSubsystem`: accept a clue only if the NPC holds it this chapter; ignore duplicates; "requires clue" links (e.g. Aisha in Chapter 3); gate for the key scene (3 of 6; none in Chapters 6–7); clue → extra suggested reply and prompt hint for later NPCs.
+- [C++] Baha: `clues` in the LLM JSON is already checked by the validator (Phase 4); offline nodes give clues directly.
 - [UI] Tuana (art) + Baha (logic): `WBP_RumorJournal` (Tab): chapter question, found clues with speaker, "?" slots, conversation log, memories; "New clue" toast.
-- [WRITE] Merve: Chapter 1 question and 5–6 clues; pre-written trees for Nura, Idris and the minor NPCs present in Chapter 1.
+- [WRITE] Merve: enter the 36 clues from the Master Lore doc (ids `ch<N>_<who>_<what>`, journal text, topic text, prompt hint); Chapter 1 cards for Nura, Aisha, Omar, Tariq, Idris and Ilyas.
 - [C++] Automation tests: rejected unknown clue, duplicate, gate opens at the required count.
 
 **Deliverable:** Chapter 1 day: gather 3 clues, Zafir opens up.
@@ -261,7 +268,7 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 - [C++] `USuspicionComponent`: +12/s running in view, +20/s restricted room in view, −5/s out of view; dance and Vashir add to the same meter; Caught at 100 → restart at checkpoint.
 - [C++] `AHidingSpot` (E to enter / leave; Sahra is not sensed by guards) and `AEavesdropZone` (hear the whole ~10 s exchange unseen → authored clue; seen → exchange stops).
 - [UI] Eye icon in `WBP_HUD`, hiding-spot glow (custom depth outline or emissive material) and prompt.
-- [BP] `BP_Guard`, `BP_HidingSpot`, `BP_EavesdropZone`; 2 guards in Chapter 1 with one garden route and one eavesdrop stop behind a lattice screen.
+- [BP] `BP_Guard`, `BP_HidingSpot`, `BP_EavesdropZone`; Chapter 1: the garden patrol guard and the Guard Post guard who meets him at the lattice screen stop (eavesdrop `ch1_guards_blade`). Merve places routes and spots; Tala adds footsteps and the hiding-spot glow.
 
 **Deliverable:** Chapter 1 day with guards, one hiding route and one eavesdrop clue.
 **Verification Gate:** Run past a guard → Suspicion rises → restart at 100; hide → the guard walks past; eavesdrop → clue added. ✋ Confirm with the user.
@@ -276,8 +283,8 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 - [C++] `UDanceMinigameComponent`: note chart from `DT_DanceCharts` (row `Night1`...), timing from a Quartz clock synced to the song, `IMC_Dance` active, 4 lanes (← ↑ ↓ →, *proposed*), 0.25 s windows, accuracy; > 80% → +10 Favor + reward; 40–80% → nothing; < 40% → +10 Suspicion; pause support.
 - [UI] `WBP_Dance`: lanes, hit feedback, end result with reward or warning.
 - [BP] Sahra's dance loop and 4 move animations (montages in `ABP_Sahra`); Throne Hall audience placement.
-- [AUDIO] Night 1 song (royalty-free) as a MetaSound; tempo as a parameter.
-- [WRITE] Night 1 reward clue (overheard noble gossip).
+- [AUDIO] Tala: Night 1 song (royalty-free) as a MetaSound; tempo as a parameter; chart row `Night1` (30 s).
+- [WRITE] Night 1 reward clue `ch1_nobles_doors` (from `DT_Barks` dance gossip).
 
 **Deliverable:** Night 1 dance in the Throne Hall.
 **Verification Gate:** Play well → Favor hint + reward clue; play badly → Suspicion; notes stay in sync with the music. ✋ Confirm with the user.
@@ -289,11 +296,11 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 **Depends on:** Phases 9, 10 and 11.
 
 **Tasks:**
-- Play Chapter 1 end to end: Day (clues, guards, eavesdrop) → Night (dance) → Zafir key scene → cutscene placeholder.
+- Play Chapter 1 end to end: Day (clues, guards, eavesdrop, Do 1) → Night (dance) → Zafir key scene (Do 2: the knife) → in-engine ending.
 - [C++] Test harness (commandlet or editor utility) and first red-team run (50 lines per character: off-topic, jailbreak, spoiler, rude); LLM judge flags spoilers and broken voice.
 - Measure tokens per playthrough and average reply time.
-- Decide: memories + pyre confession in or out; Nura / Idris stay pre-written or become LLM.
-- ⚠️ Early warnings (GDD 13.5): average reply over 4 s on the stronger PC or under 90% valid JSON → smaller model, shorter replies or word-by-word streaming; court NPCs stay pre-written. Chapter 2 cards not final → apply the cut order. Palace still grey-box → custom models cut.
+- Decide: memories + generated Chapter 7 confession in or out; 10 or 5 ambient NPCs.
+- ⚠️ Early warnings (GDD 13.5): average reply over 4 s on the stronger PC or under 90% valid JSON → smaller model, shorter replies or word-by-word streaming; side characters fall back to their offline nodes more often. Chapter 2–6 data not entered → apply the cut order. Palace still grey-box → custom models cut.
 
 **Deliverable:** Playable Chapter 1, red-team report, decisions in Notes and `PROGRESS.md`.
 **Verification Gate:** User plays Chapter 1 and confirms the loop is fun; decisions confirmed. ✋
@@ -301,34 +308,41 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 ---
 
 ## PHASE 13: Chapters 2–6 Content
-> Renamed 12.11.2026 for the 7-chapter story. The tasks below still describe the old 4-chapter plan; they are rewritten with the other docs once the team has reviewed the lines in the Master Lore doc. The day-by-day tasks in `Docs/workplan/index.html` already follow the 7 chapters.
-**Objective:** Every chapter has its day, night and key scene.
+> Rewritten 12.11.2026 for the 7-chapter story. Day-by-day tasks are in `Docs/workplan/index.html`; who is where per chapter is in `level-design.md` sections 4–9.
+**Objective:** Chapters 2–6 each have their day (main quest, 2 "do" objectives, 6 clues), night and key scene, and end in-engine.
 **Depends on:** Phase 12.
 
 **Tasks:**
-- [WRITE] Merve: Vashir's card; scene cards, chapter questions, 5–6 clues, NPC trees, fallback lines and offline trees for Chapters 2–4.
-- [UE] NPC spawn points per chapter; 3 guards and new routes in Chapter 2; eavesdrop stops per chapter.
-- [C++] / [BP] Chapter 2: night = private dance for Vashir in the King's Chamber (Favor 60 invitation); Vashir's Suspicion from conversation; Zafir's jealousy beat.
-- [C++] / [BP] Chapter 3: night dance, then the rooftop key scene (Affection 60 confession).
-- [C++] / [BP] Chapter 4: short day, night dance, then the Trap (Vashir 4 turns; Zafir's secret now in his prompt).
-- [AUDIO] Dance songs for nights 2–4, or one song at rising tempo (cut order 3).
+- [WRITE] Merve: enter Vashir's card and the minor characters' cards; scene rows `Ch2_ZafirRehearsal`, `Ch3_VashirAudience`, `Ch3_ZafirFountain`, `Ch4_ZafirKnife`, `Ch5_ZafirRooftop`, `Ch6_VashirTrap`; clues, barks and offline trees for Chapters 2–6 (all in the Master Lore doc).
+- [UE] Merve: NPC spawn points per chapter and phase; guard routes per chapter (extra guard at the Dancers' Quarters in Chapter 2, King's Chamber door guard in Chapter 3, City Gate guard at night in Chapter 4, doubled guard in Chapter 5, emptied corridors in Chapter 6); eavesdrop stops; ambient NPC spots; chapter dressing (moon, fewer lanterns in Chapter 3, banners from Chapter 4, plum blossoms in Chapter 5).
+- [C++] / [BP] Baha, Chapter 2: the search at the afternoon bell; 3 knife hiding places (`BP_KnifeHidingPlace`, Do 1); Zafir lifts the knife; the closing line depends on the hiding place; Guard Post eavesdrop (Do 2).
+- [C++] / [BP] Baha, Chapter 3: King's Chamber door scouting with Zafir's scripted save (Do 1); Ilyas leaves at the dusk bell (Do 2); Vashir's audience (7 turns, Favor 60 invitation, Suspicion from conversation; the late invitation through Nura below 60); private dance in the King's Chamber; Zafir at the fountain (jealousy beat).
+- [C++] / [BP] Baha, Chapter 4: the anklet replaces the cord on Sahra's model (morning, the king's servant); tail Zafir to the City Gate at the midnight bell (`UFollowerComponent`, Do 1); find Omar (Do 2); key scene in the practice room with the knife at his throat (Trust 50).
+- [C++] / [BP] Baha, Chapter 5: the king's servant follows Sahra (shake off, corner, fixed 3-line exchange, Do 1); nobles' eavesdrop in the Throne Hall (Do 2); the duet; rooftop key scene (Affection 60 confession); the mended cord replaces the anklet.
+- [C++] / [BP] Baha, Chapter 6: plan checks (servants' passage, City Gate, guard change, Do 1); no key-scene gate; solo dance in the King's Chamber (fixed outcome, Do 2); the trap (`Ch6_VashirTrap`, 7 turns, forced beats, lines saved as Zafir's memories); `LS_Trap` (Tala) for the fall.
+- [C++] / [BP] Baha: `UBarkComponent` and `BP_AmbientNPC` (about 10, `DT_Barks`).
+- [AUDIO] Tala: dance songs and charts for nights 2–6 (33, 36, 39, 42, 45 s), or one song at rising tempo (cut order 3); bells (nightfall, afternoon, dusk, midnight).
+- [ART] Tuana: portraits for Vashir, Nura, Idris and the 4 minor characters (placeholders first); the anklet and the mended cord.
 
-**Deliverable:** Chapters 1–4 in sequence.
-**Verification Gate:** Play Chapters 1–4 online and offline; get caught once on purpose to see the restart. ✋ Confirm with the user.
+**Deliverable:** Chapters 1–6 in sequence.
+**Verification Gate:** Play Chapters 1–6 online and offline; get caught once on purpose to see the restart; Chapter 6 cannot be lost. ✋ Confirm with the user.
 
 ---
 
 ## PHASE 14: Cutscene System, 2D Parts + Chapter 7 Spirit Walk
-**Objective:** The story plays from Prologue to Epilogue.
+**Objective:** The story plays from Prologue to Epilogue, including the Chapter 7 spirit walk.
 **Depends on:** Phase 12 (in parallel with Phase 13).
 
 **Tasks:**
-- [BP] Visual-novel cutscene player `WBP_Cutscene` (background, speaker, text, Space to advance via `IMC_Cutscene`) reading `DT_Cutscenes`; Level Sequences `LS_Prologue`, `LS_Trap`, `LS_Pyre`, `LS_Epilogue` for camera moves where needed.
-- [WRITE] Merve: cutscene script (~150 lines) for Prologue, chapter-end beats, after Chapter 4, Pyre (pre-written version), Epilogue.
-- [ART] Tuana: 2D backgrounds (Burning Tamra, the pyre, the temple), AI-assisted concepts finished by hand.
+- [BP] Baha: visual-novel cutscene player `WBP_Cutscene` (background, speaker, text, Space to advance via `IMC_Cutscene`) reading `DT_Cutscenes`, for the Prologue and the Epilogue (romance and comrade variants); Tala makes `LS_Prologue` and `LS_Epilogue` for camera moves where needed.
+- [C++] Baha: Chapter 7 `USpiritWalkSubsystem` (*proposed name*): hide guards and NPCs, ghost post process, 6 `BP_SoulEmber` (fountain, practice room, Throne Hall, City Gate, Rooftop Terrace, King's Chamber; any order), replay the stored player line per chapter, then one confession piece (generated, else pre-written); red → gold after the 6th ember; then the Epilogue.
+- [UE] Merve: the ghost palace (Chapter 7 dressing, ember placement, the red glow of the Crimson Zenith over the walls).
+- [VFX] Tala: ghost post process, ash rising, ember VFX, the red → gold fire.
+- [WRITE] Merve: enter the Prologue narration (8 lines), Epilogue lines (both routes), 6 ember captions and the 6-piece fallback confession (Master Lore doc).
+- [ART] Tuana: 2D backgrounds (Burning Tamra, the palace gate, the Crimson Zenith), AI-assisted concepts finished by hand.
 
 **Deliverable:** Full story path.
-**Verification Gate:** Play New Game to Credits offline. ✋ Confirm with the user.
+**Verification Gate:** Play New Game to Credits offline; Chapter 7 plays all 6 pieces of the pre-written confession with the model stopped. ✋ Confirm with the user.
 
 ---
 
@@ -338,7 +352,7 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 
 **Tasks:**
 - [UI] `L_Title` + `WBP_Title` (Niagara embers over the dying sun), Settings (text speed, volume, AI mode + status line), Pause (Resume, Settings, Restart Chapter, Quit), Chapter card with the chapter question (3 s), Credits.
-- [UI] Exploration HUD: goal line, day / night tag, eye icon, "E: Talk", hide prompt, "New clue" toast.
+- [UI] Exploration HUD: goal line with the 2 "do" objectives, day / night tag, eye icon, "E: Talk", hide prompt, "New clue" toast, bark bubble, Chapter 7 ember counter.
 - [C++] / [BP] Screen stack in `AAshesPlayerController` (or a HUD class), widgets bound to delegates, not Tick.
 
 **Deliverable:** All screens reachable through the flow.
@@ -346,16 +360,16 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 
 ---
 
-## PHASE 16: Memories + Pyre Confession (should have)
-**Objective:** Characters remember, and Zafir's pyre confession quotes two of the player's moments.
-**Depends on:** Phase 12 decision = keep.
+## PHASE 16: Memories + Chapter 7 Confession (should have)
+**Objective:** Characters remember, and Zafir's Chapter 7 confession quotes the player's own moments.
+**Depends on:** Phase 12 decision = keep; Phase 14 (spirit walk).
 
 **Tasks:**
-- [C++] Summary call after each key scene (1–2 memories, max 6 per character); memories in the prompt and the Rumor Journal.
-- [C++] Generated pyre confession with 2 memories; pre-written fallback.
+- [C++] Baha: summary call after each key scene (1–2 memories, max 6 per character); memories in the prompt and the Rumor Journal; the Chapter 6 lines saved as Zafir's memories.
+- [C++] Baha: generated confession, one piece (1–3 sentences) per soul ember, quoting memories; pre-written 6-piece fallback.
 
-**Deliverable:** Memories visible in the journal; pyre lines change between runs.
-**Verification Gate:** Two different playthroughs give different pyre lines; offline still works. ✋ Confirm with the user.
+**Deliverable:** Memories visible in the journal; Chapter 7 lines change between runs.
+**Verification Gate:** Two different playthroughs give different confession pieces; offline still plays the pre-written confession. ✋ Confirm with the user.
 
 ---
 
@@ -364,7 +378,7 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 **Depends on:** Phases 13–15 (16 if kept).
 
 **Tasks:**
-- Playtest with 5 outside players (Tala leads); watch for: lost players (which clue next?), patrols that feel unfair, dance difficulty, conversation pacing, broken replies.
+- Playtest with 5 outside players (Tala leads); watch for: lost players (which clue next? where is the next character?), patrols that feel unfair, the tail and being followed, dance difficulty, conversation pacing, broken replies, how Chapters 6 and 7 land.
 - Feature freeze from here: no new features in Stage 3.
 
 **Deliverable:** Playtest notes and a fix list.
@@ -379,19 +393,20 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 **Depends on:** Phase 17.
 
 **Tasks:**
-- [ART] Licensed modular palace kit (Fab) assembled and lit with Lumen (moonlight, lanterns); license check for educational and portfolio use.
-- [ART] Final portraits if time (4–6 emotions each), otherwise placeholders stay.
-- [ART] Niagara fire and ember VFX; phoenix-rise VFX for the epilogue (most important effect).
+- [ART] Tuana: licensed modular palace kit (Fab) assembled (Merve lights it with Lumen: moonlight, lanterns); license check for educational and portfolio use.
+- [ART] Tuana: final portraits if time (4–6 emotions each, 8 LLM characters), otherwise placeholders stay.
+- [VFX] Tala: Niagara fire and ember VFX; ghost-palace look polish; phoenix-rise VFX for the epilogue (most important effect).
+- [UE] Merve: lighting pass per chapter (moon, lanterns, the Rose red King's Chamber).
 
 **Deliverable:** Art-complete build.
-**Verification Gate:** Play the palace; frame rate acceptable on both PCs (`stat fps`, `stat unit`). ✋ Confirm with the user.
+**Verification Gate:** Play the palace; frame rate acceptable on the team's PCs (`stat fps`, `stat unit`). ✋ Confirm with the user.
 
 ## PHASE 19: Audio Pass
 **Objective:** Music and SFX in place.
 **Depends on:** Phase 17.
 
 **Tasks:**
-- [AUDIO] Palace loop (must); romance and finale loops (should); loop seams checked.
+- [AUDIO] Tala: palace loop (must); romance, ghost-palace and finale loops (should); loop seams checked.
 - [AUDIO] Footsteps on stone, fire, cloth, blades, crowd (CC0 / CC-BY); licenses in `Docs/Licenses.md`.
 - [AUDIO] Volume setting wired to a Sound Class Mix (Master, Music, SFX, UI sound classes).
 
@@ -403,7 +418,7 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 **Depends on:** Phases 18–19.
 
 **Tasks:**
-- Tune values, turn limits, hints, clue counts, patrol timing and dance difficulty from playtest 1.
+- Tune values, turn limits (Zafir 11, Vashir 7, others 5), hints, clue counts, patrol timing, tail distance and dance difficulty from playtest 1.
 - Second playtest.
 - Red-team pass: 0 spoiler leaks, at least 95% valid JSON.
 
@@ -415,8 +430,8 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 **Depends on:** Phase 20.
 
 **Tasks:**
-- Credits screen: team, licensed assets, AI-assisted assets and tools.
-- `Docs/Licenses.md` complete; `Docs/PromptLog.md` final; AI-assisted headers on every C++ file and a header Comment node in AI-assisted Blueprints.
+- Tala: credits screen: team (Merve, Tuana, Tala, Baha), licensed assets, AI-assisted assets and tools; course: Advanced Game Programming.
+- Tala: `Docs/Licenses.md` complete; Merve: prompt log sheet final (`Docs/PromptLog.md` links it); Baha: AI-assisted headers on every C++ file and a header Comment node in AI-assisted Blueprints.
 
 **Deliverable:** Paperwork complete.
 **Verification Gate:** Reviewer checklist from the pull request template passes. ✋ Confirm with the user.
@@ -426,11 +441,11 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 **Depends on:** Phase 21.
 
 **Tasks:**
-- Platforms → Windows → Package Project (Shipping) to `Builds/` (git-ignored); stage `ThirdParty/LLM` (llama-server + model) as non-UFS files into the build; no API key anywhere; check the model starts and the fallback works if it cannot.
+- Baha: Platforms → Windows → Package Project (Shipping) to `Builds/` (git-ignored); stage `ThirdParty/LLM` (llama-server + model) as non-UFS files into the build; no API key anywhere; check the model starts and the fallback works if it cannot.
 - Test on a PC without Unreal Engine installed and without internet.
 
 **Deliverable:** Final Windows build, tagged release on `main`.
-**Verification Gate:** Clean-machine run (no internet) from Title to Credits with the built-in model, including all 4 nights; once more with the model folder removed (fallback lines). ✋ Final sign-off.
+**Verification Gate:** Clean-machine run (no internet) from Title to Credits with the built-in model, including all 6 nights and the Chapter 7 spirit walk; once more with the model folder removed (offline trees and fallback lines). ✋ Final sign-off.
 
 ---
 
@@ -447,9 +462,9 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 | Section | Status |
 | :-- | :-- |
 | Macro-stage map and goals | FILLED |
-| Scope for 4 weeks | FILLED |
+| Scope for 4 weeks | FILLED (12.11: 7 chapters, offline trees, side characters as LLM) |
 | Progress tracker | FILLED |
 | Stage 1 phases 0–6 | FILLED |
-| Stage 2 phases 7–17 | FILLED |
+| Stage 2 phases 7–17 | FILLED (12.11: Phases 13, 14 and 16 rewritten for 7 chapters) |
 | Stage 3 phases 18–22 | FILLED |
 | Appendix | FILLED |
