@@ -1,7 +1,7 @@
-# Debug Log (debug.md) · Burnt Potato Games (Merve Özal, Tuana Tuna)
+# Debug Log (debug.md) · Burnt Potato Games (Merve Özal, Tuana Tuna, Tala, Baha)
 
 > One block per bug. Newest on top. Write the member's name in each block.
-> Unreal Engine 5.8 project since 10.11.2026.
+> Unreal Engine 5.8 project since 10.11.2026. Course: Advanced Game Programming. Anyone on the team who finds a bug adds a block (Baha owns the C++ fixes from Phase 7 on).
 
 ## Bug 2: first AI request after a cold start fails with HTTP 500 ("No user query found in messages")
 - **Found by:** Claude Code while testing `Ashes.TalkZafir` (11.11.2026)

@@ -1,6 +1,6 @@
 # Asset Licenses and Credits
 
-Every third-party asset goes here before it is merged (GDD 8.2). AI-assisted assets are marked.
+Every third-party asset goes here before it is merged (GDD 8.2). AI-assisted assets are marked. Tala keeps this file (from 12.11.2026); whoever adds an asset adds its row. Course: Advanced Game Programming.
 
 | Asset | Path in project | Source / author | License | AI-assisted? | Added by |
 |-------|-----------------|-----------------|---------|--------------|----------|

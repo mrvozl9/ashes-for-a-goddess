@@ -2,6 +2,7 @@
 
 > Claude reads this file automatically when it opens the project. For Codex, copy this file and name the copy `AGENTS.md`.
 > Unreal Engine 5.8, C++ and Blueprints (module `Ashes`). Not Unity: the old Unity skeleton lives only in the Git tag `unity-skeleton`.
+> Course: Advanced Game Programming. Team of four (12.11.2026): Merve (level design, story and data), Tuana (art), Tala (audio, VFX and other work), Baha (code from Phase 7 on). The story has 7 chapters; turn limits Zafir 11, Vashir 7, others 5.
 
 ## Read first (every session)
 - `SKILL.md` (how to work)
@@ -29,7 +30,7 @@
 
 ## Editor access (MCP + VibeUE)
 - The editor serves MCP at `http://127.0.0.1:8000/mcp` (Unreal MCP plugin, auto-starts with the editor; `.mcp.json` points Claude Code at it). The editor must be open for MCP tools to work.
-- VibeUE is a git submodule in `Plugins/VibeUE` (after cloning: `git submodule update --init`). Its agent guide is imported below with a relative path so it works on both PCs; do not replace it with `VibeUE.GenerateAgentConfig`, which writes an absolute path.
+- VibeUE is a git submodule in `Plugins/VibeUE` (after cloning: `git submodule update --init`). Its agent guide is imported below with a relative path so it works on every team member's PC; do not replace it with `VibeUE.GenerateAgentConfig`, which writes an absolute path.
 
 <!-- BEGIN VibeUE — relative import of the plugin's agent guide -->
 @Plugins/VibeUE/Content/samples/AGENTS.md.sample

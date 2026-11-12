@@ -4,7 +4,9 @@
 > **Aesthetic north stars:** Painted character portraits inside ornate gold frames (GDD 8, Figure 5); desert palaces at night with lanterns and firelight (mood board, GDD 8.1); visual novel conversation screens.
 > **Guiding law:** "A moonlit palace at the end of the world": gold line work and firelight on deep plum shadows.
 
-Source: `gdd.md` sections 5 (Graphics), 2 (Screens) and 8 (Appendix). Values marked `MISSING` are not in the GDD and must be decided by Tuana (UI Designer) before the UI phase in `production_pipeline.md`.
+Source: `gdd.md` sections 5 (Graphics), 2 (Screens) and 8 (Appendix). Values marked `MISSING` are not in the GDD and must be decided before the UI phase in `production_pipeline.md` (Phase 15): visual tokens by **Tuana** (UI artist), sound tokens by **Tala** (audio). Updated 12.11.2026 for the 7-chapter story and the team of four (course: Advanced Game Programming).
+
+**Names to use everywhere (12.11.2026):** the palace is **Sama'zar** (keep the apostrophe); the hub is the **Garden of Dusk** (Chapter 1's title is still open: "The Garden of Ash" or "The Garden of Dusk"); rooms: Dancers' Quarters (with the practice room), Throne Hall, King's Chamber (with the servants' passage), Guard Post (with the City Gate), Rooftop Terrace; the festival temple is the **Crimson Zenith**; Sahra's village is **Tamra**; her cover is the **Lantern House**; Zafir calls her **"Little Ember"**. Chapters: 1 The Garden of Ash, 2 The Practice Room, 3 The Private Dance, 4 The King's Favor, 5 Rooftop of Smoke, 6 The Trap, 7 The Pyre; Prologue: Ash; Epilogue: The Long Flame.
 
 ---
 
@@ -27,6 +29,8 @@ Source: `gdd.md` sections 5 (Graphics), 2 (Screens) and 8 (Appendix). Values mar
 | `Char_Vashir` | `#6B1E2E` | Vashir | Vashir's name plate and portrait frame fill |
 | `Char_Nura` | MISSING: Nura's accent color | Nura | Name plate |
 | `Char_Idris` | MISSING: Idris's accent color | Captain Idris | Name plate |
+| `Char_Minor` | MISSING: one shared accent or one per character | Omar, Ilyas, Tariq, Aisha | Name plates |
+| `Char_Ambient` | `#F1E3C8` at 70% (*proposed*) | Ambient NPCs, the king's servant | Bark bubble text (no name plate) |
 
 ### 1.3 Semantic Tokens
 | Token | Value | Use |
@@ -84,20 +88,21 @@ Source: `gdd.md` sections 5 (Graphics), 2 (Screens) and 8 (Appendix). Values mar
 
 ## 7. Screen Inventory & Navigation Flow
 ```
-[Boot] -> [Title] -> New Game -> [Prologue cutscene] -> [Chapter card] -> DAY [Exploration HUD] <-> [Conversation] / [Hiding]
-                                                       -> NIGHT [Dance] -> KEY SCENE [Conversation] -> [Cutscene] -> next [Chapter card]
+[Boot] -> [Title] -> New Game -> [Prologue cutscene (2D)] -> [Chapter card] -> DAY [Exploration HUD] <-> [Conversation] / [Hiding] / [Bark]
+                                                       -> NIGHT [Dance] -> KEY SCENE [Conversation] -> [In-engine ending] -> next [Chapter card]
                   -> Continue -> [Chapter card at last checkpoint]
                   -> [Settings]
                   -> Quit
 [Exploration HUD / Conversation] -> Esc -> [Pause] -> Resume / [Settings] / Restart Chapter / Quit
 [Exploration HUD / Conversation] -> Tab -> [Rumor Journal]
-Suspicion 100 -> (Caught) -> [Chapter card at checkpoint]
-Chapter 4 end -> [Pyre cutscene] -> [Epilogue cutscene] -> [Credits] -> [Title]
+Suspicion 100 -> (Caught) -> [Chapter card at checkpoint]          (Chapters 1–5 only)
+Chapter 6: [Dance (solo, fixed)] -> [Conversation with Vashir, 7 turns] -> [Trap sequence] -> [Chapter 7 card]
+Chapter 7: [Spirit HUD: ember counter] -> 6 x ([Ember memory caption] -> [Confession piece]) -> [Epilogue cutscene (2D)] -> [Credits] -> [Title]
 ```
 | # | Screen | Key elements |
 | :-- | :-- | :-- |
 | S1 | Main Menu (Title) | New Game, Continue, Settings, Quit; embers drifting over the dying sun |
-| S2 | In-Game HUD | Exploration: goal line top left, eye icon, "E: Talk" prompt. Conversation: chapter + goal, "PLAYING AS SAHRA", "Turns left · Tab: log", dialogue panel with small portraits, hint line, Sahra POV portrait, large emotion portrait with emotion icons, 3 reply buttons, 200-character input with Send (Enter) |
+| S2 | In-Game HUD | Exploration: goal line top left with the 2 "do" objectives under it, eye icon, "E: Talk" prompt, bark bubble; Chapter 7: ember counter only. Conversation: chapter + goal, "PLAYING AS SAHRA", "Turns left · Tab: log", dialogue panel with small portraits, hint line, Sahra POV portrait, large emotion portrait with emotion icons, 3 reply buttons, 200-character input with Send (Enter) |
 | S3 | Pause | Resume, Settings, Restart Chapter, Quit |
 | S4 | Game Over | MISSING: no lose screen in the GDD; being caught restarts the chapter from its checkpoint |
 | S5 | Win | Epilogue cutscene, then Credits (team, licensed assets, AI-assisted assets and tools) |
@@ -105,12 +110,16 @@ Chapter 4 end -> [Pyre cutscene] -> [Epilogue cutscene] -> [Credits] -> [Title]
 | S7 | Chapter card | Chapter number, title, one line of verse, 3 s |
 | S8 | Rumor Journal (new 09.11) | Chapter question, found clues with speaker portrait, "?" slots for missing clues, full conversation log, each character's memories |
 | S10 | Dance (new 10.11) | 4 arrow lanes, notes, hit feedback (Great / Good / Miss), accuracy result with reward or Suspicion warning; Throne Hall visible behind |
-| S9 | Cutscene (visual novel) | 2D background, speaker, text; Space advances |
+| S9 | Cutscene (visual novel) | 2D background, speaker, text; Space advances (Prologue and Epilogue only) |
+| S11 | Ember memory (new 11.11) | Chapter 7: the player's own line from that chapter over a blurred glimpse of the scene, then Zafir's confession piece in `Char_Zafir` italics; no input except Space to continue |
 
 ## 8. HUD Spec
-- **Goal line:** top left; italic one-line goal, for example "Goal: find out why the other dancer carries a blade"; shown under the chapter title in conversations.
+- **Goal line:** top left; italic one-line main quest (the chapter question), for example "Why does the other dancer carry a blade?"; shown under the chapter title in conversations.
+- **"Do" objectives (new 11.11):** two smaller lines under the goal line, ticked with `Core_Primary` when done (for example "Learn the garden patrol and listen behind the lattice screen").
 - **Eye icon:** fills only while a guard sees Sahra (`Sem_Danger`); empty otherwise; shows a closed eye while Sahra is in a hiding spot (new 10.11). MISSING: exact position.
-- **Day / night tag (new 10.11):** "Day 1" or "Night 1" next to the goal line; at nightfall the goal becomes "Perform in the Throne Hall".
+- **Day / night tag (new 10.11):** "Day" or "Night" with the moon phase icon next to the goal line (*proposed*: full, waning half, dark, waxing half, almost full); at nightfall the goal becomes "Perform in the Throne Hall" (Chapter 3 and 6: "Dance for the king").
+- **Bark bubble (new 11.11):** one line over an ambient NPC's head for 3 s (*proposed*), `Type_Body`, no portrait, no name plate.
+- **Ember counter (new 11.11):** Chapter 7 only, top centre, six small ember icons that light up in `Core_Accent`; every other HUD element is hidden.
 - **Hiding-spot glow and prompt (new 10.11):** soft `Core_Primary` glow on curtains and lattice screens; "E: Hide" / "E: Leave".
 - **Eavesdrop indicator (new 10.11):** small ear icon with a fill bar while an exchange is being overheard.
 - **"New clue" toast (new 09.11):** gold-framed note at the top right for 2 s.
@@ -135,7 +144,7 @@ Chapter 4 end -> [Pyre cutscene] -> [Epilogue cutscene] -> [Credits] -> [Title]
 | `SM_` / `SK_` | Static mesh / skeletal mesh | `SM_Arch_Lattice`, `SK_Sahra` |
 | `T_` | Texture | `T_Portrait_Zafir_Teasing` |
 | `L_` | Level (map) | `L_Test`, `L_Title`, `L_Palace` |
-| `LS_` | Level Sequence (cutscene) | `LS_Prologue`, `LS_Pyre` |
+| `LS_` | Level Sequence (cutscene) | `LS_Prologue`, `LS_Trap`, `LS_Epilogue` |
 | `DT_` / `DA_` | DataTable / Data Asset | `DT_Characters`, `DT_Clues`, `DA_LoreBible` |
 | `IA_` / `IMC_` | Enhanced Input action / mapping context | `IA_Interact`, `IMC_Exploration` |
 | `NS_` | Niagara system | `NS_Embers`, `NS_RosePetals` |
@@ -147,18 +156,19 @@ Code: C++ classes use Unreal prefixes (`A`, `U`, `F`, `E`, `I`) and the project 
 ## 10. Folder Structure
 ```
 Ashes.uproject
-Source/Ashes/      Core, Player, Dialogue, Gameplay, AI, Data, Tests (C++)
+Source/Ashes/      Core, Player, Dialogue, Gameplay, AI, UI, Data, Tests (C++)
 Content/Ashes/
   Core/        GM_Ashes, GI_Ashes, PC_Ashes
   Player/      BP_Sahra, ABP_Sahra
-  Characters/  BP_Zafir, BP_Vashir, BP_Nura, BP_Idris, BP_CourtNPC, BP_Guard
-  Gameplay/    BP_HidingSpot, BP_EavesdropZone, BP_RestrictedVolume, BP_NPCSpawnPoint
+  Characters/  BP_Zafir, BP_Vashir, BP_Nura, BP_Idris, BP_Omar, BP_Ilyas, BP_Tariq, BP_Aisha,
+               BP_KingsServant, BP_AmbientNPC, BP_Guard
+  Gameplay/    BP_HidingSpot, BP_EavesdropZone, BP_RestrictedVolume, BP_NPCSpawnPoint, BP_SoulEmber, BP_KnifeHidingPlace
   AI/          BT_Guard, BB_Guard
   UI/          WBP_* screens and elements, F_ fonts, T_UI_ textures
   Data/        DT_ DataTables, DA_ Data Assets
   Input/       IA_ actions, IMC_ mapping contexts
   Maps/        L_Test, L_Title, L_Palace
-  Cinematics/  LS_Prologue, LS_Trap, LS_Pyre, LS_Epilogue
+  Cinematics/  LS_Prologue, LS_Trap, LS_Epilogue
   Art/         Meshes, Materials, Textures, Portraits, VFX
   Audio/       Music, SFX, MetaSounds
 Config/            Engine and project settings (never the API key)
@@ -171,7 +181,8 @@ Docs/              gdd.md, design.md, technical_design.md, level-design.md, prod
 | Color-blind | MISSING: color-blind rule (note: Suspicion uses Rose red; pair it with the eye icon shape, not color alone) |
 | Text scale | Text speed is adjustable in Settings; players who don't like typing can always pick 1 of 3 suggested replies. MISSING: text size option |
 | Screen shake | MISSING: screen shake rule |
-| Photosensitivity | MISSING: rule for fire, phoenix-rise and flare effects |
+| Photosensitivity | MISSING: rule for fire, phoenix-rise and flare effects (note: the Chapter 7 red → gold change and the sky lightening must not flash) |
+| Chapter 7 ghost look | The desaturated, blurred palace must keep the embers and the path readable (*proposed*: embers stay fully saturated and unblurred) |
 
 ## 12. Token Traceability
 Every color, margin or motion value used in C++, Widget Blueprints or UMG styles carries a token comment, for example `// Token: Core_Primary` in C++ or a Comment node / variable tooltip `Token: Core_Primary` in a Widget Blueprint. New UI must not invent values that are not in this file. Add the token here first.
@@ -183,15 +194,15 @@ Every color, margin or motion value used in C++, Widget Blueprints or UMG styles
 | :-- | :-- |
 | Header / north stars / guiding law | FILLED |
 | 1.1 Core Palette | FILLED |
-| 1.2 Character Accents | FILLED (MISSING: Nura, Idris) |
+| 1.2 Character Accents | FILLED (MISSING: Nura, Idris, minor characters) |
 | 1.3 Semantic Tokens | FILLED (MISSING: success, disabled) |
 | 2. Typography | MISSING |
 | 3. Shape, Spacing | MISSING (except Space_Unit and frame style) |
 | 4. Motion | FILLED for GDD timings (MISSING: focus, panel, confirm) |
 | 5. UI Sounds | MISSING |
 | 6. Button States | MISSING (except Idle) |
-| 7. Screen Inventory | FILLED (MISSING: lose screen) |
-| 8. HUD Spec | FILLED |
+| 7. Screen Inventory | FILLED (12.11: Chapters 6–7 flow, ember memory screen; MISSING: lose screen) |
+| 8. HUD Spec | FILLED (12.11: "do" objectives, bark bubble, ember counter) |
 | 9. Naming | FILLED (Unreal prefixes since 10.11) |
 | 10. Folder Structure | FILLED |
 | 11. Accessibility | MISSING (except text speed and suggested replies) |
