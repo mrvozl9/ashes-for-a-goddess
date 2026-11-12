@@ -74,7 +74,7 @@
 **Threats:** One guard patrols the garden (plus a second guard who meets him at the lattice screen stop).
 **Main quest:** "Why does the other dancer carry a blade?" Find 3 of the 6 clues, dance, then confront Zafir in the garden.
 **Do 1:** learn the garden guard's patrol and reach the lattice screen unseen, then listen (gives `ch1_guards_blade`). This teaches hiding.
-**Do 2:** steal Zafir's knife during the key scene (it goes into the inventory for the whole game).
+**Do 2:** steal Zafir's knife during the key scene (it goes into the inventory for the whole game). A timed prompt "[E] Take his knife" shows for a few seconds when he is distracted (he leans close, or after `sahra_confronts_blade`); success → he says "Careful, Little Ember. Blades that small cut their owners first." and lets her keep it; a try at a bad moment → he catches her wrist, Trust down, then lets go: "Sloppy, Little Ember. Keep it. You clearly need the practice." She gets the knife either way; Sahra always ends Chapter 1 with it (12.11). *Open:* what happens if she never tries. Chapter 2: the knife is gone from the search until Zafir gives it back at the end of the rehearsal. The game sets beat `knife_taken`, not the LLM (Phase 7).
 
 ### Layout (who is where)
 ```

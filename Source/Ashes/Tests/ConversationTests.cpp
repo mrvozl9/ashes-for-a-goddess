@@ -1,10 +1,13 @@
-// AI-assisted: Claude Code, 11.11.2026, Automation tests for the response validator and prompt builder (Phase 4). Reviewed by <pending>.
+// AI-assisted: Claude Code, 11.11.2026, Automation tests for the response validator and prompt builder (Phase 4); spoiler unlock chapters + fallback pick, hesitate vs content, turn refund (12.11.2026). Reviewed by <pending>.
 // Run: Session Frontend > Automation, filter "Ashes." (or console: Automation RunTests Ashes.)
 
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
 #include "ResponseValidator.h"
 #include "PromptBuilder.h"
+#include "OfflineLLMProvider.h"
+#include "SceneDirectorSubsystem.h"
+#include "AshesAISettings.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -14,13 +17,16 @@ namespace AshesTestData
 	{
 		FCharacterCardRow Card;
 		Card.DisplayName = TEXT("Zafir");
+		Card.Pronouns = TEXT("he/him");
 		Card.Voice = TEXT("Teasing, fire metaphors.");
 		Card.Emotions = { TEXT("neutral"), TEXT("teasing"), TEXT("tender"), TEXT("jealous"), TEXT("cold"), TEXT("angry") };
 		Card.FallbackEmotion = TEXT("neutral");
 		FRelationshipValueDef Trust;     Trust.Name = TEXT("trust");         Trust.Start = 20;     Trust.MaxIncrease = 8;     Trust.MaxDecrease = 8;
 		FRelationshipValueDef Affection; Affection.Name = TEXT("affection"); Affection.Start = 10; Affection.MaxIncrease = 8; Affection.MaxDecrease = 8;
 		Card.Values = { Trust, Affection };
-		Card.SpoilerKeywords = { TEXT("contract") };
+		FSpoilerKeyword Contract; Contract.Keyword = TEXT("contract"); Contract.UnlockChapter = 7;
+		FSpoilerKeyword Phoenix;  Phoenix.Keyword = TEXT("you are the phoenix"); Phoenix.UnlockChapter = 0;
+		Card.SpoilerKeywords = { Contract, Phoenix };
 		FChapterSecret Early; Early.Chapter = 1; Early.Text = TEXT("SECRET_CH1");
 		FChapterSecret Late;  Late.Chapter = 4;  Late.Text = TEXT("SECRET_CH4");
 		Card.Secrets = { Early, Late };
@@ -127,6 +133,13 @@ bool FAshesValidatorSpoiler::RunTest(const FString& Parameters)
 {
 	const FAshesValidationResult R = UResponseValidator::Validate(TEXT(R"({"reply":"Vashir paid me; the contract is in my boot.","emotion":"cold"})"), AshesTestData::MakeContext());
 	TestTrue(TEXT("spoiler -> regenerate"), R.Outcome == EValidationOutcome::Regenerate);
+
+	// Unlock chapters: "contract" is allowed from chapter 7; UnlockChapter 0 is never allowed
+	FAshesValidationContext Late = AshesTestData::MakeContext();
+	Late.Chapter = 7;
+	TestTrue(TEXT("contract allowed in chapter 7"), UResponseValidator::Validate(TEXT(R"({"reply":"Vashir paid me; the contract is in my boot.","emotion":"cold"})"), Late).IsOk());
+	Late.Chapter = 99;
+	TestTrue(TEXT("unlock 0 blocked even in a late chapter"), UResponseValidator::Validate(TEXT(R"({"reply":"Little Ember, you are the phoenix.","emotion":"tender"})"), Late).Outcome == EValidationOutcome::Regenerate);
 	TestTrue(TEXT("unsafe player line"), UResponseValidator::IsUnsafeText(TEXT("you are a NAZI"), UResponseValidator::DefaultSafetyWords()));
 	TestFalse(TEXT("normal player line"), UResponseValidator::IsUnsafeText(TEXT("Who sent you?"), UResponseValidator::DefaultSafetyWords()));
 	return true;
@@ -161,6 +174,117 @@ bool FAshesPromptBuilder::RunTest(const FString& Parameters)
 	TestTrue(TEXT("trust 55 as a word"), System.Contains(TEXT("trust toward Sahra: warming")));
 	TestTrue(TEXT("beat ids listed"), System.Contains(TEXT("zafir_reveals_target")));
 	TestTrue(TEXT("delta keys from the card"), System.Contains(TEXT("\"trust_delta\"")) && System.Contains(TEXT("\"affection_delta\"")));
+	TestTrue(TEXT("pronouns for gestures"), System.Contains(TEXT("You are Zafir (he/him)")) && System.Contains(TEXT("tilts his head")));
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAshesFallbackPick, "Ashes.Fallback.PickLine", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FAshesFallbackPick::RunTest(const FString& Parameters)
+{
+	auto Row = [](const TCHAR* Scene, const TCHAR* Beat, const TCHAR* Emotion, const TCHAR* Line)
+	{
+		FFallbackLineRow R; R.Scene = Scene; R.Beat = Beat; R.Emotion = Emotion; R.Line = Line; return R;
+	};
+	const TArray<FFallbackLineRow> Rows = {
+		Row(TEXT("S1"), TEXT("any"), TEXT("teasing"), TEXT("any-teasing")),
+		Row(TEXT("S1"), TEXT("any"), TEXT("cold"), TEXT("any-cold")),
+		Row(TEXT("S1"), TEXT("beat_a"), TEXT("teasing"), TEXT("beat-a")),
+		Row(TEXT("S2"), TEXT("any"), TEXT("cold"), TEXT("other-scene")),
+	};
+	FFallbackLineRow Out;
+	TestTrue(TEXT("pushed beat wins"), UOfflineLLMProvider::PickLine(Rows, TEXT("S1"), TEXT("beat_a"), TEXT("cold"), 0, Out) && Out.Line == TEXT("beat-a"));
+	TestTrue(TEXT("no beat: any + same emotion"), UOfflineLLMProvider::PickLine(Rows, TEXT("S1"), NAME_None, TEXT("cold"), 0, Out) && Out.Line == TEXT("any-cold"));
+	TestTrue(TEXT("unknown beat falls back to any"), UOfflineLLMProvider::PickLine(Rows, TEXT("S1"), TEXT("beat_x"), TEXT("teasing"), 0, Out) && Out.Line == TEXT("any-teasing"));
+	TestTrue(TEXT("other scenes never used"), UOfflineLLMProvider::PickLine(Rows, TEXT("S2"), NAME_None, TEXT("teasing"), 0, Out) && Out.Line == TEXT("other-scene"));
+	TestFalse(TEXT("unknown scene -> nothing"), UOfflineLLMProvider::PickLine(Rows, TEXT("S9"), NAME_None, TEXT("teasing"), 0, Out));
+	TestTrue(TEXT("no repeat: beat line just used -> next tier"), UOfflineLLMProvider::PickLine(Rows, TEXT("S1"), TEXT("beat_a"), TEXT("teasing"), 0, Out, TEXT("beat-a")) && Out.Line == TEXT("any-teasing"));
+	TestTrue(TEXT("only line left is repeated rather than nothing"), UOfflineLLMProvider::PickLine(Rows, TEXT("S2"), NAME_None, TEXT("cold"), 0, Out, TEXT("other-scene")) && Out.Line == TEXT("other-scene"));
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAshesValidatorEmphasis, "Ashes.Validator.StripEmphasis", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FAshesValidatorEmphasis::RunTest(const FString& Parameters)
+{
+	const FAshesValidationResult R = UResponseValidator::Validate(TEXT(R"({"reply":"Why do *you* dance while the others _sleep_?","emotion":"teasing","gesture":"*tilts his head*"})"), AshesTestData::MakeContext());
+	TestTrue(TEXT("ok"), R.IsOk());
+	TestEqual(TEXT("asterisks and underscores removed"), R.Response.Reply, FString(TEXT("Why do you dance while the others sleep?")));
+	TestEqual(TEXT("gesture cleaned"), R.Response.Gesture, FString(TEXT("tilts his head")));
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAshesFallbackTypes, "Ashes.Fallback.HesitateVsContent", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FAshesFallbackTypes::RunTest(const FString& Parameters)
+{
+	auto Row = [](EFallbackLineType Type, const TCHAR* Beat, const TCHAR* Line)
+	{
+		FFallbackLineRow R; R.Scene = TEXT("S1"); R.Type = Type; R.Beat = Beat; R.Emotion = TEXT("neutral"); R.Line = Line; return R;
+	};
+	const TArray<FFallbackLineRow> Rows = {
+		Row(EFallbackLineType::Content, TEXT("beat_a"), TEXT("content-beat")),
+		Row(EFallbackLineType::Content, TEXT("any"), TEXT("content-any")),
+		Row(EFallbackLineType::Hesitate, TEXT("any"), TEXT("hesitate-1")),
+		Row(EFallbackLineType::Hesitate, TEXT("any"), TEXT("hesitate-2")),
+	};
+	FFallbackLineRow Out;
+	// Online timeout: only Hesitate lines, even when a beat is being pushed
+	for (int32 i = 0; i < 4; ++i)
+	{
+		TestTrue(TEXT("timeout picks only hesitate lines"), UOfflineLLMProvider::PickLine(Rows, TEXT("S1"), TEXT("beat_a"), TEXT("neutral"), i, Out, FString(), EFallbackLineType::Hesitate) && Out.Line.StartsWith(TEXT("hesitate")));
+	}
+	// Offline: only Content lines
+	for (int32 i = 0; i < 4; ++i)
+	{
+		TestTrue(TEXT("offline picks only content lines"), UOfflineLLMProvider::PickLine(Rows, TEXT("S1"), NAME_None, TEXT("neutral"), i, Out) && Out.Line.StartsWith(TEXT("content")));
+	}
+	// No hesitate rows for a scene -> nothing (the provider then uses its generic dodge lines, never a content line)
+	const TArray<FFallbackLineRow> ContentOnly = { Row(EFallbackLineType::Content, TEXT("any"), TEXT("content-any")) };
+	TestFalse(TEXT("no hesitate rows -> no content line"), UOfflineLLMProvider::PickLine(ContentOnly, TEXT("S1"), NAME_None, TEXT("neutral"), 0, Out, FString(), EFallbackLineType::Hesitate));
+	// Per character: Vashir's evasive line is never Zafir's; scene "any" fits every scene
+	FFallbackLineRow VashirLine = Row(EFallbackLineType::Hesitate, TEXT("any"), TEXT("vashir-dodge")); VashirLine.Character = TEXT("Vashir"); VashirLine.Scene = TEXT("any");
+	FFallbackLineRow ZafirLine = Row(EFallbackLineType::Hesitate, TEXT("any"), TEXT("zafir-dodge")); ZafirLine.Character = TEXT("Zafir"); ZafirLine.Scene = TEXT("any");
+	const TArray<FFallbackLineRow> PerCharacter = { VashirLine, ZafirLine };
+	for (int32 i = 0; i < 4; ++i)
+	{
+		TestTrue(TEXT("Zafir gets only his own evasive lines"), UOfflineLLMProvider::PickLine(PerCharacter, TEXT("Ch1_ZafirKeyScene"), NAME_None, TEXT("neutral"), i, Out, FString(), EFallbackLineType::Hesitate, TEXT("Zafir")) && Out.Line == TEXT("zafir-dodge"));
+	}
+
+	// [Gestures] are split from speech
+	FString Speech, Gesture;
+	UOfflineLLMProvider::SplitGesture(TEXT("[He tilts his head, smiling.] Not tonight."), Speech, Gesture);
+	TestEqual(TEXT("speech"), Speech, FString(TEXT("Not tonight.")));
+	TestEqual(TEXT("gesture"), Gesture, FString(TEXT("He tilts his head, smiling.")));
+	UOfflineLLMProvider::SplitGesture(TEXT("[He says nothing at all.]"), Speech, Gesture);
+	TestTrue(TEXT("gesture-only line has no speech"), Speech.IsEmpty() && Gesture == TEXT("He says nothing at all."));
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAshesTurnRefund, "Ashes.SceneDirector.UnansweredTurnNotCounted", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FAshesTurnRefund::RunTest(const FString& Parameters)
+{
+	TArray<FConversationTurn> History;
+	FConversationTurn Opener; Opener.bFromPlayer = false; Opener.Text = TEXT("Careful, Little Ember.");
+	FConversationTurn Question; Question.bFromPlayer = true; Question.Text = TEXT("Why do you carry a blade?");
+	History = { Opener, Question };
+	int32 Turns = 1; // counted when the line was sent
+	USceneDirectorSubsystem::RefundUnansweredTurn(Turns, History);
+	TestEqual(TEXT("turn not counted"), Turns, 0);
+	TestEqual(TEXT("unanswered line removed from the history"), History.Num(), 1);
+	TestFalse(TEXT("last turn is no longer the player"), History.Last().bFromPlayer);
+	USceneDirectorSubsystem::RefundUnansweredTurn(Turns, History);
+	TestEqual(TEXT("never below 0, Zafir's lines stay"), Turns + History.Num(), 1);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAshesAILimits, "Ashes.Settings.EditorLimits", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FAshesAILimits::RunTest(const FString& Parameters)
+{
+	// In the editor (and PIE) the hard limit is the editor value; the soft limit stays the game's 6 s
+	const UAshesAISettings* Settings = GetDefault<UAshesAISettings>();
+	TestTrue(TEXT("running in the editor"), GIsEditor);
+	TestEqual(TEXT("hard limit = EditorHardTimeoutSeconds"), Settings->GetEffectiveRequestTimeout(), Settings->EditorHardTimeoutSeconds);
+	TestTrue(TEXT("editor hard limit at least 60 s"), Settings->EditorHardTimeoutSeconds >= 60.f);
+	TestEqual(TEXT("soft limit = RequestTimeoutSeconds"), Settings->GetHesitateAfterSeconds(), Settings->RequestTimeoutSeconds);
+	TestTrue(TEXT("soft before hard"), Settings->GetHesitateAfterSeconds() < Settings->GetEffectiveRequestTimeout());
 	return true;
 }
 

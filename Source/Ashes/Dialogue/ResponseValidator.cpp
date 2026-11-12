@@ -1,4 +1,4 @@
-// AI-assisted: Claude Code, 11.11.2026, checks and clamps every model reply before the game uses it (Phase 4). Reviewed by <pending>.
+// AI-assisted: Claude Code, 11.11.2026, checks and clamps every model reply before the game uses it (Phase 4); spoiler unlock chapters, strip * and _ (12.11.2026). Reviewed by <pending>.
 
 #include "ResponseValidator.h"
 #include "Dom/JsonObject.h"
@@ -12,6 +12,7 @@ FAshesValidationContext FAshesValidationContext::FromCard(const FCharacterCardRo
 	Context.FallbackEmotion = Card.FallbackEmotion;
 	Context.Values = Card.Values;
 	Context.SpoilerKeywords = Card.SpoilerKeywords;
+	Context.Chapter = Scene.Chapter;
 	Context.SafetyWords = UResponseValidator::DefaultSafetyWords();
 	for (const FBeatDef& Beat : Scene.Beats)
 	{
@@ -65,6 +66,12 @@ namespace
 		return Out + TEXT("...");
 	}
 
+	/** Removes * and _ emphasis markers (the model sometimes writes *you* or _you_) */
+	FString StripEmphasis(const FString& Text)
+	{
+		return Text.Replace(TEXT("*"), TEXT("")).Replace(TEXT("_"), TEXT(""));
+	}
+
 	int32 ReadInt(const TSharedPtr<FJsonObject>& Obj, const FString& Key)
 	{
 		double Number = 0.0;
@@ -103,6 +110,8 @@ FAshesValidationResult UResponseValidator::Validate(const FString& RawJson, cons
 		Result.Notes.Add(TEXT("no reply text"));
 		return Result;
 	}
+	// Markdown emphasis shows literally on screen ("*you*")
+	R.Reply = StripEmphasis(R.Reply);
 	R.Reply.TrimStartAndEndInline();
 
 	// 2) Reply length: 1–4 sentences, at most 80 words
@@ -128,6 +137,7 @@ FAshesValidationResult UResponseValidator::Validate(const FString& RawJson, cons
 	}
 
 	Obj->TryGetStringField(TEXT("gesture"), R.Gesture);
+	R.Gesture = StripEmphasis(R.Gesture).TrimStartAndEnd();
 
 	// 4) Clamp every relationship delta to the per-turn limits (an impossible +50 becomes +8)
 	for (const FRelationshipValueDef& Def : Context.Values)
@@ -186,12 +196,13 @@ FAshesValidationResult UResponseValidator::Validate(const FString& RawJson, cons
 	Obj->TryGetBoolField(TEXT("off_topic"), R.bOffTopic);
 
 	// 7) Spoilers and unsafe words -> regenerate once, then the fallback line
-	for (const FString& Keyword : Context.SpoilerKeywords)
+	for (const FSpoilerKeyword& Spoiler : Context.SpoilerKeywords)
 	{
-		if (!Keyword.IsEmpty() && R.Reply.Contains(Keyword, ESearchCase::IgnoreCase))
+		const bool bLocked = Spoiler.UnlockChapter == 0 || Context.Chapter < Spoiler.UnlockChapter;
+		if (bLocked && !Spoiler.Keyword.IsEmpty() && R.Reply.Contains(Spoiler.Keyword, ESearchCase::IgnoreCase))
 		{
 			Result.Outcome = EValidationOutcome::Regenerate;
-			Result.Notes.Add(FString::Printf(TEXT("spoiler keyword '%s'"), *Keyword));
+			Result.Notes.Add(FString::Printf(TEXT("spoiler keyword '%s' (allowed from chapter %d)"), *Spoiler.Keyword, Spoiler.UnlockChapter));
 			return Result;
 		}
 	}

@@ -1,4 +1,4 @@
-// AI-assisted: Claude Code, 11.11.2026, checks and clamps every model reply before the game uses it (Phase 4). Reviewed by <pending>.
+// AI-assisted: Claude Code, 11.11.2026, checks and clamps every model reply before the game uses it (Phase 4); spoiler unlock chapters (12.11.2026). Reviewed by <pending>.
 
 #pragma once
 
@@ -18,7 +18,9 @@ struct ASHES_API FAshesValidationContext
 	TArray<FRelationshipValueDef> Values;
 	TArray<FName> AllowedBeats;
 	TArray<FName> AllowedClues;
-	TArray<FString> SpoilerKeywords;
+	TArray<FSpoilerKeyword> SpoilerKeywords;
+	/** Current chapter: a keyword is blocked while Chapter < UnlockChapter (or always when UnlockChapter == 0) */
+	int32 Chapter = 1;
 	TArray<FString> SafetyWords;
 	int32 MaxWords = 80;
 	int32 MaxSuggestions = 3;

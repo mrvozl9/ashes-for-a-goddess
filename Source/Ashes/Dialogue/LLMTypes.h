@@ -1,4 +1,4 @@
-// AI-assisted: Claude Code, 10.11.2026, request / reply types for the LLM providers (Phase 3). Reviewed by <pending>.
+// AI-assisted: Claude Code, 10.11.2026, request / reply types for the LLM providers (Phase 3); fallback context fields (Phase 4, 12.11.2026). Reviewed by <pending>.
 
 #pragma once
 
@@ -41,6 +41,24 @@ struct ASHES_API FLLMRequest
 	/** Ask the model for a single JSON object (GDD 8.1 response JSON) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="LLM")
 	bool bJsonOutput = true;
+
+	/** For the fallback pick (DT_FallbackLines): scene row, beat being pushed (None = any), current emotion */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="LLM")
+	FName FallbackScene;
+
+	/** DT_Characters row of the speaker (fallback lines are per character) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="LLM")
+	FName FallbackCharacter;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="LLM")
+	FName FallbackBeat;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="LLM")
+	FName FallbackEmotion;
+
+	/** True: pick a Hesitate line (online timeout / broken reply); false: a Content line (offline) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="LLM")
+	bool bHesitate = false;
 };
 
 /** What comes back. Text is the raw model output (the JSON string); UResponseValidator parses it later. */
@@ -72,6 +90,16 @@ struct ASHES_API FLLMReply
 
 	UPROPERTY(BlueprintReadOnly, Category="LLM")
 	float TokensPerSecond = 0.f;
+
+	/** Prompt tokens read for this request, of which taken from the server cache, and how long reading took */
+	UPROPERTY(BlueprintReadOnly, Category="LLM")
+	int32 PromptTokens = 0;
+
+	UPROPERTY(BlueprintReadOnly, Category="LLM")
+	int32 CachedTokens = 0;
+
+	UPROPERTY(BlueprintReadOnly, Category="LLM")
+	float PromptMs = 0.f;
 };
 
 /** Called on the game thread when a request finishes (success, failure or timeout) */

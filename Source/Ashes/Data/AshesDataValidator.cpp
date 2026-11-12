@@ -93,10 +93,10 @@ namespace AshesData
 	{
 		static const FAshesTableDef Defs[] =
 		{
-			{ TEXT("DT_Characters"),    &FCharacterCardRow::StaticStruct, &FAshesDataTables::Characters },
-			{ TEXT("DT_Scenes"),        &FSceneCardRow::StaticStruct,     &FAshesDataTables::Scenes },
-			{ TEXT("DT_Clues"),         &FClueRow::StaticStruct,          &FAshesDataTables::Clues },
-			{ TEXT("DT_FallbackLines"), &FFallbackLineRow::StaticStruct,  &FAshesDataTables::FallbackLines },
+			{ TEXT("DT_Characters"),    &FCharacterCardRow::StaticStruct, &FAshesDataTables::Characters,    false },
+			{ TEXT("DT_Scenes"),        &FSceneCardRow::StaticStruct,     &FAshesDataTables::Scenes,        false },
+			{ TEXT("DT_Clues"),         &FClueRow::StaticStruct,          &FAshesDataTables::Clues,         false },
+			{ TEXT("DT_FallbackLines"), &FFallbackLineRow::StaticStruct,  &FAshesDataTables::FallbackLines, false },
 			{ TEXT("DT_OfflineTrees"),  &FOfflineNodeRow::StaticStruct,   &FAshesDataTables::OfflineTrees },
 			{ TEXT("DT_Barks"),         &FBarkRow::StaticStruct,          &FAshesDataTables::Barks },
 			{ TEXT("DT_DanceCharts"),   &FDanceChartRow::StaticStruct,    &FAshesDataTables::DanceCharts },
@@ -463,27 +463,33 @@ namespace
 				if (Clue.Chapter < 1) { Report.Error(Table, Row, TEXT("Chapter must be 1 or above")); }
 				if (IsBlank(Clue.JournalText)) { Report.Error(Table, Row, TEXT("JournalText is empty")); }
 				if (IsBlank(Clue.Holder)) { Report.Error(Table, Row, TEXT("Holder is empty")); }
-				if (IsBlank(Clue.TopicText)) { Report.Warning(Table, Row, TEXT("TopicText is empty")); }
+				if (IsBlank(Clue.Topic)) { Report.Warning(Table, Row, TEXT("Topic is empty")); }
 
-				if (Clue.Source == EClueSource::Talk)
+				// Source is free text ("talk", "eavesdrop", "talk (after any other clue)"); talk clues are held by a character
+				if (Clue.Source.TrimStartAndEnd().StartsWith(TEXT("talk"), ESearchCase::IgnoreCase))
 				{
-					if (!IsBlank(Clue.Holder) && T.Characters && !FindRow<FCharacterCardRow>(T.Characters, FName(*Clue.Holder.TrimStartAndEnd())))
+					if (!IsBlank(Clue.Holder) && T.Characters)
 					{
-						Report.Error(Table, Row, FString::Printf(TEXT("talk clue: holder \"%s\" is not in DT_Characters"), *Clue.Holder));
+						const FString Holder = Clue.Holder.TrimStartAndEnd();
+						bool bFound = FindRow<FCharacterCardRow>(T.Characters, FName(*Holder)) != nullptr;
+						if (!bFound)
+						{
+							for (const TPair<FName, uint8*>& Pair : T.Characters->GetRowMap())
+							{
+								const FCharacterCardRow* Card = reinterpret_cast<const FCharacterCardRow*>(Pair.Value);
+								if (Card->DisplayName.TrimStartAndEnd().Equals(Holder, ESearchCase::IgnoreCase))
+								{
+									bFound = true;
+									break;
+								}
+							}
+						}
+						if (!bFound)
+						{
+							Report.Error(Table, Row, FString::Printf(TEXT("talk clue: holder \"%s\" is not in DT_Characters"), *Clue.Holder));
+						}
 					}
 					if (IsBlank(Clue.PromptHint)) { Report.Warning(Table, Row, TEXT("talk clue without PromptHint")); }
-				}
-
-				if (!Clue.RequiresClue.IsNone())
-				{
-					if (Clue.RequiresClue.ToString().Equals(Row, ESearchCase::IgnoreCase))
-					{
-						Report.Error(Table, Row, TEXT("RequiresClue points at itself"));
-					}
-					else
-					{
-						CheckClueRef(Table, Row, Clue.RequiresClue, TEXT("RequiresClue"));
-					}
 				}
 			});
 		}
@@ -497,11 +503,8 @@ namespace
 				CheckLineLength(Table, Row, Line.Line, TEXT("Line"));
 
 				const FCharacterCardRow* Card = FindRow<FCharacterCardRow>(T.Characters, Line.Character);
-				if (Line.Character.IsNone())
-				{
-					Report.Error(Table, Row, TEXT("Character is empty"));
-				}
-				else if (T.Characters && !Card)
+				// An empty Character means "any character"
+				if (!Line.Character.IsNone() && T.Characters && !Card)
 				{
 					Report.Error(Table, Row, FString::Printf(TEXT("character \"%s\" is not in DT_Characters"), *Line.Character.ToString()));
 				}
@@ -536,8 +539,6 @@ namespace
 				{
 					Report.Error(Table, Row, FString::Printf(TEXT("emotion \"%s\" is not one of %s's emotions"), *Line.Emotion.ToString(), *Line.Character.ToString()));
 				}
-
-				CheckClueRef(Table, Row, Line.Clue, TEXT("Clue"));
 			});
 		}
 

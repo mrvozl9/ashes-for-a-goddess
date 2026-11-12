@@ -1,0 +1,55 @@
+Character,Scene,Beat,Emotion,Line,Evasive
+Zafir,any,any,teasing,"Ask me something easier, Little Ember.",yes
+Zafir,any,any,neutral,"[He hums a few notes of an old song, notices you listening, and stops.]",yes
+Zafir,any,any,teasing,"That's a big question for such a small ember. Ask me again another night.",yes
+Zafir,any,any,neutral,"[He tilts his head, smiling, and says nothing at all.]",yes
+Zafir,any,any,teasing,"I'll answer that when you answer one of mine.",yes
+Zafir,any,any,neutral,"Some sparks are better left where they fell. Leave this one.",yes
+Zafir,any,any,cold,"Not that. Ask me something else.",yes
+Zafir,any,any,tender,"[He starts to answer, then only shakes his head.]",yes
+Vashir,any,any,serene,"[He pinches out a candle flame and watches the smoke rise.]",yes
+Vashir,any,any,serene,"The Goddess teaches patience, child. So shall I.",yes
+Vashir,any,any,curious,"[He studies you for a long moment, kind-eyed, and says nothing.]",yes
+Vashir,any,any,serene,"Some questions are better laid before the Goddess than before a king.",yes
+Vashir,any,any,curious,"Is that what you wish to ask me? Think again, child, and ask me better.",yes
+Vashir,any,any,serene,"Let us leave that, child. The Goddess hears what we do not say.",yes
+Vashir,any,any,pleased,"[He smiles slowly, as if you had said something wise.]",yes
+Vashir,any,any,serene,"[He folds his hands and waits, as though you had not finished speaking.]",yes
+Nura,any,any,amused,"Ha! You think I'd give that away for free? Bring me something better.",yes
+Nura,any,any,neutral,"[She fiddles with the bells in her braid and pretends she didn't hear.]",yes
+Nura,any,any,sharp,"Ask me after rehearsal. Or never. Never works too.",yes
+Nura,any,any,amused,"Darling, that's a question for someone who cares.",yes
+Nura,any,any,wary,"[She glances over her shoulder, then back at you, and smiles too brightly.]",yes
+Nura,any,any,neutral,"Mm. Next question.",yes
+Nura,any,any,sharp,"Did your feet ask that, or your mouth? Neither one is good enough yet.",yes
+Idris,any,any,stern,"Not your concern, dancer.",yes
+Idris,any,any,neutral,"[He looks past you at the patrol and does not answer.]",yes
+Idris,any,any,stern,"I don't answer questions. I ask them.",yes
+Idris,any,any,neutral,"Hm.",yes
+Idris,any,any,wary,"[He folds his arms and waits for you to say something sensible.]",yes
+Idris,any,any,stern,"Ask your troupe leader.",yes
+Idris,any,any,stern,"Mind your steps, dancer, not my business.",yes
+Omar,any,any,nervous,"Forgive me, my lady, I couldn't say...",yes
+Omar,any,any,neutral,"[He bows low and busies himself with the wine tray.]",yes
+Omar,any,any,nervous,"[He glances toward the nobles and lets the sentence die before it starts.]",yes
+Omar,any,any,warm,"That's... perhaps not for a servant to answer, my lady.",yes
+Omar,any,any,neutral,"More wine, my lady? Or coffee? I... must keep moving.",yes
+Omar,any,any,nervous,"Please, my lady, the walls...",yes
+Ilyas,any,any,serene,"May she rise, child. The Goddess knows the answer, even when I do not.",yes
+Ilyas,any,any,devout,"[He touches the ash on his temples and murmurs a short prayer.]",yes
+Ilyas,any,any,serene,"Ask the flame, child. It listens better than an old priest.",yes
+Ilyas,any,any,devout,"Such questions are for the high priests, child. I only tend the flame.",yes
+Ilyas,any,any,serene,"[He smiles and blesses you with two fingers, as if that were an answer.]",yes
+Ilyas,any,any,troubled,"Hm? Forgive me, child, my thoughts were... May she rise.",yes
+Tariq,any,any,bored,"[He yawns.] Ask someone who's awake.",yes
+Tariq,any,any,greedy,"That one costs more than you've got, dancer.",yes
+Tariq,any,any,blunt,"Don't know. Don't care.",yes
+Tariq,any,any,bored,"[He shrugs and stares at the wall.]",yes
+Tariq,any,any,blunt,"My shift's long enough without your questions.",yes
+Tariq,any,any,greedy,"[He rubs his thumb and fingers together and says nothing.]",yes
+Aisha,any,any,sweet,"Oh, sweetheart, you ask the funniest things!",yes
+Aisha,any,any,sharp,"[She smiles with her mouth only and turns away.]",yes
+Aisha,any,any,sweet,"[She laughs, light and empty, and fixes her bangles.]",yes
+Aisha,any,any,sharp,"Work it out yourself. The new girl is so clever, isn't she?",yes
+Aisha,any,any,sweet,"Mm, who knows? Certainly not me, sweetheart.",yes
+Aisha,any,any,jealous,"Why would I tell you? You'll have everything else soon enough.",yes

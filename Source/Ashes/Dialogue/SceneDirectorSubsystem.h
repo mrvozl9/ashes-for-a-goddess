@@ -1,4 +1,4 @@
-// AI-assisted: Claude Code, 11.11.2026, runs one conversation scene: prompt, model, validator, turn limit (Phase 5; full state machine in Phase 7). Reviewed by <pending>.
+// AI-assisted: Claude Code, 11.11.2026, runs one conversation scene: prompt, model, validator, turn limit (Phase 5; full state machine in Phase 7); beats, clue hints, fallback context (Phase 4 data, 12.11.2026); soft / hard limit with hesitation. Reviewed by <pending>.
 
 #pragma once
 
@@ -17,6 +17,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FAshesReplyReady, const FLLMRespons
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FAshesThinkingChanged, bool, bThinking);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FAshesTurnsChanged, int32, TurnsLeft);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FAshesSceneEnded);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FAshesHesitating);
 
 /**
  *  One conversation at a time (technical_design.md section 4.2).
@@ -72,14 +73,34 @@ public:
 	UPROPERTY(BlueprintAssignable, Category="Conversation")
 	FAshesSceneEnded OnSceneEnded;
 
+	/** Soft limit reached while still waiting: the status shows "<Name> hesitates..." (no dialogue line) */
+	UPROPERTY(BlueprintAssignable, Category="Conversation")
+	FAshesHesitating OnHesitating;
+
 	/** Minimum time the typing indicator shows (design.md Motion_TypingIndicator) */
 	static constexpr float MinThinkingSeconds = 0.4f;
+
+	/** Undo the turn of an unanswered line: one turn back and the player's line leaves the history (public for tests) */
+	static void RefundUnansweredTurn(int32& InOutTurnsTaken, TArray<FConversationTurn>& InOutHistory);
 
 private:
 
 	void RequestReply(const FLLMRequest& Request, int32 AttemptsLeft);
 	void DeliverReply(const FLLMResponse& Response, bool bFromFallback);
 	void UseFallback(const FLLMRequest& Request);
+
+	/** Soft limit reached: status only, keep waiting for the real answer */
+	void ShowHesitation();
+
+	/** Bumped per player line: replies, retries and timeouts of an older line are dropped */
+	int32 RequestSerial = 0;
+
+	/** Online failure (hard limit, broken / spoiling replies): a Hesitate line instead of an answer; the turn does not count */
+	void HesitateInsteadOfReply(const FLLMRequest& Request, const FString& Reason);
+	void FinishHesitation(const FLLMResponse& Hesitation);
+
+	/** Shows a fallback line: speech with the speaker, a [gesture] as "(...)"; gesture-only lines show just the gesture */
+	void PostFallbackLine(const FLLMResponse& Line);
 
 	bool bActive = false;
 	bool bWaiting = false;
@@ -93,6 +114,13 @@ private:
 	FPromptState State;
 	TArray<FConversationTurn> History;
 	TArray<FString> LastSuggestions;
+	TSet<FName> ReachedBeats;
+	FName LastEmotion;
+	FName SceneRowName;
+	FName CharacterRowName;
+
+	/** Scene, beat being pushed and current emotion, so a fallback line fits the moment (DT_FallbackLines) */
+	void FillFallbackContext(FLLMRequest& Request) const;
 
 	TWeakObjectPtr<AAshesNPC> CurrentNpc;
 	TWeakObjectPtr<AAshesCharacter> CurrentSahra;
@@ -101,4 +129,5 @@ private:
 	TObjectPtr<UConversationWidget> Widget;
 
 	FTimerHandle ThinkingTimer;
+	FTimerHandle HesitateTimer;
 };

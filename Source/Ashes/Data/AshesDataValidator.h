@@ -69,6 +69,9 @@ struct ASHES_API FAshesTableDef
 	const TCHAR* Name = nullptr;
 	UScriptStruct* (*GetRowStruct)() = nullptr;
 	const UDataTable* FAshesDataTables::* Slot = nullptr;
+
+	/** False for the tables the data team imports from Data/*.json; Ashes.Data.Import and ExportTemplates skip them (Validate still checks them) */
+	bool bImportFromCsv = true;
 };
 
 namespace AshesData

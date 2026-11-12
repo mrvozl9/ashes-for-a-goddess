@@ -1,8 +1,10 @@
 // AI-assisted: Claude Code, 12.11.2026, console commands Ashes.Data.Import / Validate / ExportTemplates (CSV -> DataTable assets + data report). Reviewed by Baha.
 //
 // Workflow: the CSV files live in Content/Ashes/Data/CSV/<TableName>.csv (first column = row id).
-// After changing a CSV, run "Ashes.Data.Import" in the editor console: every table that has a CSV is rebuilt from it,
-// saved, and all tables are checked. The report is printed to the Output Log and saved in Saved/DataReports.
+// Only four tables are imported from CSV: DT_OfflineTrees, DT_Barks, DT_DanceCharts and DT_Cutscenes.
+// DT_Characters, DT_Scenes, DT_Clues and DT_FallbackLines are owned by the data team (Data/*.json); they are only checked.
+// After changing a CSV, run "Ashes.Data.Import" in the editor console: every one of the four tables that has a CSV is rebuilt from it,
+// saved, and all eight tables are checked. The report is printed to the Output Log and saved in Saved/DataReports.
 // No code changes are needed for new or changed rows.
 
 #include "CoreMinimal.h"
@@ -167,7 +169,15 @@ namespace AshesDataCommands
 		FAshesDataReport Report;
 		for (const FAshesTableDef& Def : AshesData::GetTableDefs())
 		{
-			// Optional argument: only this table (e.g. Ashes.Data.Import DT_Clues)
+			if (!Def.bImportFromCsv)
+			{
+				if (Args.Contains(FString(Def.Name)))
+				{
+					Report.Info(Def.Name, FString(), TEXT("owned by the data team, not imported from CSV"));
+				}
+				continue;
+			}
+			// Optional argument: only this table (e.g. Ashes.Data.Import DT_Barks)
 			if (Args.Num() == 0 || Args.Contains(FString(Def.Name)))
 			{
 				ImportTable(Def, Report);
@@ -182,6 +192,10 @@ namespace AshesDataCommands
 	{
 		for (const FAshesTableDef& Def : AshesData::GetTableDefs())
 		{
+			if (!Def.bImportFromCsv)
+			{
+				continue;
+			}
 			const FString CsvPath = GetCsvPath(Def);
 			if (FPaths::FileExists(CsvPath))
 			{
@@ -223,7 +237,7 @@ static FAutoConsoleCommand GAshesDataValidate(
 
 static FAutoConsoleCommand GAshesDataImport(
 	TEXT("Ashes.Data.Import"),
-	TEXT("Rebuild the DataTables from Content/Ashes/Data/CSV/<Table>.csv, save them and write a report. Optional: table names (e.g. Ashes.Data.Import DT_Clues)"),
+	TEXT("Rebuild the DataTables from Content/Ashes/Data/CSV/<Table>.csv, save them and write a report. Optional: table names (e.g. Ashes.Data.Import DT_Barks)"),
 	FConsoleCommandWithArgsDelegate::CreateStatic(&AshesDataCommands::Import));
 
 static FAutoConsoleCommand GAshesDataExportTemplates(

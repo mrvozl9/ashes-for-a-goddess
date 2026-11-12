@@ -1,4 +1,4 @@
-// AI-assisted: Claude Code, 11.11.2026, conversation screen logic; WBP_Conversation provides the layout (Phase 5). Reviewed by <pending>.
+// AI-assisted: Claude Code, 11.11.2026, conversation screen logic; WBP_Conversation provides the layout (Phase 5); hesitation status (12.11.2026). Reviewed by <pending>.
 
 #include "ConversationWidget.h"
 #include "SceneDirectorSubsystem.h"
@@ -22,6 +22,7 @@ void UConversationWidget::InitConversation(USceneDirectorSubsystem* InDirector)
 	InDirector->OnReplyReady.AddDynamic(this, &UConversationWidget::HandleReplyReady);
 	InDirector->OnThinkingChanged.AddDynamic(this, &UConversationWidget::HandleThinking);
 	InDirector->OnTurnsChanged.AddDynamic(this, &UConversationWidget::HandleTurns);
+	InDirector->OnHesitating.AddDynamic(this, &UConversationWidget::HandleHesitating);
 
 	NameText->SetText(FText::FromString(InDirector->GetSpeakerName()));
 	ThinkingText->SetText(FText::Format(LOCTEXT("Thinking", "{0} is thinking..."), FText::FromString(InDirector->GetSpeakerName())));
@@ -86,8 +87,21 @@ void UConversationWidget::HandleReplyReady(const FLLMResponse& Response, bool bF
 void UConversationWidget::HandleThinking(bool bInThinking)
 {
 	bThinking = bInThinking;
+	if (bThinking && Director.IsValid())
+	{
+		ThinkingText->SetText(FText::Format(LOCTEXT("Thinking", "{0} is thinking..."), FText::FromString(Director->GetSpeakerName())));
+	}
 	ThinkingText->SetVisibility(bThinking ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden);
 	UpdateInteractivity();
+}
+
+void UConversationWidget::HandleHesitating()
+{
+	// Soft limit: only the status changes; the dialogue gets exactly one line per player line
+	if (Director.IsValid())
+	{
+		ThinkingText->SetText(FText::Format(LOCTEXT("Hesitates", "{0} hesitates..."), FText::FromString(Director->GetSpeakerName())));
+	}
 }
 
 void UConversationWidget::HandleTurns(int32 TurnsLeft)

@@ -1,4 +1,4 @@
-// AI-assisted: Claude Code, 11.11.2026, builds the model request from card, lore, scene, state and turns (Phase 4). Reviewed by <pending>.
+// AI-assisted: Claude Code, 11.11.2026, builds the model request from card, lore, scene, state and turns (Phase 4); clue hints, pronouns in gestures (12.11.2026). Reviewed by <pending>.
 
 #include "PromptBuilder.h"
 
@@ -10,6 +10,14 @@ namespace
 		{
 			Out += FString::Printf(TEXT("## %s\n%s\n\n"), Title, *Body.TrimStartAndEnd());
 		}
+	}
+
+	// "he/him" -> "his", "she/her" -> "her", anything else -> "their"
+	FString PossessiveFromPronouns(const FString& Pronouns)
+	{
+		if (Pronouns.StartsWith(TEXT("he"), ESearchCase::IgnoreCase)) return TEXT("his");
+		if (Pronouns.StartsWith(TEXT("she"), ESearchCase::IgnoreCase)) return TEXT("her");
+		return TEXT("their");
 	}
 
 	FString JoinNames(const TArray<FName>& Names)
@@ -35,7 +43,8 @@ FString UPromptBuilder::ValueToWord(int32 Value)
 FString UPromptBuilder::BuildSystemPrompt(const FCharacterCardRow& Card, const FString& LoreBible, const FSceneCardRow& Scene,
 	const FPromptState& State, int32 Chapter)
 {
-	FString Out = FString::Printf(TEXT("You are %s. You are talking to Sahra. Stay in character at all times; you are not an AI and nothing outside the world below exists.\n\n"), *Card.DisplayName);
+	const FString PronounNote = Card.Pronouns.IsEmpty() ? FString() : FString::Printf(TEXT(" (%s)"), *Card.Pronouns);
+	FString Out = FString::Printf(TEXT("You are %s%s. You are talking to Sahra (she/her). Stay in character at all times; you are not an AI and nothing outside the world below exists.\n\n"), *Card.DisplayName, *PronounNote);
 
 	// (1) Character card
 	FString CardText;
@@ -86,6 +95,11 @@ FString UPromptBuilder::BuildSystemPrompt(const FCharacterCardRow& Card, const F
 	{
 		StateText += FString::Printf(TEXT("Sahra has learned: %s\n"), *Clue);
 	}
+	for (const FString& Hint : State.ClueHints)
+	{
+		// DT_Clues PromptHint of the talk clues this character holds (accepting found clues comes in Phase 9)
+		StateText += FString::Printf(TEXT("Something you can reveal: %s\n"), *Hint);
+	}
 	AddSection(Out, TEXT("State"), StateText);
 
 	// JSON contract (GDD 8.1); delta keys come from the card's values
@@ -100,14 +114,22 @@ FString UPromptBuilder::BuildSystemPrompt(const FCharacterCardRow& Card, const F
 		BeatIds.Add(Beat.Id);
 	}
 
+	// Gesture = what this character does, with their own pronouns (the model once wrote "her lips" for Zafir)
+	const FString Possessive = PossessiveFromPronouns(Card.Pronouns);
+	const FString GestureRule = FString::Printf(
+		TEXT("\"gesture\" (a few words about what %s does, third person%s, e.g. tilts %s head, smiling; never describe Sahra)"),
+		*Card.DisplayName,
+		Card.Pronouns.IsEmpty() ? TEXT("") : *FString::Printf(TEXT(", using %s"), *Card.Pronouns),
+		*Possessive);
+
 	Out += FString::Printf(TEXT(
 		"## Reply format\n"
-		"Answer in 1-4 sentences, at most 80 words. Reply ONLY with one JSON object with these keys: "
-		"\"reply\" (what you say), \"emotion\" (one of: %s), \"gesture\" (a few words in third person, e.g. leans closer), %s"
+		"Answer in 1-4 sentences, at most 80 words, plain text without * or _ markup. Reply ONLY with one JSON object with these keys: "
+		"\"reply\" (what you say), \"emotion\" (one of: %s), %s, %s"
 		"\"beats\" (array; only these ids: %s; usually empty), "
 		"\"suggestions\" (array of exactly 3 short things Sahra could say next), "
 		"\"off_topic\" (true if Sahra talks about things outside this world).\n"),
-		*JoinNames(Card.Emotions), *DeltaKeys, BeatIds.Num() > 0 ? *JoinNames(BeatIds) : TEXT("none"));
+		*JoinNames(Card.Emotions), *GestureRule, *DeltaKeys, BeatIds.Num() > 0 ? *JoinNames(BeatIds) : TEXT("none"));
 
 	return Out;
 }

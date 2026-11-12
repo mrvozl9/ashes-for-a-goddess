@@ -1,4 +1,4 @@
-// AI-assisted: Claude Code, 10.11.2026, HTTP provider for OpenAI-compatible chat endpoints (built-in llama-server, Ollama, cloud) (Phase 3); streamed so a timed-out answer stops on the server (11.11.2026). Reviewed by <pending>.
+// AI-assisted: Claude Code, 10.11.2026, HTTP provider for OpenAI-compatible chat endpoints (built-in llama-server, Ollama, cloud) (Phase 3); streamed so a timed-out answer stops on the server (11.11.2026); prompt cache + timings (12.11.2026). Reviewed by <pending>.
 
 #include "OpenAICompatibleLLMProvider.h"
 #include "Ashes.h"
@@ -20,6 +20,8 @@ FString UOpenAICompatibleLLMProvider::BuildRequestBody(const FLLMRequest& Reques
 	// Streamed: when we time out and close the connection, llama-server stops writing the answer at once.
 	// (Without streaming it kept generating the abandoned answer, and the next request waited behind it.)
 	Root->SetBoolField(TEXT("stream"), true);
+	// Reuse the processed prompt (card, lore, scene stay identical at the start of every request)
+	Root->SetBoolField(TEXT("cache_prompt"), true);
 
 	TArray<TSharedPtr<FJsonValue>> Messages;
 	for (const FLLMMessage& Message : Request.Messages)
@@ -114,6 +116,11 @@ namespace
 				(*Timings)->TryGetNumberField(TEXT("predicted_n"), Predicted);
 				OutReply.TokensPerSecond = static_cast<float>(PerSecond);
 				OutReply.CompletionTokens = Predicted;
+				double PromptMs = 0.0;
+				(*Timings)->TryGetNumberField(TEXT("prompt_n"), OutReply.PromptTokens);
+				(*Timings)->TryGetNumberField(TEXT("cache_n"), OutReply.CachedTokens);
+				(*Timings)->TryGetNumberField(TEXT("prompt_ms"), PromptMs);
+				OutReply.PromptMs = static_cast<float>(PromptMs);
 			}
 			const TSharedPtr<FJsonObject>* Usage = nullptr;
 			if (OutReply.CompletionTokens == 0 && Chunk->TryGetObjectField(TEXT("usage"), Usage))
@@ -224,6 +231,8 @@ void UOpenAICompatibleLLMProvider::SendAsync(const FLLMRequest& Request, FOnLLMR
 	const FString Body = BuildRequestBody(Request);
 	Http->SetContentAsString(Body);
 	Http->SetTimeout(TimeoutSeconds);
+	// No bytes arrive while a cold prompt is read (~30 s on a laptop CPU); the default 30 s activity timeout would cut it
+	Http->SetActivityTimeout(TimeoutSeconds);
 
 	const double StartTime = FPlatformTime::Seconds();
 

@@ -59,9 +59,9 @@ namespace AshesDataTestData
 		FClueRow Clue;
 		Clue.Chapter = 1;
 		Clue.Holder = Holder;
-		Clue.Source = EClueSource::Talk;
+		Clue.Source = TEXT("talk");
 		Clue.JournalText = TEXT("Nura: Zafir is never there after the dance.");
-		Clue.TopicText = TEXT("Where does Zafir go after the dance?");
+		Clue.Topic = TEXT("Where does Zafir go after the dance?");
 		Clue.PromptHint = TEXT("If Sahra asks about Zafir, say he is never there after the dance.");
 		return Clue;
 	}
@@ -73,7 +73,6 @@ namespace AshesDataTestData
 		Line.Scene = TEXT("Ch1_ZafirKeyScene");
 		Line.Beat = TEXT("uneasy_truce");
 		Line.Emotion = TEXT("teasing");
-		Line.Clue = TEXT("ch1_nura_disappears");
 		Line.Line = TEXT("Ask nicely and I might lie to you more gently.");
 		return Line;
 	}
@@ -128,10 +127,10 @@ namespace AshesDataTestData
 		}
 	};
 
-	const TCHAR* ClueCsv = TEXT(
-		"Id,Chapter,Holder,Source,JournalText,TopicText,PromptHint,RequiresClue\n"
-		"ch1_nura_disappears,1,Nura,Talk,\"Nura: Zafir never misses a dance, and he is never there after it.\",\"Where does Zafir go after the dance?\",\"If Sahra asks about Zafir, say so.\",\n"
-		"ch1_guards_blade,1,Guards at the lattice screen,Eavesdrop,\"Two guards:\nsomeone saw a blade under Zafir's silks.\",\"They say Zafir carries a blade.\",,ch1_nura_disappears\n");
+	const TCHAR* BarkCsv = TEXT(
+		"Id,Kind,Chapter,Speaker,Line,Clue\n"
+		"ch1_bark_water,Bark,1,water seller,\"Fresh water, cold as a secret!\",\n"
+		"ch1_eaves_guards,Eavesdrop,1,Two guards,\"Guard 1: Did you see it?\nGuard 2: A blade under Zafir's silks.\",ch1_nura_disappears\n");
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAshesDataParsers, "Ashes.Data.Parsers", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
@@ -169,7 +168,7 @@ bool FAshesDataCsvIds::RunTest(const FString& Parameters)
 	using namespace AshesDataTestData;
 
 	FAshesDataReport Clean;
-	TestEqual(TEXT("two data rows"), AshesData::CheckCsvIds(ClueCsv, Clues, Clean), 2);
+	TestEqual(TEXT("two data rows"), AshesData::CheckCsvIds(BarkCsv, Clues, Clean), 2);
 	TestEqual(TEXT("no id problems in a clean CSV"), Clean.NumErrors(), 0);
 
 	const TCHAR* Broken = TEXT(
@@ -192,30 +191,30 @@ bool FAshesDataCsvImport::RunTest(const FString& Parameters)
 {
 	using namespace AshesDataTestData;
 
-	UDataTable* Table = MakeTable(FClueRow::StaticStruct());
-	const TArray<FString> Problems = Table->CreateTableFromCSVString(ClueCsv);
+	UDataTable* Table = MakeTable(FBarkRow::StaticStruct());
+	const TArray<FString> Problems = Table->CreateTableFromCSVString(BarkCsv);
 	for (const FString& Problem : Problems)
 	{
 		AddError(FString::Printf(TEXT("import problem: %s"), *Problem));
 	}
 	TestEqual(TEXT("two rows imported"), Table->GetRowMap().Num(), 2);
 
-	const FClueRow* Guards = Table->FindRow<FClueRow>(TEXT("ch1_guards_blade"), TEXT("test"), false);
+	const FBarkRow* Guards = Table->FindRow<FBarkRow>(TEXT("ch1_eaves_guards"), TEXT("test"), false);
 	if (TestNotNull(TEXT("eavesdrop row"), Guards))
 	{
-		TestTrue(TEXT("enum column"), Guards->Source == EClueSource::Eavesdrop);
-		TestEqual(TEXT("free-text holder"), Guards->Holder, FString(TEXT("Guards at the lattice screen")));
-		TestTrue(TEXT("line break inside quotes is kept"), Guards->JournalText.Contains(TEXT("\n")));
-		TestEqual(TEXT("requires clue"), Guards->RequiresClue, FName(TEXT("ch1_nura_disappears")));
+		TestTrue(TEXT("enum column"), Guards->Kind == EBarkKind::Eavesdrop);
+		TestEqual(TEXT("speaker"), Guards->Speaker, FString(TEXT("Two guards")));
+		TestTrue(TEXT("line break inside quotes is kept"), Guards->Line.Contains(TEXT("\n")));
+		TestEqual(TEXT("clue id"), Guards->Clue, FName(TEXT("ch1_nura_disappears")));
 	}
 
-	// Merve changes a text in the CSV and imports again: the table shows the new text, no code change
-	const FString Edited = FString(ClueCsv).Replace(TEXT("Where does Zafir go after the dance?"), TEXT("Where does he vanish to?"));
+	// A text is changed in the CSV and imported again: the table shows the new text, no code change
+	const FString Edited = FString(BarkCsv).Replace(TEXT("Fresh water, cold as a secret!"), TEXT("Water, cold as a grudge!"));
 	Table->CreateTableFromCSVString(Edited);
-	const FClueRow* Nura = Table->FindRow<FClueRow>(TEXT("ch1_nura_disappears"), TEXT("test"), false);
-	if (TestNotNull(TEXT("talk row after reimport"), Nura))
+	const FBarkRow* Water = Table->FindRow<FBarkRow>(TEXT("ch1_bark_water"), TEXT("test"), false);
+	if (TestNotNull(TEXT("bark row after reimport"), Water))
 	{
-		TestEqual(TEXT("reimport shows the edited text"), Nura->TopicText, FString(TEXT("Where does he vanish to?")));
+		TestEqual(TEXT("reimport shows the edited text"), Water->Line, FString(TEXT("Water, cold as a grudge!")));
 	}
 	TestEqual(TEXT("still two rows after reimport"), Table->GetRowMap().Num(), 2);
 	return true;
@@ -247,8 +246,18 @@ bool FAshesDataMissingReferences::RunTest(const FString& Parameters)
 	Set.Scenes->AddRow(TEXT("Ch9_Nowhere"), Scene);
 
 	FClueRow Clue = MakeClue(TEXT("Nobody"));
-	Clue.RequiresClue = TEXT("ch1_missing");
 	Set.Clues->AddRow(TEXT("ch1_bad"), Clue);
+
+	// Holder is a DisplayName that is not a row name: fine
+	FCharacterCardRow Named = MakeCard(TEXT("Lady Mirza"));
+	Set.Characters->AddRow(TEXT("Mirza"), Named);
+	Set.Clues->AddRow(TEXT("ch1_by_display_name"), MakeClue(TEXT("lady mirza")));
+
+	// Not a talk clue: the holder is free text
+	Clue = MakeClue(TEXT("Guards at the lattice screen"));
+	Clue.Source = TEXT("eavesdrop");
+	Clue.PromptHint.Reset();
+	Set.Clues->AddRow(TEXT("ch1_free_holder"), Clue);
 
 	FFallbackLineRow Line = MakeFallback();
 	Line.Character = TEXT("Ghost");
@@ -262,9 +271,6 @@ bool FAshesDataMissingReferences::RunTest(const FString& Parameters)
 	Line = MakeFallback();
 	Line.Emotion = TEXT("furious");
 	Set.Fallback->AddRow(TEXT("fb_emotion"), Line);
-	Line = MakeFallback();
-	Line.Clue = TEXT("ch1_missing");
-	Set.Fallback->AddRow(TEXT("fb_clue"), Line);
 
 	FOfflineNodeRow Node = MakeNode(2, 7);
 	Node.Changes = TEXT("favor:3");
@@ -275,12 +281,10 @@ bool FAshesDataMissingReferences::RunTest(const FString& Parameters)
 	const FAshesDataReport Report = Set.Validate();
 	TestTrue(TEXT("scene -> character"), Report.Has(Err, Scenes, TEXT("Ch9_Nowhere"), TEXT("\"Ghost\" is not in DT_Characters")));
 	TestTrue(TEXT("talk clue -> holder"), Report.Has(Err, Clues, TEXT("ch1_bad"), TEXT("holder \"Nobody\"")));
-	TestTrue(TEXT("clue -> required clue"), Report.Has(Err, Clues, TEXT("ch1_bad"), TEXT("RequiresClue: clue \"ch1_missing\"")));
 	TestTrue(TEXT("fallback -> character"), Report.Has(Err, Fallback, TEXT("fb_character"), TEXT("not in DT_Characters")));
 	TestTrue(TEXT("fallback -> scene"), Report.Has(Err, Fallback, TEXT("fb_scene"), TEXT("not in DT_Scenes")));
 	TestTrue(TEXT("fallback -> beat"), Report.Has(Err, Fallback, TEXT("fb_beat"), TEXT("beat \"no_such_beat\"")));
 	TestTrue(TEXT("fallback -> emotion"), Report.Has(Err, Fallback, TEXT("fb_emotion"), TEXT("emotion \"furious\"")));
-	TestTrue(TEXT("fallback -> clue"), Report.Has(Err, Fallback, TEXT("fb_clue"), TEXT("clue \"ch1_missing\"")));
 	TestTrue(TEXT("offline -> next node"), Report.Has(Err, Offline, TEXT("n2_bad"), TEXT("NextNode 7")));
 	TestTrue(TEXT("offline -> value name"), Report.Has(Err, Offline, TEXT("n2_bad"), TEXT("\"favor\" is not a relationship value")));
 	TestTrue(TEXT("offline -> beat"), Report.Has(Err, Offline, TEXT("n2_bad"), TEXT("beat \"no_such_beat\"")));
@@ -289,6 +293,8 @@ bool FAshesDataMissingReferences::RunTest(const FString& Parameters)
 	// The correct rows of the set must stay clean
 	TestFalse(TEXT("good fallback row has no error"), Report.Has(Err, Fallback, TEXT("fb_1"), TEXT("")));
 	TestFalse(TEXT("good clue row has no error"), Report.Has(Err, Clues, TEXT("ch1_nura_disappears"), TEXT("")));
+	TestFalse(TEXT("holder matching a DisplayName is no error"), Report.Has(Err, Clues, TEXT("ch1_by_display_name"), TEXT("")));
+	TestFalse(TEXT("free-text holder of a non-talk clue is no error"), Report.Has(Err, Clues, TEXT("ch1_free_holder"), TEXT("")));
 	return true;
 }
 
@@ -319,6 +325,10 @@ bool FAshesDataEmptyFields::RunTest(const FString& Parameters)
 	Line.Emotion = TEXT("any");
 	Set.Fallback->AddRow(TEXT("fb_blank"), Line);
 
+	Line = MakeFallback();
+	Line.Character = NAME_None;
+	Set.Fallback->AddRow(TEXT("fb_any_character"), Line);
+
 	FOfflineNodeRow Node = MakeNode(2, 0);
 	Node.PlayerLine.Reset();
 	Node.CharacterLine.Reset();
@@ -334,6 +344,7 @@ bool FAshesDataEmptyFields::RunTest(const FString& Parameters)
 	TestTrue(TEXT("scene Characters"), Report.Has(Err, Scenes, TEXT("Ch1_Blank"), TEXT("Characters is empty")));
 	TestTrue(TEXT("clue JournalText (spaces only)"), Report.Has(Err, Clues, TEXT("ch1_blank"), TEXT("JournalText is empty")));
 	TestTrue(TEXT("fallback Line"), Report.Has(Err, Fallback, TEXT("fb_blank"), TEXT("Line is empty")));
+	TestFalse(TEXT("empty fallback Character (any) is no error"), Report.Has(Err, Fallback, TEXT("fb_any_character"), TEXT("")));
 	TestFalse(TEXT("\"any\" beat and emotion are allowed"), Report.Has(Err, Fallback, TEXT("fb_blank"), TEXT("beat")) || Report.Has(Err, Fallback, TEXT("fb_blank"), TEXT("emotion")));
 	TestTrue(TEXT("offline PlayerLine"), Report.Has(Err, Offline, TEXT("n2_blank"), TEXT("PlayerLine is empty")));
 	TestTrue(TEXT("offline CharacterLine"), Report.Has(Err, Offline, TEXT("n2_blank"), TEXT("CharacterLine is empty")));
