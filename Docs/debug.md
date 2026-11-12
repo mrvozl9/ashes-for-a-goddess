@@ -3,6 +3,16 @@
 > One block per bug. Newest on top. Write the member's name in each block.
 > Unreal Engine 5.8 project since 10.11.2026. Course: Advanced Game Programming. Anyone on the team who finds a bug adds a block (Baha owns the C++ fixes from Phase 7 on).
 
+## Bug 4: two or three Zafir lines per player line, real reply never arrives
+- **Found by:** Merve (play test of the timeout change, 12.11.2026)
+- **When I:** talked to Zafir in PIE after the soft / hard limit change.
+- **I expected:** one answer per line.
+- **But:** after each line Zafir posted an evasive line at 6 s and another at the hard limit; no real reply; turns stayed at 11.
+- **Error from the Output Log:** `LLM request failed after 8.0 s: timeout or connection failed` (during the test the hard limit was set to 8 s by Claude's own forced-timeout test, which ran at the same time).
+- **My prompt:** (play test screenshot, relayed by the project assistant)
+- **The fix:** the soft limit only changes the status text ("Zafir hesitates..."); exactly one Zafir line per player line (real reply, or one evasive line after the hard limit / two invalid replies); a per-line request serial drops late replies. Editor hard limit `EditorHardTimeoutSeconds` = 60 s. Requests send `cache_prompt`; the log shows prompt / cached tokens and the limits used. Unreal's HTTP activity timeout (30 s without bytes) now uses the hard limit, so the cold warm-up (~30 s on the laptop CPU) is no longer cut.
+- **Did it work?** Yes: 3 turns, one line each, "Zafir hesitates..." at 6 s, real replies in 22.1 / 25.3 / 29.3 s, prompt ~1,900 tokens with ~1,860–1,910 from the cache (read in 0.9–1.7 s), both beats in order; cold warm-up 30.2 s without error; 13 tests green.
+
 ## Bug 3: Zafir's gesture says "her lips"
 - **Found by:** Merve (play test, 12.11.2026)
 - **When I:** talked to Zafir in PIE.

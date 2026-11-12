@@ -231,6 +231,8 @@ void UOpenAICompatibleLLMProvider::SendAsync(const FLLMRequest& Request, FOnLLMR
 	const FString Body = BuildRequestBody(Request);
 	Http->SetContentAsString(Body);
 	Http->SetTimeout(TimeoutSeconds);
+	// No bytes arrive while a cold prompt is read (~30 s on a laptop CPU); the default 30 s activity timeout would cut it
+	Http->SetActivityTimeout(TimeoutSeconds);
 
 	const double StartTime = FPlatformTime::Seconds();
 
