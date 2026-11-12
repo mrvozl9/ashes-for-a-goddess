@@ -1,4 +1,4 @@
-// AI-assisted: Claude Code, 11.11.2026, checks and clamps every model reply before the game uses it (Phase 4). Reviewed by <pending>.
+// AI-assisted: Claude Code, 11.11.2026, checks and clamps every model reply before the game uses it (Phase 4); spoiler unlock chapters (12.11.2026). Reviewed by <pending>.
 
 #include "ResponseValidator.h"
 #include "Dom/JsonObject.h"
@@ -12,6 +12,7 @@ FAshesValidationContext FAshesValidationContext::FromCard(const FCharacterCardRo
 	Context.FallbackEmotion = Card.FallbackEmotion;
 	Context.Values = Card.Values;
 	Context.SpoilerKeywords = Card.SpoilerKeywords;
+	Context.Chapter = Scene.Chapter;
 	Context.SafetyWords = UResponseValidator::DefaultSafetyWords();
 	for (const FBeatDef& Beat : Scene.Beats)
 	{
@@ -186,12 +187,13 @@ FAshesValidationResult UResponseValidator::Validate(const FString& RawJson, cons
 	Obj->TryGetBoolField(TEXT("off_topic"), R.bOffTopic);
 
 	// 7) Spoilers and unsafe words -> regenerate once, then the fallback line
-	for (const FString& Keyword : Context.SpoilerKeywords)
+	for (const FSpoilerKeyword& Spoiler : Context.SpoilerKeywords)
 	{
-		if (!Keyword.IsEmpty() && R.Reply.Contains(Keyword, ESearchCase::IgnoreCase))
+		const bool bLocked = Spoiler.UnlockChapter == 0 || Context.Chapter < Spoiler.UnlockChapter;
+		if (bLocked && !Spoiler.Keyword.IsEmpty() && R.Reply.Contains(Spoiler.Keyword, ESearchCase::IgnoreCase))
 		{
 			Result.Outcome = EValidationOutcome::Regenerate;
-			Result.Notes.Add(FString::Printf(TEXT("spoiler keyword '%s'"), *Keyword));
+			Result.Notes.Add(FString::Printf(TEXT("spoiler keyword '%s' (allowed from chapter %d)"), *Spoiler.Keyword, Spoiler.UnlockChapter));
 			return Result;
 		}
 	}

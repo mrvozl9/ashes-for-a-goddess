@@ -1,4 +1,4 @@
-// AI-assisted: Claude Code, 11.11.2026, builds the model request from card, lore, scene, state and turns (Phase 4). Reviewed by <pending>.
+// AI-assisted: Claude Code, 11.11.2026, builds the model request from card, lore, scene, state and turns (Phase 4); clue hints (12.11.2026). Reviewed by <pending>.
 
 #include "PromptBuilder.h"
 
@@ -85,6 +85,11 @@ FString UPromptBuilder::BuildSystemPrompt(const FCharacterCardRow& Card, const F
 	for (const FString& Clue : State.KnownClues)
 	{
 		StateText += FString::Printf(TEXT("Sahra has learned: %s\n"), *Clue);
+	}
+	for (const FString& Hint : State.ClueHints)
+	{
+		// DT_Clues PromptHint of the talk clues this character holds (accepting found clues comes in Phase 9)
+		StateText += FString::Printf(TEXT("Something you can reveal: %s\n"), *Hint);
 	}
 	AddSection(Out, TEXT("State"), StateText);
 

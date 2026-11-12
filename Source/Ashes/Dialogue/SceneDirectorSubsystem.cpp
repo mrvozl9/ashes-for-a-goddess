@@ -1,4 +1,4 @@
-// AI-assisted: Claude Code, 11.11.2026, runs one conversation scene: prompt, model, validator, turn limit (Phase 5; full state machine in Phase 7). Reviewed by <pending>.
+// AI-assisted: Claude Code, 11.11.2026, runs one conversation scene: prompt, model, validator, turn limit (Phase 5; full state machine in Phase 7); beats, clue hints, fallback context (Phase 4 data, 12.11.2026). Reviewed by <pending>.
 
 #include "SceneDirectorSubsystem.h"
 #include "Ashes.h"
@@ -19,6 +19,7 @@ namespace
 	const TCHAR* GCharactersPath = TEXT("/Game/Ashes/Data/DT_Characters.DT_Characters");
 	const TCHAR* GScenesPath = TEXT("/Game/Ashes/Data/DT_Scenes.DT_Scenes");
 	const TCHAR* GLorePath = TEXT("/Game/Ashes/Data/DA_LoreBible.DA_LoreBible");
+	const TCHAR* GCluesPath = TEXT("/Game/Ashes/Data/DT_Clues.DT_Clues");
 
 	// Bumped on every start / end so late model replies from a closed scene are ignored
 	int32 GSceneSerial = 0;
@@ -53,11 +54,28 @@ bool USceneDirectorSubsystem::StartScene(AAshesNPC* Npc, AAshesCharacter* Sahra)
 	Scene = *SceneRow;
 	const UAshesLoreBible* LoreAsset = LoadObject<UAshesLoreBible>(nullptr, GLorePath);
 	Lore = LoreAsset ? LoreAsset->Text : FString();
+	SceneRowName = Npc->SceneRowName;
+	ReachedBeats.Reset();
+	LastEmotion = NAME_None;
 
 	State = FPromptState();
 	for (const FRelationshipValueDef& Def : Card.Values)
 	{
 		State.Values.Add(Def.Name, Def.Start);
+	}
+
+	// Talk clues this character holds in this chapter: their hints go into the prompt (DT_Clues)
+	if (const UDataTable* Clues = LoadObject<UDataTable>(nullptr, GCluesPath, nullptr, LOAD_Quiet | LOAD_NoWarn))
+	{
+		TArray<FClueRow*> ClueRows;
+		Clues->GetAllRows<FClueRow>(TEXT("StartScene"), ClueRows);
+		for (const FClueRow* Clue : ClueRows)
+		{
+			if (Clue->Chapter == Scene.Chapter && Clue->Holder == Card.DisplayName && Clue->Source.StartsWith(TEXT("talk")) && !Clue->PromptHint.IsEmpty())
+			{
+				State.ClueHints.Add(Clue->PromptHint);
+			}
+		}
 	}
 	History.Reset();
 	LastSuggestions.Reset();
@@ -116,7 +134,8 @@ void USceneDirectorSubsystem::SubmitLine(const FString& InLine)
 	UE_LOG(LogAshes, Log, TEXT("Scene: Sahra: %s"), *Line);
 	OnLinePosted.Broadcast(TEXT("Sahra"), Line);
 
-	const FLLMRequest Request = UPromptBuilder::Build(Card, Lore, Scene, State, History, Line, Scene.Chapter);
+	FLLMRequest Request = UPromptBuilder::Build(Card, Lore, Scene, State, History, Line, Scene.Chapter);
+	FillFallbackContext(Request);
 	FConversationTurn Turn;
 	Turn.bFromPlayer = true;
 	Turn.Text = Line;
@@ -151,7 +170,7 @@ void USceneDirectorSubsystem::RequestReply(const FLLMRequest& Request, int32 Att
 
 		if (Reply.bFromFallback)
 		{
-			const FAshesValidationResult Parsed = UResponseValidator::Validate(Reply.Text, FAshesValidationContext());
+			const FAshesValidationResult Parsed = UResponseValidator::Validate(Reply.Text, FAshesValidationContext::FromCard(Self->Card, Self->Scene));
 			UE_LOG(LogAshes, Log, TEXT("Scene: fallback line (%s)"), *Reply.Error);
 			Self->DeliverReply(Parsed.Response, true);
 			return;
@@ -191,7 +210,7 @@ void USceneDirectorSubsystem::UseFallback(const FLLMRequest& Request)
 	{
 		if (USceneDirectorSubsystem* Self = WeakThis.Get())
 		{
-			Self->DeliverReply(UResponseValidator::Validate(Reply.Text, FAshesValidationContext()).Response, true);
+			Self->DeliverReply(UResponseValidator::Validate(Reply.Text, FAshesValidationContext::FromCard(Self->Card, Self->Scene)).Response, true);
 		}
 	}));
 }
@@ -242,6 +261,18 @@ void USceneDirectorSubsystem::DeliverReply(const FLLMResponse& InResponse, bool 
 	Turn.Text = Response.Reply;
 	History.Add(Turn);
 	LastSuggestions = Response.Suggestions;
+	if (!bFromFallback)
+	{
+		for (const FName& Beat : Response.Beats)
+		{
+			if (!ReachedBeats.Contains(Beat))
+			{
+				ReachedBeats.Add(Beat);
+				UE_LOG(LogAshes, Log, TEXT("Scene: beat reached: %s"), *Beat.ToString());
+			}
+		}
+	}
+	LastEmotion = Response.Emotion;
 
 	bWaiting = false;
 	OnThinkingChanged.Broadcast(false);
@@ -322,3 +353,18 @@ static FAutoConsoleCommandWithWorldAndArgs GAshesSceneEnd(
 	{
 		if (USceneDirectorSubsystem* Director = GetDirectorFor(World)) { Director->EndScene(); }
 	}));
+
+void USceneDirectorSubsystem::FillFallbackContext(FLLMRequest& Request) const
+{
+	Request.FallbackScene = SceneRowName;
+	Request.FallbackEmotion = LastEmotion;
+	Request.FallbackBeat = NAME_None;
+	for (const FBeatDef& Beat : Scene.Beats)
+	{
+		if (Beat.bRequired && !ReachedBeats.Contains(Beat.Id))
+		{
+			Request.FallbackBeat = Beat.Id; // the next beat the scene is pushing toward
+			break;
+		}
+	}
+}

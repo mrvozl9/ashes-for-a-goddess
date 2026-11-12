@@ -1,10 +1,11 @@
-// AI-assisted: Claude Code, 11.11.2026, Automation tests for the response validator and prompt builder (Phase 4). Reviewed by <pending>.
+// AI-assisted: Claude Code, 11.11.2026, Automation tests for the response validator and prompt builder (Phase 4); spoiler unlock chapters + fallback pick (12.11.2026). Reviewed by <pending>.
 // Run: Session Frontend > Automation, filter "Ashes." (or console: Automation RunTests Ashes.)
 
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
 #include "ResponseValidator.h"
 #include "PromptBuilder.h"
+#include "OfflineLLMProvider.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -20,7 +21,9 @@ namespace AshesTestData
 		FRelationshipValueDef Trust;     Trust.Name = TEXT("trust");         Trust.Start = 20;     Trust.MaxIncrease = 8;     Trust.MaxDecrease = 8;
 		FRelationshipValueDef Affection; Affection.Name = TEXT("affection"); Affection.Start = 10; Affection.MaxIncrease = 8; Affection.MaxDecrease = 8;
 		Card.Values = { Trust, Affection };
-		Card.SpoilerKeywords = { TEXT("contract") };
+		FSpoilerKeyword Contract; Contract.Keyword = TEXT("contract"); Contract.UnlockChapter = 7;
+		FSpoilerKeyword Phoenix;  Phoenix.Keyword = TEXT("you are the phoenix"); Phoenix.UnlockChapter = 0;
+		Card.SpoilerKeywords = { Contract, Phoenix };
 		FChapterSecret Early; Early.Chapter = 1; Early.Text = TEXT("SECRET_CH1");
 		FChapterSecret Late;  Late.Chapter = 4;  Late.Text = TEXT("SECRET_CH4");
 		Card.Secrets = { Early, Late };
@@ -127,6 +130,13 @@ bool FAshesValidatorSpoiler::RunTest(const FString& Parameters)
 {
 	const FAshesValidationResult R = UResponseValidator::Validate(TEXT(R"({"reply":"Vashir paid me; the contract is in my boot.","emotion":"cold"})"), AshesTestData::MakeContext());
 	TestTrue(TEXT("spoiler -> regenerate"), R.Outcome == EValidationOutcome::Regenerate);
+
+	// Unlock chapters: "contract" is allowed from chapter 7; UnlockChapter 0 is never allowed
+	FAshesValidationContext Late = AshesTestData::MakeContext();
+	Late.Chapter = 7;
+	TestTrue(TEXT("contract allowed in chapter 7"), UResponseValidator::Validate(TEXT(R"({"reply":"Vashir paid me; the contract is in my boot.","emotion":"cold"})"), Late).IsOk());
+	Late.Chapter = 99;
+	TestTrue(TEXT("unlock 0 blocked even in a late chapter"), UResponseValidator::Validate(TEXT(R"({"reply":"Little Ember, you are the phoenix.","emotion":"tender"})"), Late).Outcome == EValidationOutcome::Regenerate);
 	TestTrue(TEXT("unsafe player line"), UResponseValidator::IsUnsafeText(TEXT("you are a NAZI"), UResponseValidator::DefaultSafetyWords()));
 	TestFalse(TEXT("normal player line"), UResponseValidator::IsUnsafeText(TEXT("Who sent you?"), UResponseValidator::DefaultSafetyWords()));
 	return true;
@@ -161,6 +171,30 @@ bool FAshesPromptBuilder::RunTest(const FString& Parameters)
 	TestTrue(TEXT("trust 55 as a word"), System.Contains(TEXT("trust toward Sahra: warming")));
 	TestTrue(TEXT("beat ids listed"), System.Contains(TEXT("zafir_reveals_target")));
 	TestTrue(TEXT("delta keys from the card"), System.Contains(TEXT("\"trust_delta\"")) && System.Contains(TEXT("\"affection_delta\"")));
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAshesFallbackPick, "Ashes.Fallback.PickLine", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FAshesFallbackPick::RunTest(const FString& Parameters)
+{
+	auto Row = [](const TCHAR* Scene, const TCHAR* Beat, const TCHAR* Emotion, const TCHAR* Line)
+	{
+		FFallbackLineRow R; R.Scene = Scene; R.Beat = Beat; R.Emotion = Emotion; R.Line = Line; return R;
+	};
+	const TArray<FFallbackLineRow> Rows = {
+		Row(TEXT("S1"), TEXT("any"), TEXT("teasing"), TEXT("any-teasing")),
+		Row(TEXT("S1"), TEXT("any"), TEXT("cold"), TEXT("any-cold")),
+		Row(TEXT("S1"), TEXT("beat_a"), TEXT("teasing"), TEXT("beat-a")),
+		Row(TEXT("S2"), TEXT("any"), TEXT("cold"), TEXT("other-scene")),
+	};
+	FFallbackLineRow Out;
+	TestTrue(TEXT("pushed beat wins"), UOfflineLLMProvider::PickLine(Rows, TEXT("S1"), TEXT("beat_a"), TEXT("cold"), 0, Out) && Out.Line == TEXT("beat-a"));
+	TestTrue(TEXT("no beat: any + same emotion"), UOfflineLLMProvider::PickLine(Rows, TEXT("S1"), NAME_None, TEXT("cold"), 0, Out) && Out.Line == TEXT("any-cold"));
+	TestTrue(TEXT("unknown beat falls back to any"), UOfflineLLMProvider::PickLine(Rows, TEXT("S1"), TEXT("beat_x"), TEXT("teasing"), 0, Out) && Out.Line == TEXT("any-teasing"));
+	TestTrue(TEXT("other scenes never used"), UOfflineLLMProvider::PickLine(Rows, TEXT("S2"), NAME_None, TEXT("teasing"), 0, Out) && Out.Line == TEXT("other-scene"));
+	TestFalse(TEXT("unknown scene -> nothing"), UOfflineLLMProvider::PickLine(Rows, TEXT("S9"), NAME_None, TEXT("teasing"), 0, Out));
+	TestTrue(TEXT("no repeat: beat line just used -> next tier"), UOfflineLLMProvider::PickLine(Rows, TEXT("S1"), TEXT("beat_a"), TEXT("teasing"), 0, Out, TEXT("beat-a")) && Out.Line == TEXT("any-teasing"));
+	TestTrue(TEXT("only line left is repeated rather than nothing"), UOfflineLLMProvider::PickLine(Rows, TEXT("S2"), NAME_None, TEXT("cold"), 0, Out, TEXT("other-scene")) && Out.Line == TEXT("other-scene"));
 	return true;
 }
 

@@ -1,4 +1,4 @@
-// AI-assisted: Claude Code, 10.11.2026, request / reply types for the LLM providers (Phase 3). Reviewed by <pending>.
+// AI-assisted: Claude Code, 10.11.2026, request / reply types for the LLM providers (Phase 3); fallback context fields (Phase 4, 12.11.2026). Reviewed by <pending>.
 
 #pragma once
 
@@ -41,6 +41,16 @@ struct ASHES_API FLLMRequest
 	/** Ask the model for a single JSON object (GDD 8.1 response JSON) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="LLM")
 	bool bJsonOutput = true;
+
+	/** For the fallback pick (DT_FallbackLines): scene row, beat being pushed (None = any), current emotion */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="LLM")
+	FName FallbackScene;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="LLM")
+	FName FallbackBeat;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="LLM")
+	FName FallbackEmotion;
 };
 
 /** What comes back. Text is the raw model output (the JSON string); UResponseValidator parses it later. */

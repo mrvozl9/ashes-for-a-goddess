@@ -1,4 +1,4 @@
-// AI-assisted: Claude Code, 11.11.2026, runs one conversation scene: prompt, model, validator, turn limit (Phase 5; full state machine in Phase 7). Reviewed by <pending>.
+// AI-assisted: Claude Code, 11.11.2026, runs one conversation scene: prompt, model, validator, turn limit (Phase 5; full state machine in Phase 7); beats, clue hints, fallback context (Phase 4 data, 12.11.2026). Reviewed by <pending>.
 
 #pragma once
 
@@ -93,6 +93,12 @@ private:
 	FPromptState State;
 	TArray<FConversationTurn> History;
 	TArray<FString> LastSuggestions;
+	TSet<FName> ReachedBeats;
+	FName LastEmotion;
+	FName SceneRowName;
+
+	/** Scene, beat being pushed and current emotion, so a fallback line fits the moment (DT_FallbackLines) */
+	void FillFallbackContext(FLLMRequest& Request) const;
 
 	TWeakObjectPtr<AAshesNPC> CurrentNpc;
 	TWeakObjectPtr<AAshesCharacter> CurrentSahra;
