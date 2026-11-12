@@ -27,7 +27,7 @@ public class Ashes : ModuleRules
 			"GameplayTasks"
 		});
 
-		PrivateDependencyModuleNames.AddRange(new string[] { "DeveloperSettings", "Sockets" });
+		PrivateDependencyModuleNames.AddRange(new string[] { "DeveloperSettings", "Sockets", "AssetRegistry" });
 
 		PublicIncludePaths.AddRange(new string[] {
 			"Ashes",
