@@ -1,0 +1,56 @@
+[
+  {
+    "Name": "ch1_nura_disappears",
+    "Chapter": 1,
+    "Holder": "Nura",
+    "Source": "talk",
+    "JournalText": "Nura: Zafir never misses a dance, and he is never there after it.",
+    "Topic": "Where does Zafir go after the dance?",
+    "PromptHint": "If Sahra asks about Zafir, say he never misses a dance and is never there after it."
+  },
+  {
+    "Name": "ch1_guards_blade",
+    "Chapter": 1,
+    "Holder": "Guards at the lattice screen",
+    "Source": "eavesdrop",
+    "JournalText": "Two guards: someone saw a blade under Zafir's silks.",
+    "Topic": "They say Zafir carries a blade.",
+    "PromptHint": ""
+  },
+  {
+    "Name": "ch1_omar_kings_door",
+    "Chapter": 1,
+    "Holder": "Omar",
+    "Source": "talk",
+    "JournalText": "Omar: Zafir has been seen near the King's Chamber at night.",
+    "Topic": "Have you seen Zafir at night?",
+    "PromptHint": "If Sahra is kind and asks about Zafir, say you have seen him near the King's Chamber at night, then look away."
+  },
+  {
+    "Name": "ch1_tariq_soldier_walk",
+    "Chapter": 1,
+    "Holder": "Tariq",
+    "Source": "talk",
+    "JournalText": "Tariq: Zafir walks like a soldier, not a dancer.",
+    "Topic": "Zafir doesn't move like a dancer.",
+    "PromptHint": "For a coin or a bit of gossip, say Zafir walks like a soldier: heel first, always with a wall at his back."
+  },
+  {
+    "Name": "ch1_nura_lantern_house",
+    "Chapter": 1,
+    "Holder": "Nura",
+    "Source": "talk (after any other clue)",
+    "JournalText": "Nura: Zafir asked whether any new dancers were coming from the Lantern House.",
+    "Topic": "Why would Zafir ask about the Lantern House?",
+    "PromptHint": "Only after Sahra has one other clue: say Zafir asked you weeks ago whether any new dancers were coming from the Lantern House."
+  },
+  {
+    "Name": "ch1_nobles_doors",
+    "Chapter": 1,
+    "Holder": "Nobles in the Throne Hall",
+    "Source": "dance reward",
+    "JournalText": "A noble: Zafir dances as if he's watching the doors, not the king.",
+    "Topic": "Zafir watches the doors.",
+    "PromptHint": ""
+  }
+]

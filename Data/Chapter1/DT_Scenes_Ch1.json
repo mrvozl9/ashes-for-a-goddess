@@ -1,0 +1,28 @@
+[
+  {
+    "Name": "Ch1_ZafirKeyScene",
+    "Chapter": 1,
+    "Place": "Garden of Dusk, by the running fountain",
+    "Time": "Night, after Sahra's first dance; full moon; 30 nights to the festival",
+    "GoalText": "Sahra, the new dancer from the Lantern House, has followed you into the garden after her first dance. She has heard that you carry a blade, and she wants to know why. Deflect, tease and turn her questions back on her. Do not admit what you are or who sent you. You suspect who she is; test her, but never say it. If she presses hard enough, end on a truce: each of you keeps the other's secret.",
+    "Beats": [
+      {
+        "Id": "sahra_confronts_blade",
+        "Rule": "Sahra asks about the blade or names the rumor. Any turn.",
+        "bRequired": true
+      },
+      {
+        "Id": "uneasy_truce",
+        "Rule": "Both agree to keep quiet about each other. Only after sahra_confronts_blade, from turn 4.",
+        "bRequired": true
+      }
+    ],
+    "TurnLimit": 11,
+    "Characters": [
+      "Zafir"
+    ],
+    "Opener": "Careful, Little Ember. Blades that small cut their owners first.",
+    "ClosingFull": "Then we have a bargain. You keep my secret, I keep yours. And keep the knife; you'll need it more than me.",
+    "ClosingWeaker": "Say nothing about me, and I'll say nothing about you. That's not a promise, Little Ember. It's arithmetic."
+  }
+]

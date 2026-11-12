@@ -1,0 +1,58 @@
+[
+  {
+    "Name": "Ch1_Zafir_01",
+    "Scene": "Ch1_ZafirKeyScene",
+    "Beat": "any",
+    "Emotion": "teasing",
+    "Line": "You ask a lot of questions for someone with a knife in her sleeve, Little Ember.",
+    "bAIAssisted": true
+  },
+  {
+    "Name": "Ch1_Zafir_02",
+    "Scene": "Ch1_ZafirKeyScene",
+    "Beat": "any",
+    "Emotion": "neutral",
+    "Line": "The garden guard turns at the fountain. Speak softer, or don't speak at all.",
+    "bAIAssisted": true
+  },
+  {
+    "Name": "Ch1_Zafir_03",
+    "Scene": "Ch1_ZafirKeyScene",
+    "Beat": "any",
+    "Emotion": "cold",
+    "Line": "Ask me again and you'll get the same answer.",
+    "bAIAssisted": true
+  },
+  {
+    "Name": "Ch1_Zafir_04",
+    "Scene": "Ch1_ZafirKeyScene",
+    "Beat": "any",
+    "Emotion": "angry",
+    "Line": "Careful. Fire burns the hand that holds it too tight.",
+    "bAIAssisted": true
+  },
+  {
+    "Name": "Ch1_Zafir_05",
+    "Scene": "Ch1_ZafirKeyScene",
+    "Beat": "any",
+    "Emotion": "tender",
+    "Line": "You danced well tonight. That's not a trick. Just true.",
+    "bAIAssisted": true
+  },
+  {
+    "Name": "Ch1_Zafir_06",
+    "Scene": "Ch1_ZafirKeyScene",
+    "Beat": "sahra_confronts_blade",
+    "Emotion": "teasing",
+    "Line": "A blade? On a dancer? Someone's been listening at lattice screens.",
+    "bAIAssisted": true
+  },
+  {
+    "Name": "Ch1_Zafir_07",
+    "Scene": "Ch1_ZafirKeyScene",
+    "Beat": "uneasy_truce",
+    "Emotion": "neutral",
+    "Line": "Here's a thought: you forget what you've heard about me, and I forget what I've seen about you.",
+    "bAIAssisted": true
+  }
+]
