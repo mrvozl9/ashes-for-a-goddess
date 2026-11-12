@@ -127,3 +127,30 @@ Tala and Baha joined on 12.11.2026.
 
 ## AI disclosure
 This project uses AI tools during development (see the GDD's AI Tool Plan and `Docs/PromptLog.md`). The in-game characters are powered by a built-in LLM (Qwen3.5-4B via llama.cpp). The story, twist, lore bible and key lines are the team's own; game-data lines (cards, clues, barks, fallback lines, offline trees) were drafted with Claude from the team's story and are reviewed and rewritten by the team. This repository's setup, planning documents and parts of the C++ code were drafted with Claude and reviewed by the team (see the AI-assisted headers).
+
+## Working with Codex
+
+Claude and Codex use the same gameplay rules and branch/LFS workflow. Codex reads `AGENTS.md`, which explicitly points to `CLAUDE.md`, `SKILL.md`, the project design documents and VibeUE's relative agent guide. Keep shared decisions in those documents rather than in private chat history.
+
+Open this checkout as the Codex project/workspace; project settings in `.codex/config.toml` are scoped to this repository and require a trusted project. On Baha's PC the checkout is `C:\Ashes`; its trust entry was added during setup. Do not copy another developer's global Codex configuration.
+
+Start the editor from the repository root:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File Tools/Start-CodexEditor.ps1
+```
+
+The launcher uses UE 5.8 at the standard Epic Games installation path; pass `-EngineRoot` if installed elsewhere. It opens this checkout with MCP on **127.0.0.1:8001** and never closes an existing editor. If Ashes is already open on another port, save your work and close that Ashes editor normally before relaunching. Other projects and Claude's existing `.mcp.json` (port 8000) are unchanged.
+
+After the map loads, check the endpoint with Python 3:
+
+```powershell
+python Tools/Test-UnrealMCP.py
+codex mcp get ashes_unreal --json
+```
+
+The connection probe performs MCP initialization, lists tools, and invokes VibeUE Python with `auto_save=false`. It verifies the live project path matches this checkout's `Ashes.uproject`, reports the map, and checks WorkflowService. It does not edit or save assets. A readiness JSON or open TCP port is not enough to prove tool execution works.
+
+Start a new Codex chat/session rooted at this repository after adding the configuration. This does not dynamically add tools to an already running chat rooted in another folder. In the CLI, `codex -C C:\Ashes` selects Baha's checkout. In the desktop app, open/select `C:\Ashes` as the project and start the chat there. Verify project identity before any editor mutation; do not use another project's MCP integration.
+
+Setup verified on 12 November 2026: `ashes_unreal` enabled at `http://127.0.0.1:8001/mcp`, 11 MCP tools advertised, live project `C:/Ashes/Ashes.uproject`, map `/Game/Ashes/Maps/L_Test.L_Test`, VibeUE WorkflowService available. This connection check does not replace manual PIE or live-model performance testing.

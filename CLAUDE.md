@@ -28,6 +28,11 @@
 - Every AI-assisted C++ file starts with `// AI-assisted: <tool>, <date>, <what>. Reviewed by <name>.` (a Comment node in Blueprints).
 - Work on `feature/<name>-<task>` branches; `main` must always open and run.
 
+## Agent delegation
+- The main agent plans the step, hands each part to the matching subagent in `.claude/agents/`, checks the result itself (build output, test result, diff) and updates `Docs/PROGRESS.md` and the tracker. One pipeline step at a time.
+- `cpp-implementer` (sonnet): C++ in `Source/Ashes` plus build and Automation tests. `editor-operator` (sonnet): editor work through MCP + VibeUE only. `data-tools` (haiku): CSV files, data validation reports, documents. `reviewer` (opus): read-only review before a commit.
+- No subagent commits, pushes or switches branches; only the user decides when to commit.
+
 ## Editor access (MCP + VibeUE)
 - The editor serves MCP at `http://127.0.0.1:8000/mcp` (Unreal MCP plugin, auto-starts with the editor; `.mcp.json` points Claude Code at it). The editor must be open for MCP tools to work.
 - VibeUE is a git submodule in `Plugins/VibeUE` (after cloning: `git submodule update --init`). Its agent guide is imported below with a relative path so it works on every team member's PC; do not replace it with `VibeUE.GenerateAgentConfig`, which writes an absolute path.
