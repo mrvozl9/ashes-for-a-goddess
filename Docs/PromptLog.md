@@ -31,3 +31,4 @@ An AI session that cannot edit the sheet writes its rows here, in the same colum
 
 | # | Date | Week | Who | Tool | Purpose | Prompt (as sent, spelling corrected) | Result (what the AI gave) | What we changed or checked | Notes |
 | :-- | :-- | :-- | :-- | :-- | :-- | :-- | :-- | :-- | :-- |
+| pending | 12.11.2026 | Week 9 | Baha | Codex | Shared-team Codex and Unreal MCP setup | O zaman projeyi Codex ile çalışmaya uygun hale getir. AGENTS.md dosyasını hazırla ve Unreal MCP bağlantısını ayarlayıp kontrol et. | AGENTS.md, project-scoped MCP config, editor launcher and read-only connection probe; README and progress notes. | Codex CLI reads ashes_unreal; MCP tool execution confirmed Ashes.uproject, L_Test and VibeUE on port 8001. Gameplay source/assets unchanged. | Copy to the shared prompt log sheet; human review pending. |

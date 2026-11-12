@@ -1,0 +1,7 @@
+# Ashes-only Unreal MCP. Start the editor with Tools/Start-CodexEditor.ps1.
+# The editor must be running; the server does not launch it automatically.
+[mcp_servers.ashes_unreal]
+url = "http://127.0.0.1:8001/mcp"
+enabled = true
+startup_timeout_sec = 30
+tool_timeout_sec = 120
