@@ -4,7 +4,7 @@
 > **Companion documents:** `technical_design.md` and `production_pipeline.md`. Story and clue texts: the Master Lore document (tabs "Chapter Cards", "Scene Cards", "Clues", "Barks").
 > **Course:** Advanced Game Programming. **Owner:** Merve (level design). Version 2, updated 12.11.2026 for the 7-chapter story and the team of four.
 
-**World overview:** One 3D level, the palace **Sama'zar**, about 60 × 30 m: a hub, the **Garden of Dusk** (its fountain still runs, because the palace pretends to be unaffected by the dying sun), with five rooms around it: the **Dancers' Quarters** (with the practice room; stairs up to the Rooftop Terrace), the **Throne Hall**, the **King's Chamber** (restricted; a servants' passage behind a curtain), the **Guard Post** (with the locked **City Gate**) and the **Rooftop Terrace**. Played in order: Prologue: Ash (2D) → Chapter 1: The Garden of Ash → Chapter 2: The Practice Room → Chapter 3: The Private Dance → Chapter 4: The King's Favor → Chapter 5: Rooftop of Smoke → Chapter 6: The Trap → Chapter 7: The Pyre (3D spirit walk in the same palace) → Epilogue: The Long Flame (2D). In Unreal Engine 5.8, the palace is the level `L_Palace` (One File Per Actor, so several people can edit different actors at once; no World Partition streaming needed at this size). The 2D parts play as Level Sequences (`LS_Prologue`, `LS_Epilogue`) with `WBP_Cutscene` over them; the Chapter 6 trap is an in-engine sequence in `L_Palace` (`LS_Trap`); Chapter 7 reuses `L_Palace` with the ghost look. The title screen is `L_Title` and mechanics are tested in `L_Test`.
+**World overview:** One 3D level, the palace **Sama'zar**, about 60 × 30 m: a hub, the **Garden of Dusk** (its fountain still runs, because the palace pretends to be unaffected by the dying sun), with five rooms around it: the **Dancers' Quarters** (with the practice room; stairs up to the Rooftop Terrace), the **Throne Hall**, the **King's Chamber** (restricted; a servants' passage behind a curtain), the **Guard Post** (with the locked **City Gate**) and the **Rooftop Terrace**. Played in order: Prologue: Ash (2D) → Chapter 1: The Garden of Dusk → Chapter 2: The Practice Room → Chapter 3: The Private Dance → Chapter 4: The King's Favor → Chapter 5: Rooftop of Smoke → Chapter 6: The Trap → Chapter 7: The Pyre (3D spirit walk in the same palace) → Epilogue: The Long Flame (2D). In Unreal Engine 5.8, the palace is the level `L_Palace` (One File Per Actor, so several people can edit different actors at once; no World Partition streaming needed at this size). The 2D parts play as Level Sequences (`LS_Prologue`, `LS_Epilogue`) with `WBP_Cutscene` over them; the Chapter 6 trap is an in-engine sequence in `L_Palace` (`LS_Trap`); Chapter 7 reuses `L_Palace` with the ghost look. The title screen is `L_Title` and mechanics are tested in `L_Test`.
 
 **How a chapter plays (10.11, 11.11):** the palace is **open** from Chapter 1 (everything except the restricted King's Chamber and the locked City Gate). Chapters 1–6 are each **a day and a night**: by day the player reads the main quest (the chapter question), finds the real characters where the chapter puts them, gathers clues for the Rumor Journal, completes two "do" objectives and avoids the guards (hiding spots, eavesdropping); at night Sahra dances; then comes the key conversation (needs 3 of the chapter's 6 clues, not in Chapters 6 and 7) and an in-engine ending where the player keeps control. NPC positions, guard routes and the palace's look (moon, banners, blossoms, lanterns) change per chapter and between day and night. Chapter 7 has no guards and no fail state.
 
@@ -68,8 +68,7 @@
 
 ---
 
-## 4. LEVEL 1: Chapter 1 · The Garden of Ash
-> Title still open: "The Garden of Ash" or "The Garden of Dusk" (Merve and Tuana to decide).
+## 4. LEVEL 1: Chapter 1 · The Garden of Dusk
 
 **Theme / mood:** Sahra's first day; 30 nights to the festival; full moon over the Garden of Dusk; lanterns, the running fountain; night plum and old gold. Palace music loop (oud, frame drum, drone); footsteps on stone; the fountain.
 **Threats:** One guard patrols the garden (plus a second guard who meets him at the lattice screen stop).
@@ -407,7 +406,7 @@
 ## 12. Difficulty Curve
 | Level | New mechanic | Difficulty (1 to 5, *proposed*) | Notes |
 | :-- | :-- | :-- | :-- |
-| Chapter 1: The Garden of Ash | Walk, talk, clues, hide, eavesdrop, dance 1 | 1 | 1 patrolling guard (+1 at the stop); 3 of 6 clues; 30 s dance; Zafir 11 turns |
+| Chapter 1: The Garden of Dusk | Walk, talk, clues, hide, eavesdrop, dance 1 | 1 | 1 patrolling guard (+1 at the stop); 3 of 6 clues; 30 s dance; Zafir 11 turns |
 | Chapter 2: The Practice Room | Timed search, hiding an item, second eavesdrop stop | 2 | Extra guard at the Dancers' Quarters; 33 s dance; Zafir 11 turns |
 | Chapter 3: The Private Dance | Vashir's Suspicion, restricted door, a clue that needs a clue, timed Do 2 | 3 | Door guard; Vashir 7 turns (Favor 60); private dance 36 s; Zafir 11 turns |
 | Chapter 4: The King's Favor | Following (tail) | 3 | Extra City Gate guard at night; 39 s dance; Zafir 11 turns (Trust 50) |
