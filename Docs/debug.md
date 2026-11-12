@@ -3,6 +3,16 @@
 > One block per bug. Newest on top. Write the member's name in each block.
 > Unreal Engine 5.8 project since 10.11.2026. Course: Advanced Game Programming. Anyone on the team who finds a bug adds a block (Baha owns the C++ fixes from Phase 7 on).
 
+## Bug 3: Zafir's gesture says "her lips"
+- **Found by:** Merve (play test, 12.11.2026)
+- **When I:** talked to Zafir in PIE.
+- **I expected:** gestures about Zafir with he / his.
+- **But:** "(tilts head, a smirk playing on her lips)"; the reply also showed markdown asterisks ("*you*").
+- **Error from the Output Log:** none (wrong text, not an error).
+- **My prompt:** "zafir is a he, but in here it says her" (with a screenshot)
+- **The fix:** new `Pronouns` field on `FCharacterCardRow` (Zafir: he/him, in `Data/Chapter1/DT_Characters_Zafir.json` and `DT_Characters`); the prompt says "You are Zafir (he/him)" and asks for gestures about what Zafir himself does ("tilts his head, smiling"), never Sahra; the validator removes `*` and `_` from reply and gesture. Commits `[phase 4]: pronouns in gestures, strip * and _ from replies`.
+- **Did it work?** Yes: "tilts his head, eyes narrowing at her boots", "tightens his grip on the hilt of his knife"; no asterisks; 10 Automation tests green.
+
 ## Bug 2: first AI request after a cold start fails with HTTP 500 ("No user query found in messages")
 - **Found by:** Claude Code while testing `Ashes.TalkZafir` (11.11.2026)
 - **When I:** ran `Ashes.TalkZafir <line>` with the built-in model stopped, so the command started it and sent the line when it was ready.
