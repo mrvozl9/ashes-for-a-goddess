@@ -1,4 +1,4 @@
-// AI-assisted: Claude Code, 11.11.2026, Ashes.TalkZafir: test conversation through the real prompt builder and validator (Phase 4); fallback context (12.11.2026). Reviewed by <pending>.
+// AI-assisted: Claude Code, 11.11.2026, Ashes.TalkZafir: test conversation through the real prompt builder and validator (Phase 4); fallback context, hesitate lines on failure (12.11.2026). Reviewed by <pending>.
 // Temporary harness until the Scene Director and WBP_Conversation exist (Phases 5–6).
 
 #include "CoreMinimal.h"
@@ -34,6 +34,14 @@ namespace AshesTalk
 	{
 		static TStrongObjectPtr<UOpenAICompatibleLLMProvider> P(NewObject<UOpenAICompatibleLLMProvider>());
 		return P;
+	}
+
+	// Online failures use Hesitate lines (fit any question), not Content lines
+	FLLMRequest AsHesitate(const FLLMRequest& Request)
+	{
+		FLLMRequest Out = Request;
+		Out.bHesitate = true;
+		return Out;
 	}
 
 	TStrongObjectPtr<UOfflineLLMProvider>& Fallback()
@@ -113,7 +121,8 @@ namespace AshesTalk
 		{
 			if (!Reply.bSuccess)
 			{
-				Fallback()->SendAsync(Request, FOnLLMReply::CreateLambda([Card, Reply](const FLLMReply& FallbackReply)
+				// "no endpoint" = the model is not running at all (offline mode): Content lines; any other failure: Hesitate lines
+				Fallback()->SendAsync(Reply.Error == TEXT("no endpoint") ? Request : AsHesitate(Request), FOnLLMReply::CreateLambda([Card, Reply](const FLLMReply& FallbackReply)
 				{
 					FLLMReply Out = FallbackReply;
 					Out.Error = Reply.Error;
@@ -135,7 +144,7 @@ namespace AshesTalk
 				SendAndValidate(Request, Card, Context, AttemptsLeft - 1);
 				return;
 			}
-			Fallback()->SendAsync(Request, FOnLLMReply::CreateLambda([Card](const FLLMReply& FallbackReply)
+			Fallback()->SendAsync(AsHesitate(Request), FOnLLMReply::CreateLambda([Card](const FLLMReply& FallbackReply)
 			{
 				FLLMReply Out = FallbackReply;
 				Out.Error = TEXT("invalid reply");

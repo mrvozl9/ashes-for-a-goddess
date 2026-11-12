@@ -1,4 +1,4 @@
-// AI-assisted: Claude Code, 10.11.2026, pre-written fallback replies in the same JSON format (Phase 3); lines from DT_FallbackLines (Phase 4, 12.11.2026); no repeat in a row. Reviewed by <pending>.
+// AI-assisted: Claude Code, 10.11.2026, pre-written fallback replies in the same JSON format (Phase 3); lines from DT_FallbackLines (Phase 4, 12.11.2026); no repeat in a row; Hesitate / Content types. Reviewed by <pending>.
 
 #include "OfflineLLMProvider.h"
 #include "Engine/DataTable.h"
@@ -10,7 +10,7 @@ namespace
 {
 	const TCHAR* GFallbackTablePath = TEXT("/Game/Ashes/Data/DT_FallbackLines.DT_FallbackLines");
 
-	// Used only when DT_FallbackLines has nothing for the scene
+	// Used only when DT_FallbackLines has nothing for the scene (they fit any question, like Hesitate lines)
 	const TCHAR* GGenericLines[] =
 	{
 		TEXT("He studies you for a long moment, then looks away. \"Not here. Not now.\""),
@@ -37,14 +37,14 @@ FString UOfflineLLMProvider::MakeFallbackJson(const FString& Line, FName Emotion
 	return Out;
 }
 
-bool UOfflineLLMProvider::PickLine(const TArray<FFallbackLineRow>& Rows, FName Scene, FName Beat, FName Emotion, int32 Rotation, FFallbackLineRow& OutRow, const FString& AvoidLine)
+bool UOfflineLLMProvider::PickLine(const TArray<FFallbackLineRow>& Rows, FName Scene, FName Beat, FName Emotion, int32 Rotation, FFallbackLineRow& OutRow, const FString& AvoidLine, EFallbackLineType Type)
 {
 	static const FName Any(TEXT("any"));
 
 	TArray<const FFallbackLineRow*> SceneRows;
 	for (const FFallbackLineRow& Row : Rows)
 	{
-		if (Row.Scene == Scene && !Row.Line.IsEmpty() && Row.Line != AvoidLine)
+		if (Row.Scene == Scene && Row.Type == Type && !Row.Line.IsEmpty() && Row.Line != AvoidLine)
 		{
 			SceneRows.Add(&Row);
 		}
@@ -56,7 +56,7 @@ bool UOfflineLLMProvider::PickLine(const TArray<FFallbackLineRow>& Rows, FName S
 		{
 			for (const FFallbackLineRow& Row : Rows)
 			{
-				if (Row.Scene == Scene && Row.Line == AvoidLine)
+				if (Row.Scene == Scene && Row.Type == Type && Row.Line == AvoidLine)
 				{
 					OutRow = Row;
 					return true;
@@ -131,7 +131,9 @@ void UOfflineLLMProvider::SendAsync(const FLLMRequest& Request, FOnLLMReply Call
 		{
 			Rows.Add(*Row);
 		}
-		bFound = PickLine(Rows, Request.FallbackScene, Request.FallbackBeat, Request.FallbackEmotion, NextLine, Picked, LastLine);
+		// Online failure -> a Hesitate line (fits any question); offline -> a Content line for the scene / beat
+		const EFallbackLineType Type = Request.bHesitate ? EFallbackLineType::Hesitate : EFallbackLineType::Content;
+		bFound = PickLine(Rows, Request.FallbackScene, Request.bHesitate ? NAME_None : Request.FallbackBeat, Request.FallbackEmotion, NextLine, Picked, LastLine, Type);
 		if (bFound)
 		{
 			LastLine = Picked.Line;

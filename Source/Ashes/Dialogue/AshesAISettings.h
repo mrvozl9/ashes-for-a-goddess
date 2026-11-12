@@ -1,4 +1,4 @@
-// AI-assisted: Claude Code, 10.11.2026, project settings for the built-in AI (Phase 3); editor-only timeout (11.11.2026). Reviewed by <pending>.
+// AI-assisted: Claude Code, 10.11.2026, project settings for the built-in AI (Phase 3); editor-only timeout (11.11.2026); soft / hard limits (12.11.2026). Reviewed by <pending>.
 
 #pragma once
 
@@ -56,16 +56,23 @@ public:
 	UPROPERTY(config, EditAnywhere, Category="Built-in model", meta=(ClampMin="5", Units="s"))
 	float StartupTimeoutSeconds = 90.f;
 
-	/** Reply timeout in the game (GDD: 6 s); after it the fallback line is used. Packaged builds always use this. */
+	/** Soft limit (GDD: 6 s): after it Zafir visibly hesitates, but the game keeps waiting for the real answer */
 	UPROPERTY(config, EditAnywhere, Category="Requests", meta=(ClampMin="1", Units="s"))
 	float RequestTimeoutSeconds = 6.f;
 
-	/** Reply timeout in the editor and Play-in-Editor only (slow development PCs); never used by packaged builds */
+	/** Hard limit in the game: no answer by then -> a hesitate line, the turn does not count. Packaged builds always use this. */
+	UPROPERTY(config, EditAnywhere, Category="Requests", meta=(ClampMin="1", Units="s"))
+	float HardTimeoutSeconds = 20.f;
+
+	/** Hard limit in the editor and Play-in-Editor only (slow development PCs); never used by packaged builds */
 	UPROPERTY(config, EditAnywhere, Category="Requests", meta=(ClampMin="1", Units="s"))
 	float EditorRequestTimeoutSeconds = 30.f;
 
-	/** EditorRequestTimeoutSeconds in the editor (incl. PIE), RequestTimeoutSeconds in the game */
+	/** Hard limit: EditorRequestTimeoutSeconds in the editor (incl. PIE), HardTimeoutSeconds in the game */
 	float GetEffectiveRequestTimeout() const;
+
+	/** Soft limit: when the hesitation shows (RequestTimeoutSeconds) */
+	float GetHesitateAfterSeconds() const { return RequestTimeoutSeconds; }
 
 	/** Model name sent in requests (llama-server alias) */
 	UPROPERTY(config, EditAnywhere, Category="Requests")

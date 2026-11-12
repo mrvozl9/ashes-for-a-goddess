@@ -1,4 +1,4 @@
-// AI-assisted: Claude Code, 10.11.2026, project settings for the built-in AI (Phase 3); editor-only timeout (11.11.2026). Reviewed by <pending>.
+// AI-assisted: Claude Code, 10.11.2026, project settings for the built-in AI (Phase 3); editor-only timeout (11.11.2026); soft / hard limits (12.11.2026). Reviewed by <pending>.
 
 #include "AshesAISettings.h"
 #include "Misc/Paths.h"
@@ -12,7 +12,7 @@ UAshesAISettings::UAshesAISettings()
 
 float UAshesAISettings::GetEffectiveRequestTimeout() const
 {
-	return GIsEditor ? EditorRequestTimeoutSeconds : RequestTimeoutSeconds;
+	return GIsEditor ? EditorRequestTimeoutSeconds : HardTimeoutSeconds;
 }
 
 FString UAshesAISettings::ResolveLocalModelDirectory() const

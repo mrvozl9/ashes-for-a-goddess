@@ -1,8 +1,9 @@
-// AI-assisted: Claude Code, 11.11.2026, runs one conversation scene: prompt, model, validator, turn limit (Phase 5; full state machine in Phase 7); beats, clue hints, fallback context (Phase 4 data, 12.11.2026). Reviewed by <pending>.
+// AI-assisted: Claude Code, 11.11.2026, runs one conversation scene: prompt, model, validator, turn limit (Phase 5; full state machine in Phase 7); beats, clue hints, fallback context (Phase 4 data, 12.11.2026); soft / hard limit with hesitation. Reviewed by <pending>.
 
 #include "SceneDirectorSubsystem.h"
 #include "Ashes.h"
 #include "AshesGameInstance.h"
+#include "AshesAISettings.h"
 #include "AshesNPC.h"
 #include "AshesCharacter.h"
 #include "AshesPlayerController.h"
@@ -147,6 +148,22 @@ void USceneDirectorSubsystem::SubmitLine(const FString& InLine)
 	RequestStartTime = FPlatformTime::Seconds();
 	OnThinkingChanged.Broadcast(true);
 	RequestReply(Request, 1); // 1 silent retry on a broken / spoiling reply (GDD 8.1)
+
+	// Soft limit: after RequestTimeoutSeconds (6 s) Zafir visibly hesitates, but we keep waiting up to the hard limit
+	UAshesGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance<UAshesGameInstance>() : nullptr;
+	if (GI && GI->GetAIMode() == EAIMode::Online)
+	{
+		TWeakObjectPtr<USceneDirectorSubsystem> WeakThis(this);
+		const int32 Serial = GSceneSerial;
+		GetWorld()->GetTimerManager().SetTimer(HesitateTimer, FTimerDelegate::CreateLambda([WeakThis, Serial, Request]()
+		{
+			USceneDirectorSubsystem* Self = WeakThis.Get();
+			if (Self && Serial == GSceneSerial && Self->bWaiting)
+			{
+				Self->ShowHesitation(Request);
+			}
+		}), GetDefault<UAshesAISettings>()->GetHesitateAfterSeconds(), false);
+	}
 }
 
 void USceneDirectorSubsystem::RequestReply(const FLLMRequest& Request, int32 AttemptsLeft)
@@ -170,8 +187,15 @@ void USceneDirectorSubsystem::RequestReply(const FLLMRequest& Request, int32 Att
 
 		if (Reply.bFromFallback)
 		{
+			if (!Reply.Error.IsEmpty())
+			{
+				// Online but too slow / broken: a dodge that fits any question, not an unrelated answer
+				Self->HesitateInsteadOfReply(Request, Reply.Error);
+				return;
+			}
+			// Offline mode: a pre-written Content line is the answer
 			const FAshesValidationResult Parsed = UResponseValidator::Validate(Reply.Text, FAshesValidationContext::FromCard(Self->Card, Self->Scene));
-			UE_LOG(LogAshes, Log, TEXT("Scene: fallback line (%s)"), *Reply.Error);
+			UE_LOG(LogAshes, Log, TEXT("Scene: offline line"));
 			Self->DeliverReply(Parsed.Response, true);
 			return;
 		}
@@ -199,24 +223,87 @@ void USceneDirectorSubsystem::RequestReply(const FLLMRequest& Request, int32 Att
 
 void USceneDirectorSubsystem::UseFallback(const FLLMRequest& Request)
 {
+	// Broken JSON or a spoiler twice: the model is online, so Zafir dodges instead of giving an unrelated line
+	HesitateInsteadOfReply(Request, TEXT("invalid reply twice"));
+}
+
+void USceneDirectorSubsystem::ShowHesitation(const FLLMRequest& Request)
+{
 	UAshesGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance<UAshesGameInstance>() : nullptr;
 	if (!GI)
 	{
-		DeliverReply(FLLMResponse(), true);
 		return;
 	}
+	FLLMRequest Hesitate = Request;
+	Hesitate.bHesitate = true;
+	const int32 Serial = GSceneSerial;
 	TWeakObjectPtr<USceneDirectorSubsystem> WeakThis(this);
-	GI->RequestFallback(Request, FOnLLMReply::CreateLambda([WeakThis](const FLLMReply& Reply)
+	GI->RequestFallback(Hesitate, FOnLLMReply::CreateLambda([WeakThis, Serial](const FLLMReply& Reply)
 	{
-		if (USceneDirectorSubsystem* Self = WeakThis.Get())
+		USceneDirectorSubsystem* Self = WeakThis.Get();
+		if (Self && Serial == GSceneSerial && Self->bWaiting)
 		{
-			Self->DeliverReply(UResponseValidator::Validate(Reply.Text, FAshesValidationContext::FromCard(Self->Card, Self->Scene)).Response, true);
+			const FString Line = UResponseValidator::Validate(Reply.Text, FAshesValidationContext()).Response.Reply;
+			UE_LOG(LogAshes, Log, TEXT("Scene: hesitates (still waiting): %s"), *Line);
+			Self->OnLinePosted.Broadcast(FString(), Line);
 		}
 	}));
 }
 
+void USceneDirectorSubsystem::HesitateInsteadOfReply(const FLLMRequest& Request, const FString& Reason)
+{
+	if (GetWorld())
+	{
+		GetWorld()->GetTimerManager().ClearTimer(HesitateTimer);
+	}
+	UE_LOG(LogAshes, Log, TEXT("Scene: no answer (%s): hesitate line, turn not counted"), *Reason);
+
+	UAshesGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance<UAshesGameInstance>() : nullptr;
+	if (!GI)
+	{
+		FinishHesitation(TEXT("..."));
+		return;
+	}
+	FLLMRequest Hesitate = Request;
+	Hesitate.bHesitate = true;
+	const int32 Serial = GSceneSerial;
+	TWeakObjectPtr<USceneDirectorSubsystem> WeakThis(this);
+	GI->RequestFallback(Hesitate, FOnLLMReply::CreateLambda([WeakThis, Serial](const FLLMReply& Reply)
+	{
+		USceneDirectorSubsystem* Self = WeakThis.Get();
+		if (Self && Serial == GSceneSerial && Self->bActive)
+		{
+			Self->FinishHesitation(UResponseValidator::Validate(Reply.Text, FAshesValidationContext()).Response.Reply);
+		}
+	}));
+}
+
+void USceneDirectorSubsystem::RefundUnansweredTurn(int32& InOutTurnsTaken, TArray<FConversationTurn>& InOutHistory)
+{
+	InOutTurnsTaken = FMath::Max(0, InOutTurnsTaken - 1);
+	if (InOutHistory.Num() > 0 && InOutHistory.Last().bFromPlayer)
+	{
+		InOutHistory.Pop(); // the model never answered it; it must not dangle in the next prompt
+	}
+}
+
+void USceneDirectorSubsystem::FinishHesitation(const FString& Line)
+{
+	RefundUnansweredTurn(TurnsTaken, History);
+	bWaiting = false;
+	OnThinkingChanged.Broadcast(false);
+	// Values unchanged; the previous suggestions stay; the player can ask again
+	OnLinePosted.Broadcast(Line.StartsWith(TEXT("(")) ? FString() : Card.DisplayName, Line.IsEmpty() ? FString(TEXT("...")) : Line);
+	OnTurnsChanged.Broadcast(GetTurnsLeft());
+}
+
 void USceneDirectorSubsystem::DeliverReply(const FLLMResponse& InResponse, bool bFromFallback)
 {
+	if (GetWorld())
+	{
+		GetWorld()->GetTimerManager().ClearTimer(HesitateTimer);
+	}
+
 	// Keep the typing indicator up for at least 0.4 s (fallback lines arrive instantly)
 	const float Elapsed = static_cast<float>(FPlatformTime::Seconds() - RequestStartTime);
 	const float Delay = MinThinkingSeconds - Elapsed;
@@ -303,6 +390,7 @@ void USceneDirectorSubsystem::EndScene()
 	if (GetWorld())
 	{
 		GetWorld()->GetTimerManager().ClearTimer(ThinkingTimer);
+		GetWorld()->GetTimerManager().ClearTimer(HesitateTimer);
 	}
 
 	if (Widget)

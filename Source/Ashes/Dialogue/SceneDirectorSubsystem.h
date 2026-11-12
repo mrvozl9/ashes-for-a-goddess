@@ -1,4 +1,4 @@
-// AI-assisted: Claude Code, 11.11.2026, runs one conversation scene: prompt, model, validator, turn limit (Phase 5; full state machine in Phase 7); beats, clue hints, fallback context (Phase 4 data, 12.11.2026). Reviewed by <pending>.
+// AI-assisted: Claude Code, 11.11.2026, runs one conversation scene: prompt, model, validator, turn limit (Phase 5; full state machine in Phase 7); beats, clue hints, fallback context (Phase 4 data, 12.11.2026); soft / hard limit with hesitation. Reviewed by <pending>.
 
 #pragma once
 
@@ -75,11 +75,21 @@ public:
 	/** Minimum time the typing indicator shows (design.md Motion_TypingIndicator) */
 	static constexpr float MinThinkingSeconds = 0.4f;
 
+	/** Undo the turn of an unanswered line: one turn back and the player's line leaves the history (public for tests) */
+	static void RefundUnansweredTurn(int32& InOutTurnsTaken, TArray<FConversationTurn>& InOutHistory);
+
 private:
 
 	void RequestReply(const FLLMRequest& Request, int32 AttemptsLeft);
 	void DeliverReply(const FLLMResponse& Response, bool bFromFallback);
 	void UseFallback(const FLLMRequest& Request);
+
+	/** Soft limit reached: show a hesitation, keep waiting for the real answer */
+	void ShowHesitation(const FLLMRequest& Request);
+
+	/** Online failure (hard limit, broken / spoiling replies): a Hesitate line instead of an answer; the turn does not count */
+	void HesitateInsteadOfReply(const FLLMRequest& Request, const FString& Reason);
+	void FinishHesitation(const FString& Line);
 
 	bool bActive = false;
 	bool bWaiting = false;
@@ -107,4 +117,5 @@ private:
 	TObjectPtr<UConversationWidget> Widget;
 
 	FTimerHandle ThinkingTimer;
+	FTimerHandle HesitateTimer;
 };

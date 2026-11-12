@@ -51,6 +51,10 @@ struct ASHES_API FLLMRequest
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="LLM")
 	FName FallbackEmotion;
+
+	/** True: pick a Hesitate line (online timeout / broken reply); false: a Content line (offline) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="LLM")
+	bool bHesitate = false;
 };
 
 /** What comes back. Text is the raw model output (the JSON string); UResponseValidator parses it later. */

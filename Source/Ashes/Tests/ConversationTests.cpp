@@ -1,4 +1,4 @@
-// AI-assisted: Claude Code, 11.11.2026, Automation tests for the response validator and prompt builder (Phase 4); spoiler unlock chapters + fallback pick (12.11.2026). Reviewed by <pending>.
+// AI-assisted: Claude Code, 11.11.2026, Automation tests for the response validator and prompt builder (Phase 4); spoiler unlock chapters + fallback pick, hesitate vs content, turn refund (12.11.2026). Reviewed by <pending>.
 // Run: Session Frontend > Automation, filter "Ashes." (or console: Automation RunTests Ashes.)
 
 #include "CoreMinimal.h"
@@ -6,6 +6,7 @@
 #include "ResponseValidator.h"
 #include "PromptBuilder.h"
 #include "OfflineLLMProvider.h"
+#include "SceneDirectorSubsystem.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -207,6 +208,53 @@ bool FAshesValidatorEmphasis::RunTest(const FString& Parameters)
 	TestTrue(TEXT("ok"), R.IsOk());
 	TestEqual(TEXT("asterisks and underscores removed"), R.Response.Reply, FString(TEXT("Why do you dance while the others sleep?")));
 	TestEqual(TEXT("gesture cleaned"), R.Response.Gesture, FString(TEXT("tilts his head")));
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAshesFallbackTypes, "Ashes.Fallback.HesitateVsContent", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FAshesFallbackTypes::RunTest(const FString& Parameters)
+{
+	auto Row = [](EFallbackLineType Type, const TCHAR* Beat, const TCHAR* Line)
+	{
+		FFallbackLineRow R; R.Scene = TEXT("S1"); R.Type = Type; R.Beat = Beat; R.Emotion = TEXT("neutral"); R.Line = Line; return R;
+	};
+	const TArray<FFallbackLineRow> Rows = {
+		Row(EFallbackLineType::Content, TEXT("beat_a"), TEXT("content-beat")),
+		Row(EFallbackLineType::Content, TEXT("any"), TEXT("content-any")),
+		Row(EFallbackLineType::Hesitate, TEXT("any"), TEXT("hesitate-1")),
+		Row(EFallbackLineType::Hesitate, TEXT("any"), TEXT("hesitate-2")),
+	};
+	FFallbackLineRow Out;
+	// Online timeout: only Hesitate lines, even when a beat is being pushed
+	for (int32 i = 0; i < 4; ++i)
+	{
+		TestTrue(TEXT("timeout picks only hesitate lines"), UOfflineLLMProvider::PickLine(Rows, TEXT("S1"), TEXT("beat_a"), TEXT("neutral"), i, Out, FString(), EFallbackLineType::Hesitate) && Out.Line.StartsWith(TEXT("hesitate")));
+	}
+	// Offline: only Content lines
+	for (int32 i = 0; i < 4; ++i)
+	{
+		TestTrue(TEXT("offline picks only content lines"), UOfflineLLMProvider::PickLine(Rows, TEXT("S1"), NAME_None, TEXT("neutral"), i, Out) && Out.Line.StartsWith(TEXT("content")));
+	}
+	// No hesitate rows for a scene -> nothing (the provider then uses its generic dodge lines, never a content line)
+	const TArray<FFallbackLineRow> ContentOnly = { Row(EFallbackLineType::Content, TEXT("any"), TEXT("content-any")) };
+	TestFalse(TEXT("no hesitate rows -> no content line"), UOfflineLLMProvider::PickLine(ContentOnly, TEXT("S1"), NAME_None, TEXT("neutral"), 0, Out, FString(), EFallbackLineType::Hesitate));
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAshesTurnRefund, "Ashes.SceneDirector.UnansweredTurnNotCounted", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FAshesTurnRefund::RunTest(const FString& Parameters)
+{
+	TArray<FConversationTurn> History;
+	FConversationTurn Opener; Opener.bFromPlayer = false; Opener.Text = TEXT("Careful, Little Ember.");
+	FConversationTurn Question; Question.bFromPlayer = true; Question.Text = TEXT("Why do you carry a blade?");
+	History = { Opener, Question };
+	int32 Turns = 1; // counted when the line was sent
+	USceneDirectorSubsystem::RefundUnansweredTurn(Turns, History);
+	TestEqual(TEXT("turn not counted"), Turns, 0);
+	TestEqual(TEXT("unanswered line removed from the history"), History.Num(), 1);
+	TestFalse(TEXT("last turn is no longer the player"), History.Last().bFromPlayer);
+	USceneDirectorSubsystem::RefundUnansweredTurn(Turns, History);
+	TestEqual(TEXT("never below 0, Zafir's lines stay"), Turns + History.Num(), 1);
 	return true;
 }
 

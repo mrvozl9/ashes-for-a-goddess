@@ -282,6 +282,14 @@ struct ASHES_API FClueRow : public FTableRowBase
 	FString PromptHint;
 };
 
+/** Content = an answer for offline mode; Hesitate = a dodge or silent gesture that fits any question (online timeout / broken reply) */
+UENUM(BlueprintType)
+enum class EFallbackLineType : uint8
+{
+	Content,
+	Hesitate
+};
+
 /** DT_FallbackLines: pre-written line used when the model fails (values unchanged) */
 USTRUCT(BlueprintType)
 struct ASHES_API FFallbackLineRow : public FTableRowBase
@@ -289,6 +297,10 @@ struct ASHES_API FFallbackLineRow : public FTableRowBase
 	GENERATED_BODY()
 
 	/** DT_Scenes row name */
+	/** Hesitate lines are used when the model is online but too slow or broken; Content lines only offline */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Fallback")
+	EFallbackLineType Type = EFallbackLineType::Content;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Fallback")
 	FName Scene;
 

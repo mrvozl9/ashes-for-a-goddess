@@ -1,4 +1,4 @@
-// AI-assisted: Claude Code, 10.11.2026, pre-written fallback replies in the same JSON format (Phase 3); lines from DT_FallbackLines (Phase 4, 12.11.2026); no repeat in a row. Reviewed by <pending>.
+// AI-assisted: Claude Code, 10.11.2026, pre-written fallback replies in the same JSON format (Phase 3); lines from DT_FallbackLines (Phase 4, 12.11.2026); no repeat in a row; Hesitate / Content types. Reviewed by <pending>.
 
 #pragma once
 
@@ -32,9 +32,10 @@ public:
 	/**
 	 *  Picks a line: same scene; rows of the pushed beat if any, else beat "any", else any row of the scene;
 	 *  within that set the current emotion is preferred. Rotation spreads repeats. AvoidLine (the previous fallback)
-	 *  is skipped while anything else fits, so the same line does not come twice in a row. Returns false if nothing fits.
+	 *  is skipped while anything else fits, so the same line does not come twice in a row.
+	 *  Only rows of the given Type are used (Hesitate for online failures, Content for offline mode). Returns false if nothing fits.
 	 */
-	static bool PickLine(const TArray<FFallbackLineRow>& Rows, FName Scene, FName Beat, FName Emotion, int32 Rotation, FFallbackLineRow& OutRow, const FString& AvoidLine = FString());
+	static bool PickLine(const TArray<FFallbackLineRow>& Rows, FName Scene, FName Beat, FName Emotion, int32 Rotation, FFallbackLineRow& OutRow, const FString& AvoidLine = FString(), EFallbackLineType Type = EFallbackLineType::Content);
 
 private:
 
