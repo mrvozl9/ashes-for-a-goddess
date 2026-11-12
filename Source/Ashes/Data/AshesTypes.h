@@ -296,11 +296,15 @@ struct ASHES_API FFallbackLineRow : public FTableRowBase
 {
 	GENERATED_BODY()
 
-	/** DT_Scenes row name */
+	/** DT_Characters row name; empty = any character */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Fallback")
+	FName Character;
+
 	/** Hesitate lines are used when the model is online but too slow or broken; Content lines only offline */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Fallback")
 	EFallbackLineType Type = EFallbackLineType::Content;
 
+	/** DT_Scenes row name, or "any" (evasive lines fit every scene) */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Fallback")
 	FName Scene;
 

@@ -193,6 +193,7 @@ namespace AshesTalk
 
 		FLLMRequest Request = UPromptBuilder::Build(Card, Lore, Scene, State, History, PlayerLine, Scene.Chapter);
 		Request.FallbackScene = SceneRow;
+		Request.FallbackCharacter = CharacterRow;
 		Request.FallbackEmotion = LastEmotion;
 		for (const FBeatDef& Beat : Scene.Beats)
 		{

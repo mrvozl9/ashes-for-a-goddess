@@ -1,6 +1,7 @@
 [
   {
     "Name": "Ch1_Zafir_01",
+    "Character": "Zafir",
     "Type": "Content",
     "Scene": "Ch1_ZafirKeyScene",
     "Beat": "any",
@@ -10,6 +11,7 @@
   },
   {
     "Name": "Ch1_Zafir_02",
+    "Character": "Zafir",
     "Type": "Content",
     "Scene": "Ch1_ZafirKeyScene",
     "Beat": "any",
@@ -19,6 +21,7 @@
   },
   {
     "Name": "Ch1_Zafir_03",
+    "Character": "Zafir",
     "Type": "Content",
     "Scene": "Ch1_ZafirKeyScene",
     "Beat": "any",
@@ -28,6 +31,7 @@
   },
   {
     "Name": "Ch1_Zafir_04",
+    "Character": "Zafir",
     "Type": "Content",
     "Scene": "Ch1_ZafirKeyScene",
     "Beat": "any",
@@ -37,6 +41,7 @@
   },
   {
     "Name": "Ch1_Zafir_05",
+    "Character": "Zafir",
     "Type": "Content",
     "Scene": "Ch1_ZafirKeyScene",
     "Beat": "any",
@@ -46,6 +51,7 @@
   },
   {
     "Name": "Ch1_Zafir_06",
+    "Character": "Zafir",
     "Type": "Content",
     "Scene": "Ch1_ZafirKeyScene",
     "Beat": "sahra_confronts_blade",
@@ -55,38 +61,12 @@
   },
   {
     "Name": "Ch1_Zafir_07",
+    "Character": "Zafir",
     "Type": "Content",
     "Scene": "Ch1_ZafirKeyScene",
     "Beat": "uneasy_truce",
     "Emotion": "neutral",
     "Line": "Here's a thought: you forget what you've heard about me, and I forget what I've seen about you.",
-    "bAIAssisted": true
-  },
-  {
-    "Name": "Ch1_Zafir_PLACEHOLDER_H1",
-    "Type": "Hesitate",
-    "Scene": "Ch1_ZafirKeyScene",
-    "Beat": "any",
-    "Emotion": "neutral",
-    "Line": "(He looks toward the fountain and says nothing.)",
-    "bAIAssisted": true
-  },
-  {
-    "Name": "Ch1_Zafir_PLACEHOLDER_H2",
-    "Type": "Hesitate",
-    "Scene": "Ch1_ZafirKeyScene",
-    "Beat": "any",
-    "Emotion": "teasing",
-    "Line": "(He smiles, but does not answer.)",
-    "bAIAssisted": true
-  },
-  {
-    "Name": "Ch1_Zafir_PLACEHOLDER_H3",
-    "Type": "Hesitate",
-    "Scene": "Ch1_ZafirKeyScene",
-    "Beat": "any",
-    "Emotion": "cold",
-    "Line": "(He holds your gaze for a moment, then turns away.)",
     "bAIAssisted": true
   }
 ]

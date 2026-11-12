@@ -46,6 +46,10 @@ struct ASHES_API FLLMRequest
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="LLM")
 	FName FallbackScene;
 
+	/** DT_Characters row of the speaker (fallback lines are per character) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="LLM")
+	FName FallbackCharacter;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="LLM")
 	FName FallbackBeat;
 

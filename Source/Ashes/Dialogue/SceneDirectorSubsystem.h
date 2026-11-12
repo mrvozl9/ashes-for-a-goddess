@@ -89,7 +89,10 @@ private:
 
 	/** Online failure (hard limit, broken / spoiling replies): a Hesitate line instead of an answer; the turn does not count */
 	void HesitateInsteadOfReply(const FLLMRequest& Request, const FString& Reason);
-	void FinishHesitation(const FString& Line);
+	void FinishHesitation(const FLLMResponse& Hesitation);
+
+	/** Shows a fallback line: speech with the speaker, a [gesture] as "(...)"; gesture-only lines show just the gesture */
+	void PostFallbackLine(const FLLMResponse& Line);
 
 	bool bActive = false;
 	bool bWaiting = false;
@@ -106,6 +109,7 @@ private:
 	TSet<FName> ReachedBeats;
 	FName LastEmotion;
 	FName SceneRowName;
+	FName CharacterRowName;
 
 	/** Scene, beat being pushed and current emotion, so a fallback line fits the moment (DT_FallbackLines) */
 	void FillFallbackContext(FLLMRequest& Request) const;

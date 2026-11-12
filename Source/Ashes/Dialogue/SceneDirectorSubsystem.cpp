@@ -56,6 +56,7 @@ bool USceneDirectorSubsystem::StartScene(AAshesNPC* Npc, AAshesCharacter* Sahra)
 	const UAshesLoreBible* LoreAsset = LoadObject<UAshesLoreBible>(nullptr, GLorePath);
 	Lore = LoreAsset ? LoreAsset->Text : FString();
 	SceneRowName = Npc->SceneRowName;
+	CharacterRowName = Npc->CharacterRowName;
 	ReachedBeats.Reset();
 	LastEmotion = NAME_None;
 
@@ -243,9 +244,9 @@ void USceneDirectorSubsystem::ShowHesitation(const FLLMRequest& Request)
 		USceneDirectorSubsystem* Self = WeakThis.Get();
 		if (Self && Serial == GSceneSerial && Self->bWaiting)
 		{
-			const FString Line = UResponseValidator::Validate(Reply.Text, FAshesValidationContext()).Response.Reply;
-			UE_LOG(LogAshes, Log, TEXT("Scene: hesitates (still waiting): %s"), *Line);
-			Self->OnLinePosted.Broadcast(FString(), Line);
+			const FLLMResponse Line = UResponseValidator::Validate(Reply.Text, FAshesValidationContext()).Response;
+			UE_LOG(LogAshes, Log, TEXT("Scene: hesitates (still waiting): %s [%s]"), *Line.Reply, *Line.Gesture);
+			Self->PostFallbackLine(Line);
 		}
 	}));
 }
@@ -261,7 +262,7 @@ void USceneDirectorSubsystem::HesitateInsteadOfReply(const FLLMRequest& Request,
 	UAshesGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance<UAshesGameInstance>() : nullptr;
 	if (!GI)
 	{
-		FinishHesitation(TEXT("..."));
+		FinishHesitation(FLLMResponse());
 		return;
 	}
 	FLLMRequest Hesitate = Request;
@@ -273,7 +274,7 @@ void USceneDirectorSubsystem::HesitateInsteadOfReply(const FLLMRequest& Request,
 		USceneDirectorSubsystem* Self = WeakThis.Get();
 		if (Self && Serial == GSceneSerial && Self->bActive)
 		{
-			Self->FinishHesitation(UResponseValidator::Validate(Reply.Text, FAshesValidationContext()).Response.Reply);
+			Self->FinishHesitation(UResponseValidator::Validate(Reply.Text, FAshesValidationContext()).Response);
 		}
 	}));
 }
@@ -287,14 +288,28 @@ void USceneDirectorSubsystem::RefundUnansweredTurn(int32& InOutTurnsTaken, TArra
 	}
 }
 
-void USceneDirectorSubsystem::FinishHesitation(const FString& Line)
+void USceneDirectorSubsystem::FinishHesitation(const FLLMResponse& Hesitation)
 {
 	RefundUnansweredTurn(TurnsTaken, History);
 	bWaiting = false;
 	OnThinkingChanged.Broadcast(false);
 	// Values unchanged; the previous suggestions stay; the player can ask again
-	OnLinePosted.Broadcast(Line.StartsWith(TEXT("(")) ? FString() : Card.DisplayName, Line.IsEmpty() ? FString(TEXT("...")) : Line);
+	UE_LOG(LogAshes, Log, TEXT("Scene: %s dodges: %s [%s]"), *Card.DisplayName, *Hesitation.Reply, *Hesitation.Gesture);
+	PostFallbackLine(Hesitation);
 	OnTurnsChanged.Broadcast(GetTurnsLeft());
+}
+
+void USceneDirectorSubsystem::PostFallbackLine(const FLLMResponse& Line)
+{
+	const bool bSilent = Line.Reply.IsEmpty() || Line.Reply == TEXT("...");
+	if (!bSilent || Line.Gesture.IsEmpty())
+	{
+		OnLinePosted.Broadcast(Card.DisplayName, bSilent ? FString(TEXT("...")) : Line.Reply);
+	}
+	if (!Line.Gesture.IsEmpty())
+	{
+		OnLinePosted.Broadcast(FString(), FString::Printf(TEXT("(%s)"), *Line.Gesture));
+	}
 }
 
 void USceneDirectorSubsystem::DeliverReply(const FLLMResponse& InResponse, bool bFromFallback)
@@ -445,6 +460,7 @@ static FAutoConsoleCommandWithWorldAndArgs GAshesSceneEnd(
 void USceneDirectorSubsystem::FillFallbackContext(FLLMRequest& Request) const
 {
 	Request.FallbackScene = SceneRowName;
+	Request.FallbackCharacter = CharacterRowName;
 	Request.FallbackEmotion = LastEmotion;
 	Request.FallbackBeat = NAME_None;
 	for (const FBeatDef& Beat : Scene.Beats)

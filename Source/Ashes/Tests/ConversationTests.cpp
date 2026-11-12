@@ -238,6 +238,22 @@ bool FAshesFallbackTypes::RunTest(const FString& Parameters)
 	// No hesitate rows for a scene -> nothing (the provider then uses its generic dodge lines, never a content line)
 	const TArray<FFallbackLineRow> ContentOnly = { Row(EFallbackLineType::Content, TEXT("any"), TEXT("content-any")) };
 	TestFalse(TEXT("no hesitate rows -> no content line"), UOfflineLLMProvider::PickLine(ContentOnly, TEXT("S1"), NAME_None, TEXT("neutral"), 0, Out, FString(), EFallbackLineType::Hesitate));
+	// Per character: Vashir's evasive line is never Zafir's; scene "any" fits every scene
+	FFallbackLineRow VashirLine = Row(EFallbackLineType::Hesitate, TEXT("any"), TEXT("vashir-dodge")); VashirLine.Character = TEXT("Vashir"); VashirLine.Scene = TEXT("any");
+	FFallbackLineRow ZafirLine = Row(EFallbackLineType::Hesitate, TEXT("any"), TEXT("zafir-dodge")); ZafirLine.Character = TEXT("Zafir"); ZafirLine.Scene = TEXT("any");
+	const TArray<FFallbackLineRow> PerCharacter = { VashirLine, ZafirLine };
+	for (int32 i = 0; i < 4; ++i)
+	{
+		TestTrue(TEXT("Zafir gets only his own evasive lines"), UOfflineLLMProvider::PickLine(PerCharacter, TEXT("Ch1_ZafirKeyScene"), NAME_None, TEXT("neutral"), i, Out, FString(), EFallbackLineType::Hesitate, TEXT("Zafir")) && Out.Line == TEXT("zafir-dodge"));
+	}
+
+	// [Gestures] are split from speech
+	FString Speech, Gesture;
+	UOfflineLLMProvider::SplitGesture(TEXT("[He tilts his head, smiling.] Not tonight."), Speech, Gesture);
+	TestEqual(TEXT("speech"), Speech, FString(TEXT("Not tonight.")));
+	TestEqual(TEXT("gesture"), Gesture, FString(TEXT("He tilts his head, smiling.")));
+	UOfflineLLMProvider::SplitGesture(TEXT("[He says nothing at all.]"), Speech, Gesture);
+	TestTrue(TEXT("gesture-only line has no speech"), Speech.IsEmpty() && Gesture == TEXT("He says nothing at all."));
 	return true;
 }
 
