@@ -148,6 +148,9 @@ void USceneDirectorSubsystem::SubmitLine(const FString& InLine)
 	bWaiting = true;
 	RequestStartTime = FPlatformTime::Seconds();
 	OnThinkingChanged.Broadcast(true);
+	++RequestSerial;
+	UE_LOG(LogAshes, Log, TEXT("Scene: waiting (soft limit %.0f s, hard limit %.0f s%s)"), GetDefault<UAshesAISettings>()->GetHesitateAfterSeconds(),
+		GetDefault<UAshesAISettings>()->GetEffectiveRequestTimeout(), GIsEditor ? TEXT(", editor") : TEXT(""));
 	RequestReply(Request, 1); // 1 silent retry on a broken / spoiling reply (GDD 8.1)
 
 	// Soft limit: after RequestTimeoutSeconds (6 s) Zafir visibly hesitates, but we keep waiting up to the hard limit
@@ -155,13 +158,13 @@ void USceneDirectorSubsystem::SubmitLine(const FString& InLine)
 	if (GI && GI->GetAIMode() == EAIMode::Online)
 	{
 		TWeakObjectPtr<USceneDirectorSubsystem> WeakThis(this);
-		const int32 Serial = GSceneSerial;
-		GetWorld()->GetTimerManager().SetTimer(HesitateTimer, FTimerDelegate::CreateLambda([WeakThis, Serial, Request]()
+		const int32 ReqSerial = RequestSerial;
+		GetWorld()->GetTimerManager().SetTimer(HesitateTimer, FTimerDelegate::CreateLambda([WeakThis, ReqSerial]()
 		{
 			USceneDirectorSubsystem* Self = WeakThis.Get();
-			if (Self && Serial == GSceneSerial && Self->bWaiting)
+			if (Self && ReqSerial == Self->RequestSerial && Self->bWaiting)
 			{
-				Self->ShowHesitation(Request);
+				Self->ShowHesitation();
 			}
 		}), GetDefault<UAshesAISettings>()->GetHesitateAfterSeconds(), false);
 	}
@@ -177,13 +180,19 @@ void USceneDirectorSubsystem::RequestReply(const FLLMRequest& Request, int32 Att
 	}
 
 	const int32 Serial = GSceneSerial;
+	const int32 ReqSerial = RequestSerial;
 	TWeakObjectPtr<USceneDirectorSubsystem> WeakThis(this);
-	GI->RequestReply(Request, FOnLLMReply::CreateLambda([WeakThis, Serial, Request, AttemptsLeft](const FLLMReply& Reply)
+	GI->RequestReply(Request, FOnLLMReply::CreateLambda([WeakThis, Serial, ReqSerial, Request, AttemptsLeft](const FLLMReply& Reply)
 	{
 		USceneDirectorSubsystem* Self = WeakThis.Get();
 		if (!Self || Serial != GSceneSerial || !Self->bActive)
 		{
 			return; // scene was closed meanwhile
+		}
+		if (ReqSerial != Self->RequestSerial || !Self->bWaiting)
+		{
+			UE_LOG(LogAshes, Log, TEXT("Scene: late reply dropped (%.1f s)"), Reply.LatencySeconds);
+			return; // this line was already answered (e.g. by a dodge): exactly one Zafir line per player line
 		}
 
 		if (Reply.bFromFallback)
@@ -208,7 +217,8 @@ void USceneDirectorSubsystem::RequestReply(const FLLMRequest& Request, int32 Att
 		}
 		if (Result.IsOk())
 		{
-			UE_LOG(LogAshes, Log, TEXT("Scene: reply in %.1f s (%.0f tok/s)"), Reply.LatencySeconds, Reply.TokensPerSecond);
+			UE_LOG(LogAshes, Log, TEXT("Scene: reply in %.1f s (prompt %d tokens, %d from cache, read in %.1f s; %d tokens at %.0f tok/s)"),
+				Reply.LatencySeconds, Reply.PromptTokens + Reply.CachedTokens, Reply.CachedTokens, Reply.PromptMs / 1000.f, Reply.CompletionTokens, Reply.TokensPerSecond);
 			Self->DeliverReply(Result.Response, false);
 		}
 		else if (AttemptsLeft > 0)
@@ -228,27 +238,11 @@ void USceneDirectorSubsystem::UseFallback(const FLLMRequest& Request)
 	HesitateInsteadOfReply(Request, TEXT("invalid reply twice"));
 }
 
-void USceneDirectorSubsystem::ShowHesitation(const FLLMRequest& Request)
+void USceneDirectorSubsystem::ShowHesitation()
 {
-	UAshesGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance<UAshesGameInstance>() : nullptr;
-	if (!GI)
-	{
-		return;
-	}
-	FLLMRequest Hesitate = Request;
-	Hesitate.bHesitate = true;
-	const int32 Serial = GSceneSerial;
-	TWeakObjectPtr<USceneDirectorSubsystem> WeakThis(this);
-	GI->RequestFallback(Hesitate, FOnLLMReply::CreateLambda([WeakThis, Serial](const FLLMReply& Reply)
-	{
-		USceneDirectorSubsystem* Self = WeakThis.Get();
-		if (Self && Serial == GSceneSerial && Self->bWaiting)
-		{
-			const FLLMResponse Line = UResponseValidator::Validate(Reply.Text, FAshesValidationContext()).Response;
-			UE_LOG(LogAshes, Log, TEXT("Scene: hesitates (still waiting): %s [%s]"), *Line.Reply, *Line.Gesture);
-			Self->PostFallbackLine(Line);
-		}
-	}));
+	// Status only ("Zafir hesitates..."): no dialogue line, the real answer may still come
+	UE_LOG(LogAshes, Log, TEXT("Scene: soft limit reached after %.1f s, still waiting"), FPlatformTime::Seconds() - RequestStartTime);
+	OnHesitating.Broadcast();
 }
 
 void USceneDirectorSubsystem::HesitateInsteadOfReply(const FLLMRequest& Request, const FString& Reason)
@@ -268,11 +262,12 @@ void USceneDirectorSubsystem::HesitateInsteadOfReply(const FLLMRequest& Request,
 	FLLMRequest Hesitate = Request;
 	Hesitate.bHesitate = true;
 	const int32 Serial = GSceneSerial;
+	const int32 ReqSerial = RequestSerial;
 	TWeakObjectPtr<USceneDirectorSubsystem> WeakThis(this);
-	GI->RequestFallback(Hesitate, FOnLLMReply::CreateLambda([WeakThis, Serial](const FLLMReply& Reply)
+	GI->RequestFallback(Hesitate, FOnLLMReply::CreateLambda([WeakThis, Serial, ReqSerial](const FLLMReply& Reply)
 	{
 		USceneDirectorSubsystem* Self = WeakThis.Get();
-		if (Self && Serial == GSceneSerial && Self->bActive)
+		if (Self && Serial == GSceneSerial && Self->bActive && ReqSerial == Self->RequestSerial && Self->bWaiting)
 		{
 			Self->FinishHesitation(UResponseValidator::Validate(Reply.Text, FAshesValidationContext()).Response);
 		}

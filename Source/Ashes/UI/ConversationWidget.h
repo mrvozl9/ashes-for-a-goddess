@@ -1,4 +1,4 @@
-// AI-assisted: Claude Code, 11.11.2026, conversation screen logic; WBP_Conversation provides the layout (Phase 5). Reviewed by <pending>.
+// AI-assisted: Claude Code, 11.11.2026, conversation screen logic; WBP_Conversation provides the layout (Phase 5); hesitation status (12.11.2026). Reviewed by <pending>.
 
 #pragma once
 
@@ -66,6 +66,7 @@ private:
 	UFUNCTION() void HandleLinePosted(const FString& Speaker, const FString& Text);
 	UFUNCTION() void HandleReplyReady(const FLLMResponse& Response, bool bFromFallback);
 	UFUNCTION() void HandleThinking(bool bThinking);
+	UFUNCTION() void HandleHesitating();
 	UFUNCTION() void HandleTurns(int32 TurnsLeft);
 	UFUNCTION() void HandleReply1();
 	UFUNCTION() void HandleReply2();

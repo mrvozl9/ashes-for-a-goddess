@@ -17,6 +17,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FAshesReplyReady, const FLLMRespons
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FAshesThinkingChanged, bool, bThinking);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FAshesTurnsChanged, int32, TurnsLeft);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FAshesSceneEnded);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FAshesHesitating);
 
 /**
  *  One conversation at a time (technical_design.md section 4.2).
@@ -72,6 +73,10 @@ public:
 	UPROPERTY(BlueprintAssignable, Category="Conversation")
 	FAshesSceneEnded OnSceneEnded;
 
+	/** Soft limit reached while still waiting: the status shows "<Name> hesitates..." (no dialogue line) */
+	UPROPERTY(BlueprintAssignable, Category="Conversation")
+	FAshesHesitating OnHesitating;
+
 	/** Minimum time the typing indicator shows (design.md Motion_TypingIndicator) */
 	static constexpr float MinThinkingSeconds = 0.4f;
 
@@ -84,8 +89,11 @@ private:
 	void DeliverReply(const FLLMResponse& Response, bool bFromFallback);
 	void UseFallback(const FLLMRequest& Request);
 
-	/** Soft limit reached: show a hesitation, keep waiting for the real answer */
-	void ShowHesitation(const FLLMRequest& Request);
+	/** Soft limit reached: status only, keep waiting for the real answer */
+	void ShowHesitation();
+
+	/** Bumped per player line: replies, retries and timeouts of an older line are dropped */
+	int32 RequestSerial = 0;
 
 	/** Online failure (hard limit, broken / spoiling replies): a Hesitate line instead of an answer; the turn does not count */
 	void HesitateInsteadOfReply(const FLLMRequest& Request, const FString& Reason);

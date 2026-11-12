@@ -7,6 +7,7 @@
 #include "PromptBuilder.h"
 #include "OfflineLLMProvider.h"
 #include "SceneDirectorSubsystem.h"
+#include "AshesAISettings.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -271,6 +272,19 @@ bool FAshesTurnRefund::RunTest(const FString& Parameters)
 	TestFalse(TEXT("last turn is no longer the player"), History.Last().bFromPlayer);
 	USceneDirectorSubsystem::RefundUnansweredTurn(Turns, History);
 	TestEqual(TEXT("never below 0, Zafir's lines stay"), Turns + History.Num(), 1);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAshesAILimits, "Ashes.Settings.EditorLimits", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FAshesAILimits::RunTest(const FString& Parameters)
+{
+	// In the editor (and PIE) the hard limit is the editor value; the soft limit stays the game's 6 s
+	const UAshesAISettings* Settings = GetDefault<UAshesAISettings>();
+	TestTrue(TEXT("running in the editor"), GIsEditor);
+	TestEqual(TEXT("hard limit = EditorHardTimeoutSeconds"), Settings->GetEffectiveRequestTimeout(), Settings->EditorHardTimeoutSeconds);
+	TestTrue(TEXT("editor hard limit at least 60 s"), Settings->EditorHardTimeoutSeconds >= 60.f);
+	TestEqual(TEXT("soft limit = RequestTimeoutSeconds"), Settings->GetHesitateAfterSeconds(), Settings->RequestTimeoutSeconds);
+	TestTrue(TEXT("soft before hard"), Settings->GetHesitateAfterSeconds() < Settings->GetEffectiveRequestTimeout());
 	return true;
 }
 

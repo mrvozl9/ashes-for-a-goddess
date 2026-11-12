@@ -12,7 +12,7 @@ UAshesAISettings::UAshesAISettings()
 
 float UAshesAISettings::GetEffectiveRequestTimeout() const
 {
-	return GIsEditor ? EditorRequestTimeoutSeconds : HardTimeoutSeconds;
+	return GIsEditor ? EditorHardTimeoutSeconds : HardTimeoutSeconds;
 }
 
 FString UAshesAISettings::ResolveLocalModelDirectory() const

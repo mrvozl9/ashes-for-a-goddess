@@ -90,6 +90,16 @@ struct ASHES_API FLLMReply
 
 	UPROPERTY(BlueprintReadOnly, Category="LLM")
 	float TokensPerSecond = 0.f;
+
+	/** Prompt tokens read for this request, of which taken from the server cache, and how long reading took */
+	UPROPERTY(BlueprintReadOnly, Category="LLM")
+	int32 PromptTokens = 0;
+
+	UPROPERTY(BlueprintReadOnly, Category="LLM")
+	int32 CachedTokens = 0;
+
+	UPROPERTY(BlueprintReadOnly, Category="LLM")
+	float PromptMs = 0.f;
 };
 
 /** Called on the game thread when a request finishes (success, failure or timeout) */

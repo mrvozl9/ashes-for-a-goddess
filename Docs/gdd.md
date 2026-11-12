@@ -581,7 +581,8 @@ The LLM writes what the characters say, but our own C++ code decides what actual
 
 | Failure | Detection | What the player sees |
 | :-- | :-- | :-- |
-| Timeout (over 6 s in the game; 30 s in the editor while developing) or model error | Request timeout or error code | "Hesitates" animation, then a pre-written line (scene + beat + emotion → clue → scene → any scene; never twice in a row); values unchanged |
+| Slow reply or model error (online) | Soft limit 6 s, hard limit 20 s in the game (60 s in the editor while developing), error code | After 6 s Zafir visibly hesitates (an evasive line or gesture) while the game keeps waiting; the real answer is shown if it comes before the hard limit. Otherwise, or after two broken / spoiling replies: an evasive line that fits any question (`Hesitate` type, per character, e.g. "Ask me something easier, Little Ember." or a [gesture]); the turn does not count, values unchanged (changed 12.11.2026: unrelated pre-written answers felt broken online) |
+| Model not running (offline mode) | `ULocalModelSubsystem` state | A pre-written `Content` line for the scene (beat + emotion; never twice in a row); values unchanged |
 | Broken JSON | Parser fails | 1 silent retry, then the fallback line |
 | Off-topic input | `off_topic` flag + keyword list | In-character reply |
 | Spoiler leak | Secret not in prompt + keyword check | Regenerate once, then fallback |

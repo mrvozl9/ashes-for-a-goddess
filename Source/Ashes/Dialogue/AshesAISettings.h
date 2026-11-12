@@ -66,9 +66,9 @@ public:
 
 	/** Hard limit in the editor and Play-in-Editor only (slow development PCs); never used by packaged builds */
 	UPROPERTY(config, EditAnywhere, Category="Requests", meta=(ClampMin="1", Units="s"))
-	float EditorRequestTimeoutSeconds = 30.f;
+	float EditorHardTimeoutSeconds = 60.f;
 
-	/** Hard limit: EditorRequestTimeoutSeconds in the editor (incl. PIE), HardTimeoutSeconds in the game */
+	/** Hard limit: EditorHardTimeoutSeconds in the editor (incl. PIE), HardTimeoutSeconds in the game */
 	float GetEffectiveRequestTimeout() const;
 
 	/** Soft limit: when the hesitation shows (RequestTimeoutSeconds) */
