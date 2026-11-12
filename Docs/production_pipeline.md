@@ -4,7 +4,7 @@
 >
 > **How to use this file:** treat each Phase as a node in a state machine. A phase may not start until its `Depends on` phases are `DONE`. Every phase ends with a **Verification Gate**: the feature is tested in **Play In Editor (PIE)** in Unreal Engine 5.8 and the user confirms before moving on. Never build UI before the gameplay it shows. Never build a level before its mechanics work in the `L_Test` level.
 >
-> **Time box: 4 weeks in total, Monday 09.11.2026 to Sunday 06.12.2026.** Final build on Saturday 05.12.2026; Sunday 06.12 is buffer only. This compresses the GDD's Weeks 9–14 plan (which ended 20.12.2026). Owners follow the GDD roles: **Merve** (code, level, audio) and **Tuana** (art, UI, writing, programming). Two tracks run in parallel; a phase lists who owns it.
+> **Time box: 4 weeks in total, Monday 09.11.2026 to Sunday 06.12.2026.** Final build on Saturday 05.12.2026; Sunday 06.12 is buffer only. This compresses the GDD's Weeks 9–14 plan (which ended 20.12.2026). **Team (from 12.11.2026): four people.** **Merve**: level design (grey-box, rooms, spawn points, guard routes, hiding and eavesdrop spots, lighting), story and lines (with Tuana's review), data entry, tracker and board. **Tuana**: art (portraits, character looks, palace kit, UI style, 2D backgrounds). **Tala**: audio, VFX and other work (music, dance songs and charts, SFX, mix, Niagara effects, dance animations, cutscene sequences, credits, licenses, playtests). **Baha**: code (C++ and Blueprint systems from Phase 7 on; Merve wrote Phases 0–5). Four tracks run in parallel; a phase lists who owns it. Before 12.11 the team was Merve and Tuana.
 >
 > **Engine (10.11.2026):** Unreal Engine 5.8, C++ for the testable core and Blueprints for glue, UI and animation (see `technical_design.md`). The earlier Unity skeleton is kept as the Git tag `unity-skeleton`.
 >
@@ -64,29 +64,29 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 
 | # | Phase | Stage | Owner | Target | Status | Last update | Notes |
 | :-- | :-- | :-- | :-- | :-- | :-- | :-- | :-- |
-| 0 | Project setup & test level | 1 | Merve | Tue 10.11 | 🔄 IN PROGRESS | 10.11.2026 | UE 5.8 project, modules, `Content/Ashes`, `L_Test`, `L_Palace`, `GM_Ashes`, MCP + VibeUE done on PC 1 (merged to `main`); open: Functional Testing plugin, Git source control setting, Tuana's PC check, task board |
+| 0 | Project setup & test level | 1 | Merve (+ Tala, Baha setup) | Tue 10.11 | 🔄 IN PROGRESS | 12.11.2026 | UE 5.8 project, modules, `Content/Ashes`, `L_Test`, `L_Palace`, `GM_Ashes`, MCP + VibeUE done on PC 1 (merged to `main`); open: Functional Testing plugin, Git source control setting, Tuana's, Tala's and Baha's PC setup, task board |
 | 1 | Player movement & camera | 1 | Merve | Tue 10.11 | ✅ DONE | 10.11.2026 | Walk 220 / run 450 cm/s, no jump, orbit camera; tested by Merve; PR #26 merged |
 | 2 | Interaction system (E: Talk) | 1 | Merve | Wed 11.11 | ✅ DONE | 10.11.2026 | `UInteractionComponent` (200 cm, 0.1 s timer), `AAshesNPC`, `WBP_InteractPrompt`, placeholder `BP_Zafir`; tested by Merve; PR #27 merged |
 | 3 | LLM provider (built-in model + fallback) | 1 | Merve | Wed 11.11 | ✅ DONE | 11.11.2026 | Built-in model (llama-server + Qwen3.5-4B, no key); streamed requests; 30 s editor / 6 s game timeout; PR #29 merged. Open: speed test on the stronger PC |
-| 4 | Prompt builder & validator + lore and Zafir's card | 1 | Merve + Tuana | Fri 13.11 | 🔄 IN PROGRESS | 11.11.2026 | C++ done on `feature/merve-phase4-prompt` (8 tests green, `Ashes.TalkZafir` works); waiting for Tuana's lore bible, Zafir's card and Chapter 1 scene card |
-| 5 | Conversation UI + Chapter 1 Zafir scene | 1 | Tuana + Merve | Sat 14.11 | 🔄 IN PROGRESS | 11.11.2026 | Placeholder `WBP_Conversation` + `UConversationWidget` + minimal `USceneDirectorSubsystem` on `feature/merve-phase5-conversation`; E → 10-turn scene works in PIE; open: Tuana's UI style, fallback lines, portraits |
-| 6 | 🏁 Prototype gate | 1 | Both | Sun 15.11 | ⬜ NOT STARTED | | user sign-off |
-| 7 | Scene Director & relationship values | 2 | Merve | Tue 17.11 | ⬜ NOT STARTED | | |
-| 8 | Open palace grey-box & day / night flow | 2 | Merve | Wed 18.11 | ⬜ NOT STARTED | | |
-| 9 | Clues & Rumor Journal | 2 | Merve + Tuana | Thu 19.11 | ⬜ NOT STARTED | | |
-| 10 | Guards, hiding spots & eavesdropping | 2 | Merve | Sat 21.11 | ⬜ NOT STARTED | | |
-| 11 | Nightly dance minigame | 2 | Tuana | Sat 21.11 | ⬜ NOT STARTED | | |
-| 12 | ⚠️ Chapter 1 complete + risk check | 2 | Both | Sun 22.11 | ⬜ NOT STARTED | | decides should-haves |
-| 13 | Chapters 2–4 content | 2 | Tuana + Merve | Wed 25.11 | ⬜ NOT STARTED | | |
-| 14 | Cutscene system + 2D parts | 2 | Merve + Tuana | Wed 25.11 | ⬜ NOT STARTED | | |
-| 15 | HUD, menus, chapter cards | 2 | Tuana | Thu 26.11 | ⬜ NOT STARTED | | |
-| 16 | Memories + pyre confession (should) | 2 | Merve | Fri 27.11 | ⬜ NOT STARTED | | |
-| 17 | 🏁 Content gate + playtest 1 | 2 | Both | Sun 29.11 | ⬜ NOT STARTED | | user sign-off |
-| 18 | Art pass (palace kit, portraits, VFX) | 3 | Tuana | Tue 01.12 | ⬜ NOT STARTED | | |
-| 19 | Audio pass | 3 | Merve | Tue 01.12 | ⬜ NOT STARTED | | |
-| 20 | Tuning, playtest 2, red-team pass | 3 | Both | Thu 03.12 | ⬜ NOT STARTED | | |
-| 21 | Credits, disclosure, licenses, prompt log | 3 | Tuana | Fri 04.12 | ⬜ NOT STARTED | | |
-| 22 | 🏁 Packaged Windows build | 3 | Merve | Sat 05.12 | ⬜ NOT STARTED | | final |
+| 4 | Prompt builder & validator + lore and Zafir's card | 1 | Merve (code, texts) + Baha (CSV import) | Fri 13.11 | 🔄 IN PROGRESS | 11.11.2026 | C++ done on `feature/merve-phase4-prompt` (8 tests green, `Ashes.TalkZafir` works); waiting for Tuana's lore bible, Zafir's card and Chapter 1 scene card |
+| 5 | Conversation UI + Chapter 1 Zafir scene | 1 | Merve + Baha (code), Tuana (UI style, portraits), Tala (UI sounds) | Sat 14.11 | 🔄 IN PROGRESS | 11.11.2026 | Placeholder `WBP_Conversation` + `UConversationWidget` + minimal `USceneDirectorSubsystem` on `feature/merve-phase5-conversation`; E → 10-turn scene works in PIE; open: Tuana's UI style, fallback lines, portraits |
+| 6 | 🏁 Prototype gate | 1 | All | Sun 15.11 | ⬜ NOT STARTED | | user sign-off |
+| 7 | Scene Director & relationship values | 2 | Baha | Tue 17.11 | ⬜ NOT STARTED | | |
+| 8 | Open palace grey-box & day / night flow | 2 | Merve (level) + Baha (code) | Wed 18.11 | ⬜ NOT STARTED | | |
+| 9 | Clues & Rumor Journal | 2 | Baha (code), Tuana (UI art), Merve (placement) | Thu 19.11 | ⬜ NOT STARTED | | |
+| 10 | Guards, hiding spots & eavesdropping | 2 | Baha (AI), Merve (routes, spots), Tala (SFX, glow) | Sat 21.11 | ⬜ NOT STARTED | | |
+| 11 | Nightly dance minigame | 2 | Baha (code), Tala (song, chart, animations), Tuana (UI art) | Sat 21.11 | ⬜ NOT STARTED | | |
+| 12 | ⚠️ Chapter 1 complete + risk check | 2 | All | Sun 22.11 | ⬜ NOT STARTED | | decides should-haves |
+| 13 | Chapters 2–6 content | 2 | Merve (levels, data), Baha (chapter logic), Tala (dance songs), Tuana (portraits) | Wed 25.11 | ⬜ NOT STARTED | | |
+| 14 | Cutscene system, 2D parts + Chapter 7 spirit walk | 2 | Baha (player, spirit walk), Tala (sequences, VFX), Tuana (2D art), Merve (ghost palace) | Wed 25.11 | ⬜ NOT STARTED | | |
+| 15 | HUD, menus, chapter cards | 2 | Tuana (art) + Baha (wiring) | Thu 26.11 | ⬜ NOT STARTED | | |
+| 16 | Memories + pyre confession (should) | 2 | Baha | Fri 27.11 | ⬜ NOT STARTED | | |
+| 17 | 🏁 Content gate + playtest 1 | 2 | All (Tala runs the playtest) | Sun 29.11 | ⬜ NOT STARTED | | user sign-off |
+| 18 | Art pass (palace kit, portraits, VFX) | 3 | Tuana (art), Tala (VFX), Merve (lighting) | Tue 01.12 | ⬜ NOT STARTED | | |
+| 19 | Audio pass | 3 | Tala | Tue 01.12 | ⬜ NOT STARTED | | |
+| 20 | Tuning, playtest 2, red-team pass | 3 | All | Thu 03.12 | ⬜ NOT STARTED | | |
+| 21 | Credits, disclosure, licenses, prompt log | 3 | Tala (+ Merve prompt log, Baha headers) | Fri 04.12 | ⬜ NOT STARTED | | |
+| 22 | 🏁 Packaged Windows build | 3 | Baha | Sat 05.12 | ⬜ NOT STARTED | | final |
 
 ---
 
@@ -104,8 +104,9 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 - ✅ [UE] Create `Content/Ashes/` (folders from `design.md` section 10), `L_Test` (floor, walls, a ramp, night sky, Nav Mesh Bounds Volume) and an empty `L_Palace`; set `L_Test` as the editor startup map and `GM_Ashes` as the default game mode.
 - [UE] Project Settings → Editor → Source Control: Git with LFS (MISSING: each PC sets this in the editor); ✅ "One File Per Actor" is on for `L_Palace` (World Settings → Use External Actors).
 - [UE] Both members clone with Git LFS, build in Visual Studio 2022 (or Rider), and open the project on the same engine version; `git lfs lock` before editing any `.uasset` / `.umap`.
-- [TOOLS] Install MCP + VibeUE (course setup) so the AI agent can reach the editor; confirm both PCs have it. ✅ PC 1 (Merve, 10.11.2026); MISSING: Tuana's PC.
-- [WRITE] Tuana: start the GitHub Projects task board (To Do, Doing, Review, Done) with this tracker's phases.
+- [TOOLS] Install MCP + VibeUE (course setup) so the AI agent can reach the editor; confirm every PC has it. ✅ PC 1 (Merve, 10.11.2026); MISSING: Tuana's, Tala's and Baha's PCs.
+- [UE] Tala and Baha (joined 12.11.2026): clone with Git LFS, `git submodule update --init`, build in Visual Studio, open on UE 5.8, run `Tools/GetLocalLLM.ps1`; Baha reads `CLAUDE.md`, `SKILL.md` and `technical_design.md` before taking over the code.
+- ✅ [WRITE] Task board: GitHub Projects board started (Merve keeps it).
 
 **Deliverable:** `main` opens the Unreal project and `L_Test` plays with no errors on both PCs.
 **Verification Gate:** Open the project on both PCs, press Play In Editor (PIE) in `L_Test`, the Output Log shows no errors and the C++ build succeeds. ✋ Confirm with the user before the next phase.
@@ -162,7 +163,7 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 **Depends on:** Phase 3.
 
 **Tasks:**
-- [WRITE] Tuana: lore bible (~600 words, hand-written); Zafir's character card (add the line on when he turns cold or angry, from the 03.11 test); Chapter 1 scene card with beats and turn limit 10.
+- [WRITE] Merve (Tuana reviews): lore bible (~600 words, hand-written); Zafir's character card (add the line on when he turns cold or angry, from the 03.11 test); Chapter 1 scene card with beats and turn limit 10.
 - ✅ [C++] Row structs `FCharacterCardRow`, `FSceneCardRow` (`Source/Ashes/Data/AshesTypes.h`) and DataTables `DT_Characters`, `DT_Scenes`, Data Asset `DA_LoreBible` (class `UAshesLoreBible`) in `Content/Ashes/Data`, filled with placeholder text from the GDD until Tuana's hand-written versions; `UPromptBuilder` (card, lore, scene, state words, last 8 turns + new line).
 - ✅ [C++] `UResponseValidator`: JSON parse (also inside code fences), 1 silent retry, emotion whitelist with fallback, 80-word limit, `off_topic`, spoiler keywords (regenerate once), safety word list (placeholder), delta clamp, beat / clue ids only.
 - ✅ [C++] Automation tests: valid JSON, broken JSON, unknown emotion, +50 Trust clamped to +8, over-long reply, plus free-sentence beats, spoiler / safety and prompt order / secrets / history (8 tests, all green 11.11.2026). Console `Ashes.TalkZafir <line>` talks through the real prompt and validator.
@@ -177,9 +178,9 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 **Depends on:** Phases 2 and 4.
 
 **Tasks:**
-- [UI] Tuana: `WBP_Conversation` per `design.md` (dialogue panel, small portraits, hint line, large portrait, 3 reply buttons, 200-character input, Send, turns left) with placeholder portraits. ✅ Placeholder version built 11.11.2026 (design.md colours; widget names fixed by `UConversationWidget`); Tuana restyles it (keep the widget names).
+- [UI] Tuana (style): `WBP_Conversation` per `design.md` (dialogue panel, small portraits, hint line, large portrait, 3 reply buttons, 200-character input, Send, turns left) with placeholder portraits. ✅ Placeholder version built 11.11.2026 (design.md colours; widget names fixed by `UConversationWidget`); Tuana restyles it (keep the widget names).
 - ✅ [C++] `WBP_Conversation` logic in `UConversationWidget` (C++ instead of Blueprint): portrait swap (emotion → `T_Portrait_<Name>_<Emotion>` if it exists, else a placeholder colour), typing indicator ≥ 0.4 s, input cut at 200 (MISSING: warning text), 1 / 2 / 3 picks (typed into the empty box or clicked), Send, Leave.
-- [WRITE] Tuana: Chapter 1 fallback lines for Zafir (the full offline dialogue tree is skipped: team decision 11.11.2026, the built-in model is always there; fallback lines only).
+- [WRITE] Merve: Chapter 1 fallback lines for Zafir (the full offline dialogue tree is skipped: team decision 11.11.2026, the built-in model is always there; fallback lines only).
 - ✅ [C++] Turn counter and simple end at 10 turns in `USceneDirectorSubsystem` (minimal; full Director comes in Phase 7); E on an `AAshesNPC` with a card + scene row opens the screen; prompt warm-up when the scene opens; console `Ashes.Scene.Say / Pick / End`.
 
 **Deliverable:** A playable Zafir conversation from E to the 10th turn.
@@ -212,7 +213,7 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 **Tasks:**
 - [C++] `USceneDirectorSubsystem` state machine: Intro → FreeTalk → Nudge (2 turns left or 3 stalled) → Resolve / ForcedClose → NextChapter; Caught at Suspicion 100.
 - [C++] `UNPCBrainComponent` with Trust 20 / Affection 10 (±8), Favor 30 (±6), Suspicion 10 (+10 / −5); thresholds 50, 60, 70; value-to-word bands for the prompt.
-- [WRITE] Tuana: hint lines ("Zafir looks at you a moment too long.") per value change; nudge notes per scene.
+- [WRITE] Merve: hint lines ("Zafir looks at you a moment too long.") per value change; nudge notes per scene.
 - [C++] Automation tests for transitions and thresholds.
 
 **Deliverable:** The Zafir scene resolves with full or weaker outcome; hints instead of numbers.
@@ -242,8 +243,8 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 **Tasks:**
 - [C++] `FClueRow` / `DT_Clues` and `UClueJournalSubsystem`: accept a clue only if the NPC holds it this chapter; ignore duplicates; required-clue gate for the key scene; clue → extra suggested reply and prompt hint for later NPCs.
 - [C++] Add `clues` to the LLM JSON and to the validator; pre-written NPC trees give clues directly.
-- [UI] Tuana: `WBP_RumorJournal` (Tab): chapter question, found clues with speaker, "?" slots, conversation log, memories; "New clue" toast.
-- [WRITE] Tuana: Chapter 1 question and 5–6 clues; pre-written trees for Nura, Idris and the minor NPCs present in Chapter 1.
+- [UI] Tuana (art) + Baha (logic): `WBP_RumorJournal` (Tab): chapter question, found clues with speaker, "?" slots, conversation log, memories; "New clue" toast.
+- [WRITE] Merve: Chapter 1 question and 5–6 clues; pre-written trees for Nura, Idris and the minor NPCs present in Chapter 1.
 - [C++] Automation tests: rejected unknown clue, duplicate, gate opens at the required count.
 
 **Deliverable:** Chapter 1 day: gather 3 clues, Zafir opens up.
@@ -269,7 +270,7 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 
 ## PHASE 11: Nightly Dance Minigame
 **Objective:** The night performance is a short, readable rhythm game that feeds Favor, Suspicion and clues.
-**Depends on:** Phase 6 (built in `L_Test` in parallel with Phases 7–10; Tuana's programming task).
+**Depends on:** Phase 6 (built in `L_Test` in parallel with Phases 7–10; Baha writes the code, Tala makes the song, chart and dance animations, Tuana draws `WBP_Dance`).
 
 **Tasks:**
 - [C++] `UDanceMinigameComponent`: note chart from `DT_DanceCharts` (row `Night1`...), timing from a Quartz clock synced to the song, `IMC_Dance` active, 4 lanes (← ↑ ↓ →, *proposed*), 0.25 s windows, accuracy; > 80% → +10 Favor + reward; 40–80% → nothing; < 40% → +10 Suspicion; pause support.
@@ -299,12 +300,13 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 
 ---
 
-## PHASE 13: Chapters 2–4 Content
+## PHASE 13: Chapters 2–6 Content
+> Renamed 12.11.2026 for the 7-chapter story. The tasks below still describe the old 4-chapter plan; they are rewritten with the other docs once the team has reviewed the lines in the Master Lore doc. The day-by-day tasks in `Docs/workplan/index.html` already follow the 7 chapters.
 **Objective:** Every chapter has its day, night and key scene.
 **Depends on:** Phase 12.
 
 **Tasks:**
-- [WRITE] Tuana: Vashir's card; scene cards, chapter questions, 5–6 clues, NPC trees, fallback lines and offline trees for Chapters 2–4.
+- [WRITE] Merve: Vashir's card; scene cards, chapter questions, 5–6 clues, NPC trees, fallback lines and offline trees for Chapters 2–4.
 - [UE] NPC spawn points per chapter; 3 guards and new routes in Chapter 2; eavesdrop stops per chapter.
 - [C++] / [BP] Chapter 2: night = private dance for Vashir in the King's Chamber (Favor 60 invitation); Vashir's Suspicion from conversation; Zafir's jealousy beat.
 - [C++] / [BP] Chapter 3: night dance, then the rooftop key scene (Affection 60 confession).
@@ -316,13 +318,13 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 
 ---
 
-## PHASE 14: Cutscene System + 2D Parts
+## PHASE 14: Cutscene System, 2D Parts + Chapter 7 Spirit Walk
 **Objective:** The story plays from Prologue to Epilogue.
 **Depends on:** Phase 12 (in parallel with Phase 13).
 
 **Tasks:**
 - [BP] Visual-novel cutscene player `WBP_Cutscene` (background, speaker, text, Space to advance via `IMC_Cutscene`) reading `DT_Cutscenes`; Level Sequences `LS_Prologue`, `LS_Trap`, `LS_Pyre`, `LS_Epilogue` for camera moves where needed.
-- [WRITE] Tuana: cutscene script (~150 lines) for Prologue, chapter-end beats, after Chapter 4, Pyre (pre-written version), Epilogue.
+- [WRITE] Merve: cutscene script (~150 lines) for Prologue, chapter-end beats, after Chapter 4, Pyre (pre-written version), Epilogue.
 - [ART] Tuana: 2D backgrounds (Burning Tamra, the pyre, the temple), AI-assisted concepts finished by hand.
 
 **Deliverable:** Full story path.
@@ -362,7 +364,7 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 **Depends on:** Phases 13–15 (16 if kept).
 
 **Tasks:**
-- Playtest with 5 outside players (Tuana leads); watch for: lost players (which clue next?), patrols that feel unfair, dance difficulty, conversation pacing, broken replies.
+- Playtest with 5 outside players (Tala leads); watch for: lost players (which clue next?), patrols that feel unfair, dance difficulty, conversation pacing, broken replies.
 - Feature freeze from here: no new features in Stage 3.
 
 **Deliverable:** Playtest notes and a fix list.
