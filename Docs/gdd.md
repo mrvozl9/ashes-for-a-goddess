@@ -148,7 +148,7 @@ Chapter 7 is played as Sahra's spirit in the empty palace on festival night (des
 #### Gameplay Walkthrough
 1. **Title screen:** embers drift over the dying sun. The player picks New Game.
 2. **Prologue: Ash (2D cutscene):** Tamra burns at the Festival of the Long Flame and a girl walks out of the smoke. Ten years later, Sahra arrives at Sama'zar as a dancer from the Lantern House, a month before the next festival. Space advances the text.
-3. **Chapter card:** "Chapter 1 · The Garden of Ash" (title still open: Garden of Ash or Dusk) with one line of verse, for 3 seconds.
+3. **Chapter card:** "Chapter 1 · The Garden of Dusk" with one line of verse, for 3 seconds.
 4. **Dancers' Quarters (start and checkpoint):** Sahra starts here. The main quest at the top left reads "Why does the other dancer carry a blade?" Nura and Aisha are here; Nura's gossip gives a first clue ("Zafir never misses a dance, and he is never there after it."). A toast shows "New clue" and Tab opens the Rumor Journal.
 5. **Open palace:** every room except the King's Chamber (restricted) and the City Gate (locked) is open. In the Garden of Dusk the fountain still runs under lanterns and a full moon. A guard patrols the garden; running in view raises Suspicion by 12 per second, and the eye icon fills while a guard sees Sahra. The player chooses whom to question next: Tariq off duty by the fountain, Omar setting out the wine in the Throne Hall, Captain Idris at the Guard Post, Ilyas on the Rooftop Terrace. Ambient NPCs give one line each. "Do 1": learn the garden guard's patrol and reach the lattice screen unseen to hear two guards talk about a blade under Zafir's silks. Zafir passes Sahra once in a corridor and says nothing.
 6. **Nightfall:** a bell rings; the goal line changes to "Perform in the Throne Hall". Sahra dances for the court (30 s, 4 keys) while Vashir watches. A good dance adds Favor and a noble's gossip as a clue; a poor one adds Suspicion. After the performance, Zafir waits by the fountain.
@@ -301,7 +301,7 @@ The game has one 3D level: Sama'zar, the palace, built as a hub (the **Garden of
 - **Challenges:** None (cutscene).
 - **Goal:** Watch Tamra burn ten years ago and Sahra arrive at Sama'zar as a dancer from the Lantern House, 30 nights before the festival.
 
-#### Theme 2: Chapter 1: The Garden of Ash (title open: Ash or Dusk)
+#### Theme 2: Chapter 1: The Garden of Dusk
 - **Mood:** Full moon over the Garden of Dusk; lanterns, a running fountain; night plum and old gold.
 - **Objects:** Whole palace open except the King's Chamber; Dancers' Quarters (start, checkpoint); a lattice screen in the garden; Zafir's knife.
 - **Challenges:** 1 guard patrols the garden; 6 clues (find 3) from Nura, Omar, Tariq, an eavesdrop and the dance; Do 1: learn the garden patrol and listen behind the lattice screen; Do 2: steal Zafir's knife in the key scene; night dance 30 s; Zafir, 11 turns.
@@ -351,7 +351,7 @@ The game has one 3D level: Sama'zar, the palace, built as a hub (the **Garden of
 
 ### Game Flow
 1. Title → Prologue: Ash (2D cutscene, start).
-2. Chapter 1: The Garden of Ash (tutorial for walking, talking, gathering clues, hiding and the garden patrol; whole palace open except the King's Chamber; 1 guard in the garden).
+2. Chapter 1: The Garden of Dusk (tutorial for walking, talking, gathering clues, hiding and the garden patrol; whole palace open except the King's Chamber; 1 guard in the garden).
 3. Chapter 2: The Practice Room (hide the knife before the search; extra guard; first rehearsal).
 4. Chapter 3: The Private Dance (Vashir's Favor and Suspicion enter; the King's Chamber opens by invitation; Zafir's jealousy).
 5. Chapter 4: The King's Favor (following stealth; the alliance).

@@ -42,7 +42,7 @@ An assassin disguised as a dancer sneaks into Sama'zar, the palace of a king who
 
 ### Story structure
 
-Prologue: Ash (2D) → 1. The Garden of Ash → 2. The Practice Room → 3. The Private Dance → 4. The King's Favor → 5. Rooftop of Smoke → 6. The Trap → 7. The Pyre (spirit walk) → Epilogue: The Long Flame (2D)
+Prologue: Ash (2D) → 1. The Garden of Dusk → 2. The Practice Room → 3. The Private Dance → 4. The King's Favor → 5. Rooftop of Smoke → 6. The Trap → 7. The Pyre (spirit walk) → Epilogue: The Long Flame (2D)
 
 The story spans one month, full moon to full moon, before the Festival of the Long Flame. Chapters 1–7 are played in 3D in the same palace; the main story and the ending are fixed, and the romance or comrade route changes the lines.
 

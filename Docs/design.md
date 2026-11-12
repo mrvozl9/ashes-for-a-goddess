@@ -6,7 +6,7 @@
 
 Source: `gdd.md` sections 5 (Graphics), 2 (Screens) and 8 (Appendix). Values marked `MISSING` are not in the GDD and must be decided before the UI phase in `production_pipeline.md` (Phase 15): visual tokens by **Tuana** (UI artist), sound tokens by **Tala** (audio). Updated 12.11.2026 for the 7-chapter story and the team of four (course: Advanced Game Programming).
 
-**Names to use everywhere (12.11.2026):** the palace is **Sama'zar** (keep the apostrophe); the hub is the **Garden of Dusk** (Chapter 1's title is still open: "The Garden of Ash" or "The Garden of Dusk"); rooms: Dancers' Quarters (with the practice room), Throne Hall, King's Chamber (with the servants' passage), Guard Post (with the City Gate), Rooftop Terrace; the festival temple is the **Crimson Zenith**; Sahra's village is **Tamra**; her cover is the **Lantern House**; Zafir calls her **"Little Ember"**. Chapters: 1 The Garden of Ash, 2 The Practice Room, 3 The Private Dance, 4 The King's Favor, 5 Rooftop of Smoke, 6 The Trap, 7 The Pyre; Prologue: Ash; Epilogue: The Long Flame.
+**Names to use everywhere (12.11.2026):** the palace is **Sama'zar** (keep the apostrophe); the hub is the **Garden of Dusk** (also Chapter 1's title, decided 12.11.2026); rooms: Dancers' Quarters (with the practice room), Throne Hall, King's Chamber (with the servants' passage), Guard Post (with the City Gate), Rooftop Terrace; the festival temple is the **Crimson Zenith**; Sahra's village is **Tamra**; her cover is the **Lantern House**; Zafir calls her **"Little Ember"**. Chapters: 1 The Garden of Dusk, 2 The Practice Room, 3 The Private Dance, 4 The King's Favor, 5 Rooftop of Smoke, 6 The Trap, 7 The Pyre; Prologue: Ash; Epilogue: The Long Flame.
 
 ---
 
