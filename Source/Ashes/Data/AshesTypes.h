@@ -65,6 +65,10 @@ struct ASHES_API FCharacterCardRow : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Card")
 	FString DisplayName;
 
+	/** e.g. "he/him" - the model writes gestures about the character with these pronouns */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Card")
+	FString Pronouns;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Card", meta=(MultiLine=true))
 	FString Voice;
 

@@ -15,6 +15,7 @@ namespace AshesTestData
 	{
 		FCharacterCardRow Card;
 		Card.DisplayName = TEXT("Zafir");
+		Card.Pronouns = TEXT("he/him");
 		Card.Voice = TEXT("Teasing, fire metaphors.");
 		Card.Emotions = { TEXT("neutral"), TEXT("teasing"), TEXT("tender"), TEXT("jealous"), TEXT("cold"), TEXT("angry") };
 		Card.FallbackEmotion = TEXT("neutral");
@@ -171,6 +172,7 @@ bool FAshesPromptBuilder::RunTest(const FString& Parameters)
 	TestTrue(TEXT("trust 55 as a word"), System.Contains(TEXT("trust toward Sahra: warming")));
 	TestTrue(TEXT("beat ids listed"), System.Contains(TEXT("zafir_reveals_target")));
 	TestTrue(TEXT("delta keys from the card"), System.Contains(TEXT("\"trust_delta\"")) && System.Contains(TEXT("\"affection_delta\"")));
+	TestTrue(TEXT("pronouns for gestures"), System.Contains(TEXT("You are Zafir (he/him)")) && System.Contains(TEXT("tilts his head")));
 	return true;
 }
 
@@ -195,6 +197,16 @@ bool FAshesFallbackPick::RunTest(const FString& Parameters)
 	TestFalse(TEXT("unknown scene -> nothing"), UOfflineLLMProvider::PickLine(Rows, TEXT("S9"), NAME_None, TEXT("teasing"), 0, Out));
 	TestTrue(TEXT("no repeat: beat line just used -> next tier"), UOfflineLLMProvider::PickLine(Rows, TEXT("S1"), TEXT("beat_a"), TEXT("teasing"), 0, Out, TEXT("beat-a")) && Out.Line == TEXT("any-teasing"));
 	TestTrue(TEXT("only line left is repeated rather than nothing"), UOfflineLLMProvider::PickLine(Rows, TEXT("S2"), NAME_None, TEXT("cold"), 0, Out, TEXT("other-scene")) && Out.Line == TEXT("other-scene"));
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAshesValidatorEmphasis, "Ashes.Validator.StripEmphasis", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FAshesValidatorEmphasis::RunTest(const FString& Parameters)
+{
+	const FAshesValidationResult R = UResponseValidator::Validate(TEXT(R"({"reply":"Why do *you* dance while the others _sleep_?","emotion":"teasing","gesture":"*tilts his head*"})"), AshesTestData::MakeContext());
+	TestTrue(TEXT("ok"), R.IsOk());
+	TestEqual(TEXT("asterisks and underscores removed"), R.Response.Reply, FString(TEXT("Why do you dance while the others sleep?")));
+	TestEqual(TEXT("gesture cleaned"), R.Response.Gesture, FString(TEXT("tilts his head")));
 	return true;
 }
 
