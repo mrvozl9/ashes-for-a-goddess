@@ -1,8 +1,9 @@
-// AI-assisted: Claude Code, 11.11.2026, runs one conversation scene: prompt, model, validator, turn limit (Phase 5; full state machine in Phase 7). Reviewed by <pending>.
+// AI-assisted: Claude Code, 11.11.2026, runs one conversation scene: prompt, model, validator, turn limit (Phase 5; full state machine in Phase 7); beats, clue hints, fallback context (Phase 4 data, 12.11.2026); soft / hard limit with hesitation. Reviewed by <pending>.
 
 #include "SceneDirectorSubsystem.h"
 #include "Ashes.h"
 #include "AshesGameInstance.h"
+#include "AshesAISettings.h"
 #include "AshesNPC.h"
 #include "AshesCharacter.h"
 #include "AshesPlayerController.h"
@@ -19,6 +20,7 @@ namespace
 	const TCHAR* GCharactersPath = TEXT("/Game/Ashes/Data/DT_Characters.DT_Characters");
 	const TCHAR* GScenesPath = TEXT("/Game/Ashes/Data/DT_Scenes.DT_Scenes");
 	const TCHAR* GLorePath = TEXT("/Game/Ashes/Data/DA_LoreBible.DA_LoreBible");
+	const TCHAR* GCluesPath = TEXT("/Game/Ashes/Data/DT_Clues.DT_Clues");
 
 	// Bumped on every start / end so late model replies from a closed scene are ignored
 	int32 GSceneSerial = 0;
@@ -53,11 +55,29 @@ bool USceneDirectorSubsystem::StartScene(AAshesNPC* Npc, AAshesCharacter* Sahra)
 	Scene = *SceneRow;
 	const UAshesLoreBible* LoreAsset = LoadObject<UAshesLoreBible>(nullptr, GLorePath);
 	Lore = LoreAsset ? LoreAsset->Text : FString();
+	SceneRowName = Npc->SceneRowName;
+	CharacterRowName = Npc->CharacterRowName;
+	ReachedBeats.Reset();
+	LastEmotion = NAME_None;
 
 	State = FPromptState();
 	for (const FRelationshipValueDef& Def : Card.Values)
 	{
 		State.Values.Add(Def.Name, Def.Start);
+	}
+
+	// Talk clues this character holds in this chapter: their hints go into the prompt (DT_Clues)
+	if (const UDataTable* Clues = LoadObject<UDataTable>(nullptr, GCluesPath, nullptr, LOAD_Quiet | LOAD_NoWarn))
+	{
+		TArray<FClueRow*> ClueRows;
+		Clues->GetAllRows<FClueRow>(TEXT("StartScene"), ClueRows);
+		for (const FClueRow* Clue : ClueRows)
+		{
+			if (Clue->Chapter == Scene.Chapter && Clue->Holder == Card.DisplayName && Clue->Source.StartsWith(TEXT("talk")) && !Clue->PromptHint.IsEmpty())
+			{
+				State.ClueHints.Add(Clue->PromptHint);
+			}
+		}
 	}
 	History.Reset();
 	LastSuggestions.Reset();
@@ -116,7 +136,8 @@ void USceneDirectorSubsystem::SubmitLine(const FString& InLine)
 	UE_LOG(LogAshes, Log, TEXT("Scene: Sahra: %s"), *Line);
 	OnLinePosted.Broadcast(TEXT("Sahra"), Line);
 
-	const FLLMRequest Request = UPromptBuilder::Build(Card, Lore, Scene, State, History, Line, Scene.Chapter);
+	FLLMRequest Request = UPromptBuilder::Build(Card, Lore, Scene, State, History, Line, Scene.Chapter);
+	FillFallbackContext(Request);
 	FConversationTurn Turn;
 	Turn.bFromPlayer = true;
 	Turn.Text = Line;
@@ -127,7 +148,26 @@ void USceneDirectorSubsystem::SubmitLine(const FString& InLine)
 	bWaiting = true;
 	RequestStartTime = FPlatformTime::Seconds();
 	OnThinkingChanged.Broadcast(true);
+	++RequestSerial;
+	UE_LOG(LogAshes, Log, TEXT("Scene: waiting (soft limit %.0f s, hard limit %.0f s%s)"), GetDefault<UAshesAISettings>()->GetHesitateAfterSeconds(),
+		GetDefault<UAshesAISettings>()->GetEffectiveRequestTimeout(), GIsEditor ? TEXT(", editor") : TEXT(""));
 	RequestReply(Request, 1); // 1 silent retry on a broken / spoiling reply (GDD 8.1)
+
+	// Soft limit: after RequestTimeoutSeconds (6 s) Zafir visibly hesitates, but we keep waiting up to the hard limit
+	UAshesGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance<UAshesGameInstance>() : nullptr;
+	if (GI && GI->GetAIMode() == EAIMode::Online)
+	{
+		TWeakObjectPtr<USceneDirectorSubsystem> WeakThis(this);
+		const int32 ReqSerial = RequestSerial;
+		GetWorld()->GetTimerManager().SetTimer(HesitateTimer, FTimerDelegate::CreateLambda([WeakThis, ReqSerial]()
+		{
+			USceneDirectorSubsystem* Self = WeakThis.Get();
+			if (Self && ReqSerial == Self->RequestSerial && Self->bWaiting)
+			{
+				Self->ShowHesitation();
+			}
+		}), GetDefault<UAshesAISettings>()->GetHesitateAfterSeconds(), false);
+	}
 }
 
 void USceneDirectorSubsystem::RequestReply(const FLLMRequest& Request, int32 AttemptsLeft)
@@ -140,19 +180,32 @@ void USceneDirectorSubsystem::RequestReply(const FLLMRequest& Request, int32 Att
 	}
 
 	const int32 Serial = GSceneSerial;
+	const int32 ReqSerial = RequestSerial;
 	TWeakObjectPtr<USceneDirectorSubsystem> WeakThis(this);
-	GI->RequestReply(Request, FOnLLMReply::CreateLambda([WeakThis, Serial, Request, AttemptsLeft](const FLLMReply& Reply)
+	GI->RequestReply(Request, FOnLLMReply::CreateLambda([WeakThis, Serial, ReqSerial, Request, AttemptsLeft](const FLLMReply& Reply)
 	{
 		USceneDirectorSubsystem* Self = WeakThis.Get();
 		if (!Self || Serial != GSceneSerial || !Self->bActive)
 		{
 			return; // scene was closed meanwhile
 		}
+		if (ReqSerial != Self->RequestSerial || !Self->bWaiting)
+		{
+			UE_LOG(LogAshes, Log, TEXT("Scene: late reply dropped (%.1f s)"), Reply.LatencySeconds);
+			return; // this line was already answered (e.g. by a dodge): exactly one Zafir line per player line
+		}
 
 		if (Reply.bFromFallback)
 		{
-			const FAshesValidationResult Parsed = UResponseValidator::Validate(Reply.Text, FAshesValidationContext());
-			UE_LOG(LogAshes, Log, TEXT("Scene: fallback line (%s)"), *Reply.Error);
+			if (!Reply.Error.IsEmpty())
+			{
+				// Online but too slow / broken: a dodge that fits any question, not an unrelated answer
+				Self->HesitateInsteadOfReply(Request, Reply.Error);
+				return;
+			}
+			// Offline mode: a pre-written Content line is the answer
+			const FAshesValidationResult Parsed = UResponseValidator::Validate(Reply.Text, FAshesValidationContext::FromCard(Self->Card, Self->Scene));
+			UE_LOG(LogAshes, Log, TEXT("Scene: offline line"));
 			Self->DeliverReply(Parsed.Response, true);
 			return;
 		}
@@ -164,7 +217,8 @@ void USceneDirectorSubsystem::RequestReply(const FLLMRequest& Request, int32 Att
 		}
 		if (Result.IsOk())
 		{
-			UE_LOG(LogAshes, Log, TEXT("Scene: reply in %.1f s (%.0f tok/s)"), Reply.LatencySeconds, Reply.TokensPerSecond);
+			UE_LOG(LogAshes, Log, TEXT("Scene: reply in %.1f s (prompt %d tokens, %d from cache, read in %.1f s; %d tokens at %.0f tok/s)"),
+				Reply.LatencySeconds, Reply.PromptTokens + Reply.CachedTokens, Reply.CachedTokens, Reply.PromptMs / 1000.f, Reply.CompletionTokens, Reply.TokensPerSecond);
 			Self->DeliverReply(Result.Response, false);
 		}
 		else if (AttemptsLeft > 0)
@@ -180,24 +234,86 @@ void USceneDirectorSubsystem::RequestReply(const FLLMRequest& Request, int32 Att
 
 void USceneDirectorSubsystem::UseFallback(const FLLMRequest& Request)
 {
+	// Broken JSON or a spoiler twice: the model is online, so Zafir dodges instead of giving an unrelated line
+	HesitateInsteadOfReply(Request, TEXT("invalid reply twice"));
+}
+
+void USceneDirectorSubsystem::ShowHesitation()
+{
+	// Status only ("Zafir hesitates..."): no dialogue line, the real answer may still come
+	UE_LOG(LogAshes, Log, TEXT("Scene: soft limit reached after %.1f s, still waiting"), FPlatformTime::Seconds() - RequestStartTime);
+	OnHesitating.Broadcast();
+}
+
+void USceneDirectorSubsystem::HesitateInsteadOfReply(const FLLMRequest& Request, const FString& Reason)
+{
+	if (GetWorld())
+	{
+		GetWorld()->GetTimerManager().ClearTimer(HesitateTimer);
+	}
+	UE_LOG(LogAshes, Log, TEXT("Scene: no answer (%s): hesitate line, turn not counted"), *Reason);
+
 	UAshesGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance<UAshesGameInstance>() : nullptr;
 	if (!GI)
 	{
-		DeliverReply(FLLMResponse(), true);
+		FinishHesitation(FLLMResponse());
 		return;
 	}
+	FLLMRequest Hesitate = Request;
+	Hesitate.bHesitate = true;
+	const int32 Serial = GSceneSerial;
+	const int32 ReqSerial = RequestSerial;
 	TWeakObjectPtr<USceneDirectorSubsystem> WeakThis(this);
-	GI->RequestFallback(Request, FOnLLMReply::CreateLambda([WeakThis](const FLLMReply& Reply)
+	GI->RequestFallback(Hesitate, FOnLLMReply::CreateLambda([WeakThis, Serial, ReqSerial](const FLLMReply& Reply)
 	{
-		if (USceneDirectorSubsystem* Self = WeakThis.Get())
+		USceneDirectorSubsystem* Self = WeakThis.Get();
+		if (Self && Serial == GSceneSerial && Self->bActive && ReqSerial == Self->RequestSerial && Self->bWaiting)
 		{
-			Self->DeliverReply(UResponseValidator::Validate(Reply.Text, FAshesValidationContext()).Response, true);
+			Self->FinishHesitation(UResponseValidator::Validate(Reply.Text, FAshesValidationContext()).Response);
 		}
 	}));
 }
 
+void USceneDirectorSubsystem::RefundUnansweredTurn(int32& InOutTurnsTaken, TArray<FConversationTurn>& InOutHistory)
+{
+	InOutTurnsTaken = FMath::Max(0, InOutTurnsTaken - 1);
+	if (InOutHistory.Num() > 0 && InOutHistory.Last().bFromPlayer)
+	{
+		InOutHistory.Pop(); // the model never answered it; it must not dangle in the next prompt
+	}
+}
+
+void USceneDirectorSubsystem::FinishHesitation(const FLLMResponse& Hesitation)
+{
+	RefundUnansweredTurn(TurnsTaken, History);
+	bWaiting = false;
+	OnThinkingChanged.Broadcast(false);
+	// Values unchanged; the previous suggestions stay; the player can ask again
+	UE_LOG(LogAshes, Log, TEXT("Scene: %s dodges: %s [%s]"), *Card.DisplayName, *Hesitation.Reply, *Hesitation.Gesture);
+	PostFallbackLine(Hesitation);
+	OnTurnsChanged.Broadcast(GetTurnsLeft());
+}
+
+void USceneDirectorSubsystem::PostFallbackLine(const FLLMResponse& Line)
+{
+	const bool bSilent = Line.Reply.IsEmpty() || Line.Reply == TEXT("...");
+	if (!bSilent || Line.Gesture.IsEmpty())
+	{
+		OnLinePosted.Broadcast(Card.DisplayName, bSilent ? FString(TEXT("...")) : Line.Reply);
+	}
+	if (!Line.Gesture.IsEmpty())
+	{
+		OnLinePosted.Broadcast(FString(), FString::Printf(TEXT("(%s)"), *Line.Gesture));
+	}
+}
+
 void USceneDirectorSubsystem::DeliverReply(const FLLMResponse& InResponse, bool bFromFallback)
 {
+	if (GetWorld())
+	{
+		GetWorld()->GetTimerManager().ClearTimer(HesitateTimer);
+	}
+
 	// Keep the typing indicator up for at least 0.4 s (fallback lines arrive instantly)
 	const float Elapsed = static_cast<float>(FPlatformTime::Seconds() - RequestStartTime);
 	const float Delay = MinThinkingSeconds - Elapsed;
@@ -242,6 +358,18 @@ void USceneDirectorSubsystem::DeliverReply(const FLLMResponse& InResponse, bool 
 	Turn.Text = Response.Reply;
 	History.Add(Turn);
 	LastSuggestions = Response.Suggestions;
+	if (!bFromFallback)
+	{
+		for (const FName& Beat : Response.Beats)
+		{
+			if (!ReachedBeats.Contains(Beat))
+			{
+				ReachedBeats.Add(Beat);
+				UE_LOG(LogAshes, Log, TEXT("Scene: beat reached: %s"), *Beat.ToString());
+			}
+		}
+	}
+	LastEmotion = Response.Emotion;
 
 	bWaiting = false;
 	OnThinkingChanged.Broadcast(false);
@@ -272,6 +400,7 @@ void USceneDirectorSubsystem::EndScene()
 	if (GetWorld())
 	{
 		GetWorld()->GetTimerManager().ClearTimer(ThinkingTimer);
+		GetWorld()->GetTimerManager().ClearTimer(HesitateTimer);
 	}
 
 	if (Widget)
@@ -322,3 +451,19 @@ static FAutoConsoleCommandWithWorldAndArgs GAshesSceneEnd(
 	{
 		if (USceneDirectorSubsystem* Director = GetDirectorFor(World)) { Director->EndScene(); }
 	}));
+
+void USceneDirectorSubsystem::FillFallbackContext(FLLMRequest& Request) const
+{
+	Request.FallbackScene = SceneRowName;
+	Request.FallbackCharacter = CharacterRowName;
+	Request.FallbackEmotion = LastEmotion;
+	Request.FallbackBeat = NAME_None;
+	for (const FBeatDef& Beat : Scene.Beats)
+	{
+		if (Beat.bRequired && !ReachedBeats.Contains(Beat.Id))
+		{
+			Request.FallbackBeat = Beat.Id; // the next beat the scene is pushing toward
+			break;
+		}
+	}
+}

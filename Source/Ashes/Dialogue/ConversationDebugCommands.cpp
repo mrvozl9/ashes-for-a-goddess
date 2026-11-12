@@ -1,4 +1,4 @@
-// AI-assisted: Claude Code, 11.11.2026, Ashes.TalkZafir: test conversation through the real prompt builder and validator (Phase 4). Reviewed by <pending>.
+// AI-assisted: Claude Code, 11.11.2026, Ashes.TalkZafir: test conversation through the real prompt builder and validator (Phase 4); fallback context, hesitate lines on failure (12.11.2026). Reviewed by <pending>.
 // Temporary harness until the Scene Director and WBP_Conversation exist (Phases 5–6).
 
 #include "CoreMinimal.h"
@@ -27,11 +27,21 @@ namespace AshesTalk
 	TArray<FConversationTurn> History;
 	FPromptState State;
 	bool bBusy = false;
+	TSet<FName> ReachedBeats;
+	FName LastEmotion;
 
 	TStrongObjectPtr<UOpenAICompatibleLLMProvider>& Provider()
 	{
 		static TStrongObjectPtr<UOpenAICompatibleLLMProvider> P(NewObject<UOpenAICompatibleLLMProvider>());
 		return P;
+	}
+
+	// Online failures use Hesitate lines (fit any question), not Content lines
+	FLLMRequest AsHesitate(const FLLMRequest& Request)
+	{
+		FLLMRequest Out = Request;
+		Out.bHesitate = true;
+		return Out;
 	}
 
 	TStrongObjectPtr<UOfflineLLMProvider>& Fallback()
@@ -66,9 +76,10 @@ namespace AshesTalk
 		if (bFallback || !Valid)
 		{
 			// Fallback line: values unchanged (GDD 8.1)
-			const FAshesValidationResult FallbackParsed = UResponseValidator::Validate(Raw.Text, FAshesValidationContext());
+			const FAshesValidationResult FallbackParsed = UResponseValidator::Validate(Raw.Text, FAshesValidationContext::FromCard(Card, FSceneCardRow()));
 			ReplyText = FallbackParsed.Response.Reply;
 			UE_LOG(LogAshes, Display, TEXT("Zafir (FALLBACK%s%s): %s"), Raw.Error.IsEmpty() ? TEXT("") : TEXT(", "), *Raw.Error, *ReplyText);
+			LastEmotion = FallbackParsed.Response.Emotion;
 		}
 		else
 		{
@@ -82,7 +93,8 @@ namespace AshesTalk
 				DeltaText += FString::Printf(TEXT("%s %+d -> %d  "), *Pair.Key.ToString(), Pair.Value, Value);
 			}
 			TArray<FString> BeatStrings;
-			for (const FName& Beat : R.Beats) { BeatStrings.Add(Beat.ToString()); }
+			for (const FName& Beat : R.Beats) { BeatStrings.Add(Beat.ToString()); ReachedBeats.Add(Beat); }
+			LastEmotion = R.Emotion;
 
 			UE_LOG(LogAshes, Display, TEXT("Zafir [%s, %s] (%.1f s, %.0f tok/s): %s"), *R.Emotion.ToString(), *R.Gesture, Raw.LatencySeconds, Raw.TokensPerSecond, *R.Reply);
 			UE_LOG(LogAshes, Display, TEXT("  values: %s| beats: %s | off_topic: %s"), *DeltaText, BeatStrings.Num() ? *FString::Join(BeatStrings, TEXT(", ")) : TEXT("-"), R.bOffTopic ? TEXT("yes") : TEXT("no"));
@@ -109,7 +121,8 @@ namespace AshesTalk
 		{
 			if (!Reply.bSuccess)
 			{
-				Fallback()->SendAsync(Request, FOnLLMReply::CreateLambda([Card, Reply](const FLLMReply& FallbackReply)
+				// "no endpoint" = the model is not running at all (offline mode): Content lines; any other failure: Hesitate lines
+				Fallback()->SendAsync(Reply.Error == TEXT("no endpoint") ? Request : AsHesitate(Request), FOnLLMReply::CreateLambda([Card, Reply](const FLLMReply& FallbackReply)
 				{
 					FLLMReply Out = FallbackReply;
 					Out.Error = Reply.Error;
@@ -131,7 +144,7 @@ namespace AshesTalk
 				SendAndValidate(Request, Card, Context, AttemptsLeft - 1);
 				return;
 			}
-			Fallback()->SendAsync(Request, FOnLLMReply::CreateLambda([Card](const FLLMReply& FallbackReply)
+			Fallback()->SendAsync(AsHesitate(Request), FOnLLMReply::CreateLambda([Card](const FLLMReply& FallbackReply)
 			{
 				FLLMReply Out = FallbackReply;
 				Out.Error = TEXT("invalid reply");
@@ -178,7 +191,14 @@ namespace AshesTalk
 		}
 		UE_LOG(LogAshes, Display, TEXT("Sahra: %s"), *PlayerLine);
 
-		const FLLMRequest Request = UPromptBuilder::Build(Card, Lore, Scene, State, History, PlayerLine, Scene.Chapter);
+		FLLMRequest Request = UPromptBuilder::Build(Card, Lore, Scene, State, History, PlayerLine, Scene.Chapter);
+		Request.FallbackScene = SceneRow;
+		Request.FallbackCharacter = CharacterRow;
+		Request.FallbackEmotion = LastEmotion;
+		for (const FBeatDef& Beat : Scene.Beats)
+		{
+			if (Beat.bRequired && !ReachedBeats.Contains(Beat.Id)) { Request.FallbackBeat = Beat.Id; break; }
+		}
 		FConversationTurn Turn;
 		Turn.bFromPlayer = true;
 		Turn.Text = PlayerLine;
@@ -235,6 +255,8 @@ static FAutoConsoleCommand GAshesTalkZafirReset(
 	{
 		AshesTalk::History.Reset();
 		AshesTalk::State = FPromptState();
+		AshesTalk::ReachedBeats.Reset();
+		AshesTalk::LastEmotion = NAME_None;
 		AshesTalk::bBusy = false;
 		UE_LOG(LogAshes, Display, TEXT("TalkZafir: conversation reset"));
 	}));

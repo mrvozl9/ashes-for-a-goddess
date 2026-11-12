@@ -1,4 +1,4 @@
-// AI-assisted: Claude Code, 11.11.2026, row structs and conversation types for cards, scenes and validated replies (Phase 4). Reviewed by <pending>.
+// AI-assisted: Claude Code, 11.11.2026, row structs and conversation types for cards, scenes and validated replies (Phase 4); spoiler unlock chapters, clue and fallback-line rows (12.11.2026). Reviewed by <pending>.
 
 #pragma once
 
@@ -42,6 +42,20 @@ struct ASHES_API FChapterSecret
 	FString Text;
 };
 
+/** A word the model must not say before its chapter (spoiler check) */
+USTRUCT(BlueprintType)
+struct ASHES_API FSpoilerKeyword
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Card")
+	FString Keyword;
+
+	/** Allowed from this chapter on; 0 = never allowed */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Card")
+	int32 UnlockChapter = 0;
+};
+
 /** DT_Characters: one hand-written character card per row (Tuana writes them; never AI-generated) */
 USTRUCT(BlueprintType)
 struct ASHES_API FCharacterCardRow : public FTableRowBase
@@ -50,6 +64,10 @@ struct ASHES_API FCharacterCardRow : public FTableRowBase
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Card")
 	FString DisplayName;
+
+	/** e.g. "he/him" - the model writes gestures about the character with these pronouns */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Card")
+	FString Pronouns;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Card", meta=(MultiLine=true))
 	FString Voice;
@@ -87,9 +105,9 @@ struct ASHES_API FCharacterCardRow : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Card")
 	TArray<FRelationshipValueDef> Values;
 
-	/** Words that must never appear in a reply before their secret's chapter (spoiler check) */
+	/** Words that must not appear in a reply before their unlock chapter (spoiler check) */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Card")
-	TArray<FString> SpoilerKeywords;
+	TArray<FSpoilerKeyword> SpoilerKeywords;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Card")
 	bool bUsesLLM = true;
@@ -194,6 +212,10 @@ struct ASHES_API FPromptState
 	/** Clues Sahra has found that this character may react to */
 	UPROPERTY(BlueprintReadWrite, Category="Conversation")
 	TArray<FString> KnownClues;
+
+	/** Prompt hints of the talk clues this character holds in this chapter (DT_Clues) */
+	UPROPERTY(BlueprintReadWrite, Category="Conversation")
+	TArray<FString> ClueHints;
 };
 
 /** A reply after validation: safe to show and apply */
@@ -228,4 +250,74 @@ struct ASHES_API FLLMResponse
 
 	UPROPERTY(BlueprintReadOnly, Category="Conversation")
 	TArray<FName> Clues;
+};
+
+/** DT_Clues: one clue per row (row name = clue id, e.g. ch1_nura_disappears) */
+USTRUCT(BlueprintType)
+struct ASHES_API FClueRow : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Clue")
+	int32 Chapter = 1;
+
+	/** Who holds it: a character's DisplayName, or e.g. "Guards at the lattice screen" */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Clue")
+	FString Holder;
+
+	/** talk / eavesdrop / dance reward (free text, e.g. "talk (after any other clue)") */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Clue")
+	FString Source;
+
+	/** Text in the Rumor Journal */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Clue", meta=(MultiLine=true))
+	FString JournalText;
+
+	/** Topic it unlocks as a suggested reply with other characters */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Clue")
+	FString Topic;
+
+	/** Told to the holder's model so it can reveal the clue (empty for eavesdrop / dance clues) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Clue", meta=(MultiLine=true))
+	FString PromptHint;
+};
+
+/** Content = an answer for offline mode; Hesitate = a dodge or silent gesture that fits any question (online timeout / broken reply) */
+UENUM(BlueprintType)
+enum class EFallbackLineType : uint8
+{
+	Content,
+	Hesitate
+};
+
+/** DT_FallbackLines: pre-written line used when the model fails (values unchanged) */
+USTRUCT(BlueprintType)
+struct ASHES_API FFallbackLineRow : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	/** DT_Characters row name; empty = any character */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Fallback")
+	FName Character;
+
+	/** Hesitate lines are used when the model is online but too slow or broken; Content lines only offline */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Fallback")
+	EFallbackLineType Type = EFallbackLineType::Content;
+
+	/** DT_Scenes row name, or "any" (evasive lines fit every scene) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Fallback")
+	FName Scene;
+
+	/** Beat being pushed, or "any" */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Fallback")
+	FName Beat;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Fallback")
+	FName Emotion;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Fallback", meta=(MultiLine=true))
+	FString Line;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Fallback")
+	bool bAIAssisted = false;
 };
