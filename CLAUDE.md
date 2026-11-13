@@ -2,7 +2,7 @@
 
 > Claude reads this file automatically when it opens the project. For Codex, copy this file and name the copy `AGENTS.md`.
 > Unreal Engine 5.8, C++ and Blueprints (module `Ashes`). Not Unity: the old Unity skeleton lives only in the Git tag `unity-skeleton`.
-> Course: Advanced Game Programming. Team of four (12.11.2026): Merve (level design, story and data), Tuana (art), Tala (audio, VFX and other work), Baha (code from Phase 7 on). The story has 7 chapters; turn limits Zafir 11, Vashir 7, others 5.
+> Course: Advanced Game Programming. Team of four (12.11.2026): Merve Özal (level design, story and data), Tuana Tuna (art), Tala Alsayed (audio, VFX and other work), Ebrar Baha Özüpek (code from Phase 7 on). The story has 7 chapters; turn limits Zafir 11, Vashir 7, others 5.
 
 ## Read first (every session)
 - `SKILL.md` (how to work)
@@ -17,7 +17,7 @@
 - One pipeline step at a time.
 - Follow the names in `Docs/design.md`.
 - After a step works: update the tracker and `Docs/PROGRESS.md`, and tell me to commit.
-- Prompt log (Google Sheet linked in `Docs/PromptLog.md`, shared with the instructor): about once a day, add one short row for that day's big change (a big design decision, a new document or asset, a new way of using AI), not for every phase or message. Skip days with no big change. If you cannot edit the sheet, add the row to the waiting table in `Docs/PromptLog.md` and tell me to copy it.
+- Prompt log (Google Sheet linked in `Docs/PromptLog.md`, for the course Game Design Studio-III, shared with its instructor): about once a day, add one short row for that day's big change (a big design decision, a new document or asset, a new way of using AI), not for every phase or message. Skip days with no big change. If you cannot edit the sheet, add the row to the waiting table in `Docs/PromptLog.md` and tell me to copy it.
 - Never change things outside the current step.
 - When you fill or update a document: fill it COMPLETELY. Never skip or shorten sections to save tokens.
 - Never put an API key in the repo, `Config/*.ini` or the build; the game must run in offline mode without one.

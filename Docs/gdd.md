@@ -3,7 +3,7 @@
 
 > *"Some gods brighten the sky when they are born; others, when they die."*
 
-**Author:** Burnt Potato Games (BPG): Merve Özal, Tuana Tuna, Tala, Baha · **Version:** 1.4 (Markdown version of the midterm GDD dated 07.11.2026; 4-week schedule; "Court of Whispers" investigation concept added 09.11.2026; day/night loop, nightly dance and guard stealth added 10.11.2026; engine changed to Unreal Engine 5.8 and the AI model built into the game on 10.11.2026; 7-chapter story, living palace and spirit chapter added 11.11.2026; character, scene and clue data, turn limits, offline trees and the team of four added 12.11.2026) · **Date:** 12.11.2026
+**Author:** Burnt Potato Games (BPG): Merve Özal, Tuana Tuna, Tala Alsayed, Ebrar Baha Özüpek · **Version:** 1.4 (Markdown version of the midterm GDD dated 07.11.2026; 4-week schedule; "Court of Whispers" investigation concept added 09.11.2026; day/night loop, nightly dance and guard stealth added 10.11.2026; engine changed to Unreal Engine 5.8 and the AI model built into the game on 10.11.2026; 7-chapter story, living palace and spirit chapter added 11.11.2026; character, scene and clue data, turn limits, offline trees and the team of four added 12.11.2026) · **Date:** 12.11.2026
 **Genre:** Third-person narrative RPG and visual novel hybrid; dark fantasy romance · **Platform:** Windows PC, keyboard and mouse (Unreal packaged build) · **Engine:** Unreal Engine 5.8, C++ and Blueprints, 3D, Lumen · **Players:** Single player
 
 | Field | Details |
@@ -16,9 +16,9 @@
 | Member | Role | Owns |
 | :-- | :-- | :-- |
 | Merve Özal | Team Lead, Level Designer, Narrative Lead | Level (palace grey-box, rooms, spawn points, guard routes, hiding and eavesdrop spots, lighting), story and lines with Claude, data entry, tracker and board; wrote the code for Phases 0–5 (movement, interaction, built-in AI model, prompt builder, validator, conversation screen) |
-| Tuana Tuna | Lead Artist, UI Artist | Portraits, character looks, palace kit, UI style, 2D backgrounds; reviews the writing |
-| Tala | Audio and VFX Designer | Music, dance songs, dance charts and animations, sound effects and mix, Niagara effects, cutscene sequences, credits, licenses, playtests |
-| Baha | Programmer | Gameplay code from Phase 7: Scene Director, offline trees, clues, guards, dance, cutscene player, the spirit chapter, packaging |
+| Tuana Tuna | Lead Artist, UI Artist, Narrative Designer | Portraits, character looks, palace kit, UI style, 2D backgrounds; reviews the writing |
+| Tala Alsayed | Audio and VFX Designer | Music, dance songs, dance charts and animations, sound effects and mix, Niagara effects, cutscene sequences, credits, licenses, playtests |
+| Ebrar Baha Özüpek | Lead Programmer and Gameplay Systems | Gameplay code from Phase 7: Scene Director, offline trees, clues, guards, dance, cutscene player, the spirit chapter, packaging |
 
 > **Team update (12.11.2026).** Tala and Baha joined Merve and Tuana. The work is split by role (table above); `production_pipeline.md` and `Docs/workplan/index.html` list who owns each phase and each day's task.
 
@@ -252,7 +252,7 @@ Every AI feature has a fallback (fallback lines, offline dialogue trees for ever
 
 #### 1. Free Conversation
 - **Rule:** The player types a line or picks one of 3 suggestions; the prompt builder sends the character card, lore bible, scene card, state and the last 8 turns; the reply must be JSON and must pass the validator before the player sees it.
-- **Numbers:** Max input 200 characters; turn limit (decided 12.11) 11 (Zafir), 7 (Vashir), 5 at most (Nura, Idris, the 4 minor characters), 1 line (ambient NPCs); 3 suggested replies; reply 1–4 sentences, max 80 words; response timeout 6 s; typing indicator at least 0.4 s; portrait and gesture change within 1 s of the reply.
+- **Numbers:** Max input 200 characters; turn limit (decided 12.11) 11 (Zafir), 7 (Vashir), 5 at most (Nura, Idris, the 4 minor characters), 1 line (ambient NPCs); 3 suggested replies; reply 1–4 sentences, max 80 words; the reply is shown word by word as the model writes it, and the first words appear within 4 s (decided 13.11.2026); response timeout 6 s for the whole reply; typing indicator at least 0.4 s; portrait and gesture change within 1 s of the reply.
 - **Edge cases:** Longer input is cut with a warning. Timeout or model error: "hesitates" animation, then a pre-written fallback line (pick order: scene + beat + emotion → the clue the character holds → scene → any scene; never the same line twice in a row; 142 lines); values unchanged. Broken JSON: 1 silent retry, then fallback. Off-topic input: in-character reply ("A dancer who talks of 'phones'? The heat has got to you."). Spoiler leak: regenerate once, then fallback. Explicit or hateful content: the character refuses in character; after 3 times the scene closes politely. Jailbreak: in-character confused reply. Built-in model missing or too slow: offline mode with pre-written dialogue trees for every key scene and every side character (`DT_OfflineTrees`, written 12.11; every path reaches the scene's required beats). (GDD Figure 2 says "5 s timeout"; the GDD text says 6 s, and 6 s is used here.)
 
 #### 2. Relationship Values
@@ -612,7 +612,7 @@ The LLM writes what the characters say, but our own C++ code decides what actual
 ### 8.3 Top Risks and What We Cut
 | Risk | Early warning (4-week plan) | What we cut |
 | :-- | :-- | :-- |
-| LLM integration slower or less reliable than planned (built-in model too slow on target PCs) | End of week 1 / mid week 2: average reply over 4 s on the stronger PC, or under 90% valid JSON | Smaller model or shorter replies; stream the reply word by word; court NPCs and the Chapter 7 confession become pre-written |
+| LLM integration slower or less reliable than planned (built-in model too slow on target PCs) | End of week 1 / mid week 2: the character's first words take over 4 s on average to appear on screen (measured in the game window, not the editor; changed 13.11.2026 from "whole reply over 4 s", because the reply is shown word by word as it is written), or under 90% valid JSON | Smaller model or shorter replies; court NPCs and the Chapter 7 confession become pre-written |
 | Writing takes longer (review of cards, lines, cutscenes) | End of week 2: Chapter 2 lines not reviewed | Use the drafted lines as they are; cutscenes become still images with text |
 | Six palace chapters plus a spirit chapter (11.11) | End of week 2: Chapter 1 not complete | Chapters 2 and 4 get a shorter day (fewer clues, no new guard routes); the spirit walk keeps 6 embers but no new art |
 | 3D art and animation take too long | End of week 2: palace still grey-box | Custom models; final portraits (placeholders stay) |

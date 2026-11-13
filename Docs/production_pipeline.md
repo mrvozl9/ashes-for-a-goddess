@@ -4,7 +4,7 @@
 >
 > **How to use this file:** treat each Phase as a node in a state machine. A phase may not start until its `Depends on` phases are `DONE`. Every phase ends with a **Verification Gate**: the feature is tested in **Play In Editor (PIE)** in Unreal Engine 5.8 and the user confirms before moving on. Never build UI before the gameplay it shows. Never build a level before its mechanics work in the `L_Test` level.
 >
-> **Time box: 4 weeks in total, Monday 09.11.2026 to Sunday 06.12.2026.** Final build on Saturday 05.12.2026; Sunday 06.12 is buffer only. This compresses the GDD's Weeks 9–14 plan (which ended 20.12.2026). **Team (from 12.11.2026): four people.** **Merve**: level design (grey-box, rooms, spawn points, guard routes, hiding and eavesdrop spots, lighting), story and lines (with Tuana's review), data entry, tracker and board. **Tuana**: art (portraits, character looks, palace kit, UI style, 2D backgrounds). **Tala**: audio, VFX and other work (music, dance songs and charts, SFX, mix, Niagara effects, dance animations, cutscene sequences, credits, licenses, playtests). **Baha**: code (C++ and Blueprint systems from Phase 7 on; Merve wrote Phases 0–5). Four tracks run in parallel; a phase lists who owns it. Before 12.11 the team was Merve and Tuana.
+> **Time box: 4 weeks in total, Monday 09.11.2026 to Sunday 06.12.2026.** Final build on Saturday 05.12.2026; Sunday 06.12 is buffer only. This compresses the GDD's Weeks 9–14 plan (which ended 20.12.2026). **Team (from 12.11.2026): four people.** **Merve Özal**: level design (grey-box, rooms, spawn points, guard routes, hiding and eavesdrop spots, lighting), story and lines (with Tuana's review), data entry, tracker and board. **Tuana Tuna**: art (portraits, character looks, palace kit, UI style, 2D backgrounds). **Tala Alsayed**: audio, VFX and other work (music, dance songs and charts, SFX, mix, Niagara effects, dance animations, cutscene sequences, credits, licenses, playtests). **Ebrar Baha Özüpek**: code (C++ and Blueprint systems from Phase 7 on; Merve wrote Phases 0–5). Four tracks run in parallel; a phase lists who owns it. Before 12.11 the team was Merve and Tuana.
 >
 > **Engine (10.11.2026):** Unreal Engine 5.8, C++ for the testable core and Blueprints for glue, UI and animation (see `technical_design.md`). The earlier Unity skeleton is kept as the Git tag `unity-skeleton`.
 >
@@ -73,10 +73,10 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 | 1 | Player movement & camera | 1 | Merve | Tue 10.11 | ✅ DONE | 10.11.2026 | Walk 220 / run 450 cm/s, no jump, orbit camera; tested by Merve; PR #26 merged |
 | 2 | Interaction system (E: Talk) | 1 | Merve | Wed 11.11 | ✅ DONE | 10.11.2026 | `UInteractionComponent` (200 cm, 0.1 s timer), `AAshesNPC`, `WBP_InteractPrompt`, placeholder `BP_Zafir`; tested by Merve; PR #27 merged |
 | 3 | LLM provider (built-in model + fallback) | 1 | Merve | Wed 11.11 | ✅ DONE | 11.11.2026 | Built-in model (llama-server + Qwen3.5-4B, no key); streamed requests; 30 s editor / 6 s game timeout; PR #29 merged. Open: speed test on the stronger PC |
-| 4 | Prompt builder & validator + lore and Zafir's card | 1 | Merve (code, texts) + Baha (CSV import) | Fri 13.11 | 🔄 IN PROGRESS | 12.11.2026 | Chapter 1 data imported word for word on `feature/merve-phase4-lore-data` (lore bible 682 words, Zafir card, scene card, 6 clues, 7 fallback lines); spoiler unlock chapters, `DT_Clues`, `DT_FallbackLines`; 9 tests green; scene test: real replies in 20–23 s on the laptop CPU, `uneasy_truce` reached. Gate: Merve plays it |
-| 5 | Conversation UI + Chapter 1 Zafir scene | 1 | Merve + Baha (code), Tuana (UI style, portraits), Tala (UI sounds) | Sat 14.11 | 🔄 IN PROGRESS | 11.11.2026 | Placeholder `WBP_Conversation` + `UConversationWidget` + minimal `USceneDirectorSubsystem` on `feature/merve-phase5-conversation`; E → 10-turn scene works in PIE; open: Tuana's UI style, fallback lines, portraits |
-| 6 | 🏁 Prototype gate | 1 | All | Sun 15.11 | ⬜ NOT STARTED | | user sign-off |
-| 7 | Scene Director & relationship values | 2 | Baha | Tue 17.11 | 🔄 IN PROGRESS | 13.11.2026 | On `feature/baha-phase7-scene-director` (not committed): `FSceneFlow` state machine, `UNPCBrainComponent`, `FOfflineTreeWalker`, wired into `USceneDirectorSubsystem`; new tables `DT_SceneRules` (2 rows) and `DT_Thresholds` (5 rows); build ok, 35 of 35 Automation tests green; first PIE test by Baha done (state machine and nudge work). Open: the model plays a beat without listing it (team decision on the fix), Merve's Chapter 1 offline tree (`DT_OfflineTrees` is empty), hint lines, Vashir's thresholds, forced beats data for `Ch6_VashirTrap` |
+| 4 | Prompt builder & validator + lore and Zafir's card | 1 | Merve (code, texts) + Baha (CSV import) | Fri 13.11 | ✅ DONE | 12.11.2026 | Chapter 1 data imported word for word on `feature/merve-phase4-lore-data` (lore bible 682 words, Zafir card, scene card, 6 clues, 7 fallback lines); spoiler unlock chapters, `DT_Clues`, `DT_FallbackLines`; 9 tests green; scene test: real replies in 20–23 s on the laptop CPU, `uneasy_truce` reached. Gate: Merve plays it; merged 12.11 (PR #35), played by Merve 13.11 |
+| 5 | Conversation UI + Chapter 1 Zafir scene | 1 | Merve + Baha (code), Tuana (UI style, portraits), Tala (UI sounds) | Sat 14.11 | ✅ DONE | 11.11.2026 | Placeholder `WBP_Conversation` + `UConversationWidget` + minimal `USceneDirectorSubsystem` on `feature/merve-phase5-conversation`; E → 10-turn scene works in PIE; open: Tuana's UI style, fallback lines, portraits; 11-turn Zafir scene played by Merve 13.11 (UI restyle from Tuana still open, Phase 15) |
+| 6 | 🏁 Prototype gate | 1 | All | Sun 15.11 | 🔄 PLAYTESTED | 13.11.2026 | Merve played L_Test online and offline on the laptop; speed measured in the game window. Core loop works (E, typing, picks, turns, leave, fallback); 8 fixes open, see PROGRESS.md 13.11 (prompt order for speed, scene facts, plainer speech, 3 suggestions, beat-name slips, warm-up, offline choices-only). Speed rule not met on the laptop yet |
+| 7 | Scene Director & relationship values | 2 | Baha | Tue 17.11 | 🔄 IN PROGRESS | 13.11.2026 | On `feature/baha-phase7-scene-director` (pushed, commit `7336765`, not merged): `FSceneFlow` state machine, `UNPCBrainComponent`, `FOfflineTreeWalker`, wired into `USceneDirectorSubsystem`; new tables `DT_SceneRules` (2 rows) and `DT_Thresholds` (5 rows); build ok, 35 of 35 Automation tests green; first PIE test by Baha done (state machine and nudge work). Open: the model plays a beat without listing it (team decision on the fix), Merve's Chapter 1 offline tree (`DT_OfflineTrees` is empty), hint lines, Vashir's thresholds, forced beats data for `Ch6_VashirTrap` |
 | 8 | Open palace grey-box & day / night flow | 2 | Merve (level) + Baha (code) | Wed 18.11 | ⬜ NOT STARTED | | |
 | 9 | Clues & Rumor Journal | 2 | Baha (code), Tuana (UI art), Merve (placement) | Thu 19.11 | ⬜ NOT STARTED | | |
 | 10 | Guards, hiding spots & eavesdropping | 2 | Baha (AI), Merve (routes, spots), Tala (SFX, glow) | Sat 21.11 | ⬜ NOT STARTED | | |
@@ -201,7 +201,7 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 
 **Tasks:**
 - All: play `L_Test` end to end, online and offline.
-- ⚠️ Early warning check (GDD 13.5): average reply over 4 s, or under 90% valid JSON? If yes → offline mode becomes the default and the side characters and the Chapter 7 confession use their pre-written trees and lines.
+- ⚠️ Early warning check (GDD 13.5): do the character's first words take over 4 s on average to appear (measured in the game window on Merve's laptop, not in the editor; rule changed 13.11.2026 from "whole reply over 4 s"), or under 90% valid JSON? If yes → offline mode becomes the default and the side characters and the Chapter 7 confession use their pre-written trees and lines.
 - Update this tracker, `PROGRESS.md` and the task board.
 
 **Deliverable:** Signed-off prototype; risk decision recorded in Notes.
@@ -223,6 +223,7 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 - [C++] Baha: turn limits per scene row (Zafir 11, Vashir 7, others 5); forced beats for `Ch6_VashirTrap`; `ClosingRomance` field in `FSceneCardRow` (proposed).
 - [C++] Baha: offline mode: `FOfflineNodeRow` / `DT_OfflineTrees` tree walker in `UOfflineLLMProvider`, `FFallbackLineRow` / `DT_FallbackLines` with the pick order (scene + beat + emotion → clue → scene → any; never the same line twice in a row).
 - [WRITE] Merve: enter the Master Lore cards, scene rows, hint lines, nudge notes, 142 fallback lines and the offline trees into the DataTables (CSV import).
+- [C++] Baha: show the reply word by word while the model writes it (decided 13.11.2026): `UOpenAICompatibleLLMProvider` passes partial text to the Scene Director, `WBP_Conversation` shows the `reply` field as it grows; the finished reply still passes `UResponseValidator`, and a failed check replaces the shown words with the regenerated or fallback line. Log the time to the first words (the GDD 13.5 early warning number).
 - [C++] Automation tests for transitions, thresholds and offline trees (every key-scene path reaches its required beats).
 
 **Deliverable:** The Zafir scene resolves with full or weaker outcome, online and offline; hints instead of numbers.
@@ -302,7 +303,7 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 - [C++] Test harness (commandlet or editor utility) and first red-team run (50 lines per character: off-topic, jailbreak, spoiler, rude); LLM judge flags spoilers and broken voice.
 - Measure tokens per playthrough and average reply time.
 - Decide: memories + generated Chapter 7 confession in or out; 10 or 5 ambient NPCs.
-- ⚠️ Early warnings (GDD 13.5): average reply over 4 s on the stronger PC or under 90% valid JSON → smaller model, shorter replies or word-by-word streaming; side characters fall back to their offline nodes more often. Chapter 2–6 data not entered → apply the cut order. Palace still grey-box → custom models cut.
+- ⚠️ Early warnings (GDD 13.5): first words over 4 s on average (game window) or under 90% valid JSON → smaller model or shorter replies; side characters fall back to their offline nodes more often. Chapter 2–6 data not entered → apply the cut order. Palace still grey-box → custom models cut.
 
 **Deliverable:** Playable Chapter 1, red-team report, decisions in Notes and `PROGRESS.md`.
 **Verification Gate:** User plays Chapter 1 and confirms the loop is fun; decisions confirmed. ✋
@@ -432,7 +433,7 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 **Depends on:** Phase 20.
 
 **Tasks:**
-- Tala: credits screen: team (Merve, Tuana, Tala, Baha), licensed assets, AI-assisted assets and tools; course: Advanced Game Programming.
+- Tala: credits screen: team (Merve Özal, Tuana Tuna, Tala Alsayed, Ebrar Baha Özüpek), licensed assets, AI-assisted assets and tools; course: Advanced Game Programming.
 - Tala: `Docs/Licenses.md` complete; Merve: prompt log sheet final (`Docs/PromptLog.md` links it); Baha: AI-assisted headers on every C++ file and a header Comment node in AI-assisted Blueprints.
 
 **Deliverable:** Paperwork complete.

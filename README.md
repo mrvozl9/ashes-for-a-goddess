@@ -2,7 +2,7 @@
 
 > *"Some gods brighten the sky when they are born; others, when they die."*
 
-A third-person narrative RPG / visual novel hybrid by **Burnt Potato Games (BPG)**, built in **Unreal Engine 5.8** (C++ and Blueprints) for the course *Advanced Game Programming*.
+A third-person narrative RPG / visual novel hybrid by **Burnt Potato Games (BPG)**, built in **Unreal Engine 5.8** (C++ and Blueprints) for the course *Game Design Studio-III*.
 
 An assassin disguised as a dancer sneaks into Sama'zar, the palace of a king who burns a village every year to save a dying sun. You explore the palace, slip past guards, dance every night to keep your cover, and talk to the characters in your own words. They remember what you said: a rival assassin who slowly falls for you, and a king who has been hunting you all along.
 
@@ -119,9 +119,9 @@ Plugins/VibeUE/    editor access for the AI agent (git submodule)
 | Member | Role |
 |---|---|
 | Merve Özal | Team Lead, Level Designer, Narrative Lead (wrote the Phase 0–5 code) |
-| Tuana Tuna | Lead Artist, UI Artist (reviews the writing) |
-| Tala | Audio and VFX Designer (music, dance songs and charts, SFX, Niagara, cutscene sequences, credits, playtests) |
-| Baha | Programmer (gameplay systems from Phase 7 on, packaging) |
+| Tuana Tuna | Lead Artist, UI Artist, Narrative Designer (reviews the writing) |
+| Tala Alsayed | Audio and VFX Designer (music, dance songs and charts, SFX, Niagara, cutscene sequences, credits, playtests) |
+| Ebrar Baha Özüpek | Lead Programmer and Gameplay Systems (gameplay code from Phase 7 on, packaging) |
 
 Tala and Baha joined on 12.11.2026.
 
