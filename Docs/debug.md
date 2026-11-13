@@ -1,4 +1,4 @@
-# Debug Log (debug.md) · Burnt Potato Games (Merve Özal, Tuana Tuna, Tala, Baha)
+# Debug Log (debug.md) · Burnt Potato Games (Merve Özal, Tuana Tuna, Tala Alsayed, Ebrar Baha Özüpek)
 
 > One block per bug. Newest on top. Write the member's name in each block.
 > Unreal Engine 5.8 project since 10.11.2026. Course: Advanced Game Programming. Anyone on the team who finds a bug adds a block (Baha owns the C++ fixes from Phase 7 on).
