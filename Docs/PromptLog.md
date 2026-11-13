@@ -1,6 +1,6 @@
 # Prompt Log
 
-Our AI prompt log (GDD 8.2) is a Google Sheet that is shared with the instructor:
+Our AI prompt log (GDD 8.2) is for the course **Game Design Studio-III** (the rest of the project docs belong to Advanced Game Programming). It is a Google Sheet that is shared with the Game Design Studio-III instructor:
 
 **[BurntPotatoGames_PromptLog](https://docs.google.com/spreadsheets/d/1D1uqRMgC_2E4n-PsOUjiOAxivMPjW9H0ComF00bLa40/edit?usp=sharing)**
 
@@ -15,7 +15,7 @@ Columns (section "2. Prompt Log Entries"; one section row per course week, e.g. 
 | :-- | :-- |
 | # | Next number |
 | Date | The day of the session |
-| Week | Advanced Game Programming course week (Week 8 = 02.11–08.11.2026, Week 9 = 09.11–15.11, Week 10 = 16.11–22.11, Week 11 = 23.11–29.11, Week 12 = 30.11–06.12) |
+| Week | Game Design Studio-III course week (Week 8 = 02.11–08.11.2026, Week 9 = 09.11–15.11, Week 10 = 16.11–22.11, Week 11 = 23.11–29.11, Week 12 = 30.11–06.12) |
 | Who | Merve / Tuana / Tala / Baha / Team |
 | Tool | e.g. `Claude Opus 5.5`, `Claude Opus 5.5 (Claude Code + Unreal MCP + VibeUE)`, `ChatGPT` |
 | Purpose | Short goal, e.g. "Phase 3: Rumor Journal" |
