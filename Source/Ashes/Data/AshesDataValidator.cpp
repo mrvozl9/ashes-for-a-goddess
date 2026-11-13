@@ -1,4 +1,4 @@
-// AI-assisted: Claude Code, 12.11.2026, data report and checks for the CSV-imported DataTables (duplicate ids, missing references, empty required fields). Reviewed by Baha.
+// AI-assisted: Claude Code, 12.11.2026, data report and checks for the CSV-imported DataTables (duplicate ids, missing references, empty required fields); DT_SceneRules and DT_Thresholds (Phase 7, 13.11.2026). Reviewed by Baha.
 
 #include "AshesDataValidator.h"
 #include "Engine/DataTable.h"
@@ -101,6 +101,8 @@ namespace AshesData
 			{ TEXT("DT_Barks"),         &FBarkRow::StaticStruct,          &FAshesDataTables::Barks },
 			{ TEXT("DT_DanceCharts"),   &FDanceChartRow::StaticStruct,    &FAshesDataTables::DanceCharts },
 			{ TEXT("DT_Cutscenes"),     &FCutsceneLineRow::StaticStruct,  &FAshesDataTables::Cutscenes },
+				{ TEXT("DT_SceneRules"),    &FSceneRuleRow::StaticStruct,     &FAshesDataTables::SceneRules },
+				{ TEXT("DT_Thresholds"),    &FValueThresholdRow::StaticStruct, &FAshesDataTables::Thresholds },
 		};
 		return Defs;
 	}
@@ -773,6 +775,136 @@ namespace
 			});
 		}
 
+		void CheckSceneRules()
+		{
+			const TCHAR* Table = TEXT("DT_SceneRules");
+			TMap<FString, FString> RowOfSlot;
+			ForEachRow<FSceneRuleRow>(T.SceneRules, [&](const FString& Row, const FSceneRuleRow& Rule)
+			{
+				if (Rule.Scene.IsNone())
+				{
+					Report.Error(Table, Row, TEXT("Scene is empty"));
+				}
+
+				const FSceneCardRow* Scene = FindRow<FSceneCardRow>(T.Scenes, Rule.Scene);
+				if (!Rule.Scene.IsNone() && T.Scenes && !Scene)
+				{
+					Report.Error(Table, Row, FString::Printf(TEXT("scene \"%s\" is not in DT_Scenes"), *Rule.Scene.ToString()));
+				}
+
+				if (Scene)
+				{
+					if (!Rule.Beat.IsNone() && !HasBeat(*Scene, Rule.Beat))
+					{
+						Report.Error(Table, Row, FString::Printf(TEXT("Beat \"%s\" is not in scene \"%s\""), *Rule.Beat.ToString(), *Rule.Scene.ToString()));
+					}
+					if (!Rule.RequiresBeat.IsNone() && !HasBeat(*Scene, Rule.RequiresBeat))
+					{
+						Report.Error(Table, Row, FString::Printf(TEXT("RequiresBeat \"%s\" is not in scene \"%s\""), *Rule.RequiresBeat.ToString(), *Rule.Scene.ToString()));
+					}
+					if (!Rule.RequiresValue.IsNone() && T.Characters)
+					{
+						bool bAnyCard = false;
+						bool bFoundValue = false;
+						for (const FName Character : Scene->Characters)
+						{
+							if (const FCharacterCardRow* Card = FindRow<FCharacterCardRow>(T.Characters, Character))
+							{
+								bAnyCard = true;
+								bFoundValue = bFoundValue || HasValue(*Card, Rule.RequiresValue);
+							}
+						}
+						if (bAnyCard && !bFoundValue)
+						{
+							Report.Error(Table, Row, FString::Printf(TEXT("RequiresValue \"%s\" is not a relationship value of any character in scene \"%s\""), *Rule.RequiresValue.ToString(), *Rule.Scene.ToString()));
+						}
+					}
+					if (Rule.MinTurn > Scene->TurnLimit)
+					{
+						Report.Error(Table, Row, FString::Printf(TEXT("MinTurn %d is above the TurnLimit %d of scene \"%s\""), Rule.MinTurn, Scene->TurnLimit, *Rule.Scene.ToString()));
+					}
+					if (Rule.ForceAtTurn > Scene->TurnLimit)
+					{
+						Report.Error(Table, Row, FString::Printf(TEXT("ForceAtTurn %d is above the TurnLimit %d of scene \"%s\""), Rule.ForceAtTurn, Scene->TurnLimit, *Rule.Scene.ToString()));
+					}
+				}
+
+				if (!Rule.RequiresBeat.IsNone() && Rule.RequiresBeat == Rule.Beat)
+				{
+					Report.Error(Table, Row, TEXT("RequiresBeat is the same as Beat"));
+				}
+				if (Rule.RequiresMin < 0 || Rule.RequiresMin > 100)
+				{
+					Report.Error(Table, Row, FString::Printf(TEXT("RequiresMin %d is outside 0-100"), Rule.RequiresMin));
+				}
+
+				const FString Slot = FString::Printf(TEXT("%s|%s"), *Rule.Scene.ToString().ToLower(), *Rule.Beat.ToString().ToLower());
+				if (const FString* Other = RowOfSlot.Find(Slot))
+				{
+					Report.Error(Table, Row, FString::Printf(TEXT("same Scene and Beat as row \"%s\""), **Other));
+				}
+				else
+				{
+					RowOfSlot.Add(Slot, Row);
+				}
+
+				if (!Rule.Beat.IsNone() && !IsBlank(Rule.ClosingRomance))
+				{
+					Report.Warning(Table, Row, TEXT("ClosingRomance is only read from the scene-level row (empty Beat)"));
+				}
+				if (Rule.Beat.IsNone() && Rule.MinTurn == 0 && Rule.RequiresBeat.IsNone() && Rule.RequiresValue.IsNone()
+					&& Rule.ForceAtTurn == 0 && IsBlank(Rule.NudgeNote) && IsBlank(Rule.ClosingRomance))
+				{
+					Report.Warning(Table, Row, TEXT("the row sets nothing"));
+				}
+			});
+		}
+
+		void CheckThresholds()
+		{
+			const TCHAR* Table = TEXT("DT_Thresholds");
+			TMap<FString, FString> RowOfSlot;
+			ForEachRow<FValueThresholdRow>(T.Thresholds, [&](const FString& Row, const FValueThresholdRow& Threshold)
+			{
+				const FCharacterCardRow* Card = FindRow<FCharacterCardRow>(T.Characters, Threshold.Character);
+				if (Threshold.Character.IsNone())
+				{
+					Report.Error(Table, Row, TEXT("Character is empty"));
+				}
+				else if (T.Characters && !Card)
+				{
+					Report.Error(Table, Row, FString::Printf(TEXT("character \"%s\" is not in DT_Characters"), *Threshold.Character.ToString()));
+				}
+				if (Card && !HasValue(*Card, Threshold.Value))
+				{
+					Report.Error(Table, Row, FString::Printf(TEXT("Value \"%s\" is not a relationship value of %s"), *Threshold.Value.ToString(), *Threshold.Character.ToString()));
+				}
+				if (Threshold.AtLeast < 1 || Threshold.AtLeast > 100)
+				{
+					Report.Error(Table, Row, FString::Printf(TEXT("AtLeast %d is outside 1-100"), Threshold.AtLeast));
+				}
+				if (Threshold.UnlockId.IsNone())
+				{
+					Report.Error(Table, Row, TEXT("UnlockId is empty"));
+				}
+
+				const FString Slot = FString::Printf(TEXT("%s|%s|%d"), *Threshold.Character.ToString().ToLower(), *Threshold.Value.ToString().ToLower(), Threshold.AtLeast);
+				if (const FString* Other = RowOfSlot.Find(Slot))
+				{
+					Report.Error(Table, Row, FString::Printf(TEXT("same Character, Value and AtLeast as row \"%s\""), **Other));
+				}
+				else
+				{
+					RowOfSlot.Add(Slot, Row);
+				}
+
+				if (IsBlank(Threshold.HintLine))
+				{
+					Report.Warning(Table, Row, TEXT("HintLine is empty (the player gets no hint for this unlock)"));
+				}
+			});
+		}
+
 		void CheckCutscenes()
 		{
 			const TCHAR* Table = TEXT("DT_Cutscenes");
@@ -815,4 +947,6 @@ void AshesData::Validate(const FAshesDataTables& Tables, FAshesDataReport& Repor
 	if (Checker.T.Barks) { Checker.CheckBarks(); }
 	if (Checker.T.DanceCharts) { Checker.CheckDanceCharts(); }
 	if (Checker.T.Cutscenes) { Checker.CheckCutscenes(); }
+	if (Checker.T.SceneRules) { Checker.CheckSceneRules(); }
+	if (Checker.T.Thresholds) { Checker.CheckThresholds(); }
 }

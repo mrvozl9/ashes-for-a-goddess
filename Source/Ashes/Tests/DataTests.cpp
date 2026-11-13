@@ -1,4 +1,4 @@
-// AI-assisted: Claude Code, 12.11.2026, Automation tests for the CSV import and the data checks (Phase 4 data). Reviewed by Baha.
+// AI-assisted: Claude Code, 12.11.2026, Automation tests for the CSV import and the data checks (Phase 4 data); DT_SceneRules and DT_Thresholds (Phase 7, 13.11.2026). Reviewed by Baha.
 // Run: Session Frontend > Automation, filter "Ashes.Data" (or console: Automation RunTests Ashes.Data)
 
 #include "CoreMinimal.h"
@@ -15,6 +15,8 @@ namespace AshesDataTestData
 	const TCHAR* Clues = TEXT("DT_Clues");
 	const TCHAR* Fallback = TEXT("DT_FallbackLines");
 	const TCHAR* Offline = TEXT("DT_OfflineTrees");
+	const TCHAR* Rules = TEXT("DT_SceneRules");
+	const TCHAR* Thresholds = TEXT("DT_Thresholds");
 
 	UDataTable* MakeTable(UScriptStruct* RowStruct)
 	{
@@ -92,7 +94,30 @@ namespace AshesDataTestData
 		return Row;
 	}
 
-	/** A small, correct data set: Zafir and Nura, one scene, one clue, one fallback line, a two-node tree */
+	FSceneRuleRow MakeRule(const TCHAR* Scene, const TCHAR* Beat)
+	{
+		FSceneRuleRow Rule;
+		Rule.Scene = Scene;
+		Rule.Beat = Beat;
+		Rule.MinTurn = 2;
+		Rule.RequiresValue = TEXT("trust");
+		Rule.RequiresMin = 30;
+		Rule.NudgeNote = TEXT("Steer toward the truce.");
+		return Rule;
+	}
+
+	FValueThresholdRow MakeThreshold()
+	{
+		FValueThresholdRow Threshold;
+		Threshold.Character = TEXT("Zafir");
+		Threshold.Value = TEXT("trust");
+		Threshold.AtLeast = 40;
+		Threshold.UnlockId = TEXT("one_true_thing");
+		Threshold.HintLine = TEXT("Zafir looks at you a moment too long.");
+		return Threshold;
+	}
+
+	/** A small, correct data set: Zafir and Nura, one scene, one clue, one fallback line, a two-node tree, a rule and a threshold */
 	struct FSet
 	{
 		UDataTable* Characters = MakeTable(FCharacterCardRow::StaticStruct());
@@ -100,9 +125,13 @@ namespace AshesDataTestData
 		UDataTable* Clues = MakeTable(FClueRow::StaticStruct());
 		UDataTable* Fallback = MakeTable(FFallbackLineRow::StaticStruct());
 		UDataTable* Offline = MakeTable(FOfflineNodeRow::StaticStruct());
+		UDataTable* SceneRules = MakeTable(FSceneRuleRow::StaticStruct());
+		UDataTable* Thresholds = MakeTable(FValueThresholdRow::StaticStruct());
 
 		FSet()
 		{
+			SceneRules->AddRow(TEXT("rule_truce"), MakeRule(TEXT("Ch1_ZafirKeyScene"), TEXT("uneasy_truce")));
+			Thresholds->AddRow(TEXT("th_trust_40"), MakeThreshold());
 			Characters->AddRow(TEXT("Zafir"), MakeCard(TEXT("Zafir")));
 			Characters->AddRow(TEXT("Nura"), MakeCard(TEXT("Nura")));
 			Scenes->AddRow(TEXT("Ch1_ZafirKeyScene"), MakeScene());
@@ -120,6 +149,8 @@ namespace AshesDataTestData
 			Tables.Clues = Clues;
 			Tables.FallbackLines = Fallback;
 			Tables.OfflineTrees = Offline;
+			Tables.SceneRules = SceneRules;
+			Tables.Thresholds = Thresholds;
 
 			FAshesDataReport Report;
 			AshesData::Validate(Tables, Report);
@@ -229,7 +260,7 @@ bool FAshesDataValidSet::RunTest(const FString& Parameters)
 	{
 		AddError(Report.ToText());
 	}
-	TestEqual(TEXT("row counts for the five tables"), Report.RowCounts.Num(), 5);
+	TestEqual(TEXT("row counts for the seven tables"), Report.RowCounts.Num(), 7);
 	return true;
 }
 
@@ -368,6 +399,116 @@ bool FAshesDataWrongStruct::RunTest(const FString& Parameters)
 	AshesData::Validate(Tables, Report);
 	TestTrue(TEXT("wrong row struct reported"), Report.Has(EAshesDataSeverity::Error, Scenes, TEXT(""), TEXT("wrong row struct")));
 	TestEqual(TEXT("only that one error"), Report.NumErrors(), 1);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAshesDataPhase7Tables, "Ashes.Data.Phase7Tables", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FAshesDataPhase7Tables::RunTest(const FString& Parameters)
+{
+	using namespace AshesDataTestData;
+	const EAshesDataSeverity Err = EAshesDataSeverity::Error;
+	const EAshesDataSeverity Warn = EAshesDataSeverity::Warning;
+
+	FSet Set;
+
+	// A scene with three beats for the bad rule rows (Zafir has only "trust")
+	FSceneCardRow Scene = MakeScene();
+	FBeatDef BeatA, BeatB, BeatC;
+	BeatA.Id = TEXT("a"); BeatA.Rule = TEXT("a");
+	BeatB.Id = TEXT("b"); BeatB.Rule = TEXT("b");
+	BeatC.Id = TEXT("c"); BeatC.Rule = TEXT("c");
+	Scene.Beats = { BeatA, BeatB, BeatC };
+	Set.Scenes->AddRow(TEXT("Ch2_Rules"), Scene);
+
+	FSceneRuleRow Rule = MakeRule(TEXT(""), TEXT(""));
+	Set.SceneRules->AddRow(TEXT("r_noscene"), Rule);
+
+	Rule = MakeRule(TEXT("Ch9_Nowhere"), TEXT(""));
+	Set.SceneRules->AddRow(TEXT("r_ghost"), Rule);
+
+	Rule = MakeRule(TEXT("Ch2_Rules"), TEXT("no_such_beat"));
+	Rule.ClosingRomance = TEXT("Stay.");
+	Set.SceneRules->AddRow(TEXT("r_beat"), Rule);
+
+	Rule = MakeRule(TEXT("Ch2_Rules"), TEXT("b"));
+	Rule.RequiresBeat = TEXT("no_such_beat");
+	Set.SceneRules->AddRow(TEXT("r_reqbeat"), Rule);
+
+	Rule = MakeRule(TEXT("Ch2_Rules"), TEXT("a"));
+	Rule.RequiresBeat = TEXT("a");
+	Set.SceneRules->AddRow(TEXT("r_self"), Rule);
+
+	Rule = MakeRule(TEXT("Ch2_Rules"), TEXT(""));
+	Rule.RequiresValue = TEXT("favor");
+	Rule.RequiresMin = 150;
+	Set.SceneRules->AddRow(TEXT("r_value"), Rule);
+
+	Rule = MakeRule(TEXT("Ch2_Rules"), TEXT("c"));
+	Rule.MinTurn = 12;
+	Rule.ForceAtTurn = 12;
+	Set.SceneRules->AddRow(TEXT("r_turn"), Rule);
+	Set.SceneRules->AddRow(TEXT("r_dup"), MakeRule(TEXT("Ch2_Rules"), TEXT("c")));
+
+	FSceneRuleRow Empty;
+	Empty.Scene = TEXT("Ch2_Rules");
+	Set.SceneRules->AddRow(TEXT("r_empty"), Empty);
+
+	FValueThresholdRow Threshold = MakeThreshold();
+	Threshold.Character = NAME_None;
+	Set.Thresholds->AddRow(TEXT("t_nochar"), Threshold);
+
+	Threshold = MakeThreshold();
+	Threshold.Character = TEXT("Ghost");
+	Set.Thresholds->AddRow(TEXT("t_ghost"), Threshold);
+
+	Threshold = MakeThreshold();
+	Threshold.Value = TEXT("favor");
+	Set.Thresholds->AddRow(TEXT("t_value"), Threshold);
+
+	Threshold = MakeThreshold();
+	Threshold.AtLeast = 101;
+	Set.Thresholds->AddRow(TEXT("t_range"), Threshold);
+
+	Threshold = MakeThreshold();
+	Threshold.AtLeast = 45;
+	Threshold.UnlockId = NAME_None;
+	Set.Thresholds->AddRow(TEXT("t_unlock"), Threshold);
+
+	Threshold = MakeThreshold();
+	Threshold.AtLeast = 50;
+	Set.Thresholds->AddRow(TEXT("t_dup1"), Threshold);
+	Set.Thresholds->AddRow(TEXT("t_dup2"), Threshold);
+
+	Threshold = MakeThreshold();
+	Threshold.AtLeast = 60;
+	Threshold.HintLine.Reset();
+	Set.Thresholds->AddRow(TEXT("t_nohint"), Threshold);
+
+	const FAshesDataReport Report = Set.Validate();
+	TestTrue(TEXT("rule: Scene empty"), Report.Has(Err, Rules, TEXT("r_noscene"), TEXT("Scene is empty")));
+	TestTrue(TEXT("rule: Scene not in DT_Scenes"), Report.Has(Err, Rules, TEXT("r_ghost"), TEXT("not in DT_Scenes")));
+	TestTrue(TEXT("rule: Beat not in scene"), Report.Has(Err, Rules, TEXT("r_beat"), TEXT("Beat \"no_such_beat\"")));
+	TestTrue(TEXT("rule: RequiresBeat not in scene"), Report.Has(Err, Rules, TEXT("r_reqbeat"), TEXT("RequiresBeat \"no_such_beat\"")));
+	TestTrue(TEXT("rule: RequiresBeat equals Beat"), Report.Has(Err, Rules, TEXT("r_self"), TEXT("same as Beat")));
+	TestTrue(TEXT("rule: RequiresValue unknown"), Report.Has(Err, Rules, TEXT("r_value"), TEXT("RequiresValue \"favor\"")));
+	TestTrue(TEXT("rule: RequiresMin range"), Report.Has(Err, Rules, TEXT("r_value"), TEXT("RequiresMin 150")));
+	TestTrue(TEXT("rule: MinTurn above TurnLimit"), Report.Has(Err, Rules, TEXT("r_turn"), TEXT("MinTurn 12")));
+	TestTrue(TEXT("rule: ForceAtTurn above TurnLimit"), Report.Has(Err, Rules, TEXT("r_turn"), TEXT("ForceAtTurn 12")));
+	TestTrue(TEXT("rule: same Scene and Beat twice"),
+		Report.Has(Err, Rules, TEXT("r_turn"), TEXT("same Scene and Beat")) || Report.Has(Err, Rules, TEXT("r_dup"), TEXT("same Scene and Beat")));
+	TestTrue(TEXT("rule: ClosingRomance on a beat row"), Report.Has(Warn, Rules, TEXT("r_beat"), TEXT("ClosingRomance")));
+	TestTrue(TEXT("rule: row sets nothing"), Report.Has(Warn, Rules, TEXT("r_empty"), TEXT("sets nothing")));
+	TestFalse(TEXT("good rule row has no error"), Report.Has(Err, Rules, TEXT("rule_truce"), TEXT("")));
+
+	TestTrue(TEXT("threshold: Character empty"), Report.Has(Err, Thresholds, TEXT("t_nochar"), TEXT("Character is empty")));
+	TestTrue(TEXT("threshold: Character not in DT_Characters"), Report.Has(Err, Thresholds, TEXT("t_ghost"), TEXT("not in DT_Characters")));
+	TestTrue(TEXT("threshold: Value unknown"), Report.Has(Err, Thresholds, TEXT("t_value"), TEXT("Value \"favor\"")));
+	TestTrue(TEXT("threshold: AtLeast range"), Report.Has(Err, Thresholds, TEXT("t_range"), TEXT("AtLeast 101")));
+	TestTrue(TEXT("threshold: UnlockId empty"), Report.Has(Err, Thresholds, TEXT("t_unlock"), TEXT("UnlockId is empty")));
+	TestTrue(TEXT("threshold: same Character, Value, AtLeast twice"),
+		Report.Has(Err, Thresholds, TEXT("t_dup1"), TEXT("same Character")) || Report.Has(Err, Thresholds, TEXT("t_dup2"), TEXT("same Character")));
+	TestTrue(TEXT("threshold: HintLine empty"), Report.Has(Warn, Thresholds, TEXT("t_nohint"), TEXT("HintLine is empty")));
+	TestFalse(TEXT("good threshold row has no error"), Report.Has(Err, Thresholds, TEXT("th_trust_40"), TEXT("")));
 	return true;
 }
 

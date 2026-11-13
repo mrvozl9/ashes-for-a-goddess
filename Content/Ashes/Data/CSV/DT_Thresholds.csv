@@ -1,0 +1,6 @@
+﻿---,Character,Value,AtLeast,UnlockId,HintLine,bRomanceOnly
+Zafir_trust_30,Zafir,trust,30,one_true_thing,,false
+Zafir_trust_50,Zafir,trust,50,admits_hunting_vashir,,false
+Zafir_trust_60,Zafir,trust,60,tells_of_village,,true
+Zafir_affection_40,Zafir,affection,40,jealousy_shows,,false
+Zafir_affection_60,Zafir,affection,60,rooftop_confession,,false

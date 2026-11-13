@@ -1,4 +1,4 @@
-// AI-assisted: Claude Code, 11.11.2026, runs one conversation scene: prompt, model, validator, turn limit (Phase 5; full state machine in Phase 7); beats, clue hints, fallback context (Phase 4 data, 12.11.2026); soft / hard limit with hesitation. Reviewed by <pending>.
+// AI-assisted: Claude Code, 11.11.2026, runs one conversation scene: prompt, model, validator, turn limit (Phase 5; full state machine in Phase 7); beats, clue hints, fallback context (Phase 4 data, 12.11.2026); soft / hard limit with hesitation; Phase 7: state machine (FSceneFlow), NPC brain, offline tree (13.11.2026). Reviewed by <pending>.
 
 #include "SceneDirectorSubsystem.h"
 #include "Ashes.h"
@@ -10,6 +10,8 @@
 #include "ConversationWidget.h"
 #include "PromptBuilder.h"
 #include "ResponseValidator.h"
+#include "NPCBrainComponent.h"
+#include "OfflineLLMProvider.h"
 #include "Engine/DataTable.h"
 #include "Engine/World.h"
 #include "TimerManager.h"
@@ -21,6 +23,27 @@ namespace
 	const TCHAR* GScenesPath = TEXT("/Game/Ashes/Data/DT_Scenes.DT_Scenes");
 	const TCHAR* GLorePath = TEXT("/Game/Ashes/Data/DA_LoreBible.DA_LoreBible");
 	const TCHAR* GCluesPath = TEXT("/Game/Ashes/Data/DT_Clues.DT_Clues");
+	const TCHAR* GSceneRulesPath = TEXT("/Game/Ashes/Data/DT_SceneRules.DT_SceneRules");
+	const TCHAR* GThresholdsPath = TEXT("/Game/Ashes/Data/DT_Thresholds.DT_Thresholds");
+	const TCHAR* GOfflineTreesPath = TEXT("/Game/Ashes/Data/DT_OfflineTrees.DT_OfflineTrees");
+
+	// All rows of an optional table; empty when the asset does not exist yet or has another row type
+	template <typename RowType>
+	TArray<RowType> LoadRows(const TCHAR* Path)
+	{
+		TArray<RowType> Out;
+		const UDataTable* Table = LoadObject<UDataTable>(nullptr, Path, nullptr, LOAD_Quiet | LOAD_NoWarn);
+		if (Table && Table->GetRowStruct() && Table->GetRowStruct()->IsChildOf(RowType::StaticStruct()))
+		{
+			TArray<RowType*> Rows;
+			Table->GetAllRows<RowType>(TEXT("SceneDirector"), Rows);
+			for (const RowType* Row : Rows)
+			{
+				Out.Add(*Row);
+			}
+		}
+		return Out;
+	}
 
 	// Bumped on every start / end so late model replies from a closed scene are ignored
 	int32 GSceneSerial = 0;
@@ -57,13 +80,31 @@ bool USceneDirectorSubsystem::StartScene(AAshesNPC* Npc, AAshesCharacter* Sahra)
 	Lore = LoreAsset ? LoreAsset->Text : FString();
 	SceneRowName = Npc->SceneRowName;
 	CharacterRowName = Npc->CharacterRowName;
-	ReachedBeats.Reset();
 	LastEmotion = NAME_None;
+	PendingHints.Reset();
+	bTreeEnded = false;
+
+	// The rules of this scene (DT_SceneRules is optional: without it every beat counts at any turn)
+	Flow.Start(SceneRowName, Scene, LoadRows<FSceneRuleRow>(GSceneRulesPath));
+
+	// The character's values live on the NPC, so they carry over to the next scene (the card only gives the start)
+	UNPCBrainComponent* NpcBrain = Npc->FindComponentByClass<UNPCBrainComponent>();
+	if (!NpcBrain)
+	{
+		NpcBrain = NewObject<UNPCBrainComponent>(Npc, TEXT("NPCBrain"));
+		NpcBrain->RegisterComponent();
+	}
+	NpcBrain->InitFromCard(CharacterRowName, Card, LoadRows<FValueThresholdRow>(GThresholdsPath));
+	NpcBrain->OnThresholdReached.AddUniqueDynamic(this, &USceneDirectorSubsystem::HandleThresholdReached);
+	Brain = NpcBrain;
 
 	State = FPromptState();
-	for (const FRelationshipValueDef& Def : Card.Values)
+	State.Values = NpcBrain->GetValues();
+
+	// Offline answers for this scene, if written (used only while the model is not available)
+	if (!Tree.Start(LoadRows<FOfflineNodeRow>(GOfflineTreesPath), SceneRowName))
 	{
-		State.Values.Add(Def.Name, Def.Start);
+		Tree.Reset();
 	}
 
 	// Talk clues this character holds in this chapter: their hints go into the prompt (DT_Clues)
@@ -109,8 +150,20 @@ bool USceneDirectorSubsystem::StartScene(AAshesNPC* Npc, AAshesCharacter* Sahra)
 	OnLinePosted.Broadcast(Card.DisplayName, Scene.Opener);
 	OnTurnsChanged.Broadcast(GetTurnsLeft());
 
+	UAshesGameInstance* GI = GetWorld()->GetGameInstance<UAshesGameInstance>();
+
+	// Offline with a tree: Sahra's first replies are the tree's (the opener itself stays the scene card's)
+	if (Tree.IsActive() && (!GI || GI->GetAIMode() == EAIMode::Offline))
+	{
+		FLLMResponse First;
+		First.Emotion = Card.FallbackEmotion;
+		First.Suggestions = Tree.GetReplies();
+		LastSuggestions = First.Suggestions;
+		OnReplyReady.Broadcast(First, true);
+	}
+
 	// Let the model read the card, lore and scene while the player reads the opener
-	if (UAshesGameInstance* GI = GetWorld()->GetGameInstance<UAshesGameInstance>())
+	if (GI)
 	{
 		GI->PrimeModel(UPromptBuilder::Build(Card, Lore, Scene, State, History, FString(), Scene.Chapter));
 	}
@@ -136,19 +189,40 @@ void USceneDirectorSubsystem::SubmitLine(const FString& InLine)
 	UE_LOG(LogAshes, Log, TEXT("Scene: Sahra: %s"), *Line);
 	OnLinePosted.Broadcast(TEXT("Sahra"), Line);
 
+	if (const UNPCBrainComponent* NpcBrain = Brain.Get())
+	{
+		State.Values = NpcBrain->GetValues(); // the prompt shows them as words
+	}
 	FLLMRequest Request = UPromptBuilder::Build(Card, Lore, Scene, State, History, Line, Scene.Chapter);
+
+	// Nudge (2 turns left or 3 turns without a new beat): a steering note rides on the newest line only,
+	// so the cached part of the prompt stays the same and the note never enters the history
+	const FString NudgeNote = Flow.GetNudgeNote();
+	if (!NudgeNote.IsEmpty() && Request.Messages.Num() > 0)
+	{
+		Request.Messages.Last().Content += FString::Printf(TEXT("\n\n[Director's note, not spoken by Sahra: %s]"), *NudgeNote);
+		UE_LOG(LogAshes, Log, TEXT("Scene: nudge toward '%s'"), *Flow.GetPendingBeat().ToString());
+	}
+
 	FillFallbackContext(Request);
 	FConversationTurn Turn;
 	Turn.bFromPlayer = true;
 	Turn.Text = Line;
 	History.Add(Turn);
 	++TurnsTaken;
+	Flow.BeginTurn();
 	OnTurnsChanged.Broadcast(GetTurnsLeft());
 
 	bWaiting = true;
 	RequestStartTime = FPlatformTime::Seconds();
 	OnThinkingChanged.Broadcast(true);
 	++RequestSerial;
+
+	// Offline: the tree answers if the line is (or clearly means) one of its replies; else a fallback line below
+	if (TryAnswerFromTree(Line))
+	{
+		return;
+	}
 	UE_LOG(LogAshes, Log, TEXT("Scene: waiting (soft limit %.0f s, hard limit %.0f s%s)"), GetDefault<UAshesAISettings>()->GetHesitateAfterSeconds(),
 		GetDefault<UAshesAISettings>()->GetEffectiveRequestTimeout(), GIsEditor ? TEXT(", editor") : TEXT(""));
 	RequestReply(Request, 1); // 1 silent retry on a broken / spoiling reply (GDD 8.1)
@@ -286,6 +360,7 @@ void USceneDirectorSubsystem::RefundUnansweredTurn(int32& InOutTurnsTaken, TArra
 void USceneDirectorSubsystem::FinishHesitation(const FLLMResponse& Hesitation)
 {
 	RefundUnansweredTurn(TurnsTaken, History);
+	Flow.RefundTurn();
 	bWaiting = false;
 	OnThinkingChanged.Broadcast(false);
 	// Values unchanged; the previous suggestions stay; the player can ask again
@@ -307,7 +382,121 @@ void USceneDirectorSubsystem::PostFallbackLine(const FLLMResponse& Line)
 	}
 }
 
-void USceneDirectorSubsystem::DeliverReply(const FLLMResponse& InResponse, bool bFromFallback)
+bool USceneDirectorSubsystem::TryAnswerFromTree(const FString& Line)
+{
+	const UAshesGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance<UAshesGameInstance>() : nullptr;
+	if (!Tree.IsActive() || (GI && GI->GetAIMode() == EAIMode::Online))
+	{
+		return false;
+	}
+	const int32 Index = Tree.MatchReply(Line);
+	if (Index < 0)
+	{
+		return false; // free text the tree does not know: a fallback line answers, the node stays
+	}
+
+	// The clue journal comes in Phase 9; until then a "requires clue" rule uses its stand-in
+	const FOfflineStep Step = Tree.Pick(Index, State.Values, TSet<FName>());
+	if (!Step.bValid)
+	{
+		return false;
+	}
+
+	FLLMResponse Response;
+	UOfflineLLMProvider::SplitGesture(Step.Line, Response.Reply, Response.Gesture);
+	Response.Emotion = Step.Emotion.IsNone() ? Card.FallbackEmotion : Step.Emotion;
+	Response.Deltas = Step.Changes;
+	Response.Beats = Step.Beats;
+	Response.Clues = Step.Clues;
+	Response.Suggestions = Step.NextReplies;
+	bTreeEnded = Step.bEnded;
+	UE_LOG(LogAshes, Log, TEXT("Scene: offline tree reply %d%s -> node %d%s"), Index + 1, Step.bStandIn ? TEXT(" (stand-in)") : TEXT(""),
+		Tree.GetNode(), Step.bEnded ? TEXT(" (end)") : TEXT(""));
+	DeliverReply(Response, true, true);
+	return true;
+}
+
+void USceneDirectorSubsystem::HandleThresholdReached(FName UnlockId, const FString& HintLine)
+{
+	UE_LOG(LogAshes, Log, TEXT("Scene: unlocked '%s'"), *UnlockId.ToString());
+	if (!HintLine.IsEmpty())
+	{
+		PendingHints.Add(HintLine); // shown after the reply that caused it; never a number
+	}
+}
+
+UNPCBrainComponent* USceneDirectorSubsystem::GetBrain() const
+{
+	return bActive ? Brain.Get() : nullptr;
+}
+
+FString USceneDirectorSubsystem::GetStatusText() const
+{
+	if (!bActive)
+	{
+		return TEXT("no scene");
+	}
+	TArray<FString> Beats;
+	for (const FName& Beat : Flow.GetReachedBeats())
+	{
+		Beats.Add(Beat.ToString());
+	}
+	TArray<FString> Values;
+	for (const TPair<FName, int32>& Value : State.Values)
+	{
+		Values.Add(FString::Printf(TEXT("%s %d (%s)"), *Value.Key.ToString(), Value.Value, *UPromptBuilder::ValueToWord(Value.Value)));
+	}
+	return FString::Printf(TEXT("%s: phase %s, turn %d of %d, stalled %d, beats [%s], next beat %s, values [%s], offline tree %s"),
+		*SceneRowName.ToString(), *UEnum::GetDisplayValueAsText(Flow.GetPhase()).ToString(), Flow.GetTurnsTaken(), Scene.TurnLimit, Flow.GetStalledTurns(),
+		*FString::Join(Beats, TEXT(", ")), *Flow.GetPendingBeat().ToString(), *FString::Join(Values, TEXT(", ")),
+		Tree.IsActive() ? *FString::Printf(TEXT("node %d"), Tree.GetNode()) : TEXT("none"));
+}
+
+void USceneDirectorSubsystem::CloseScene()
+{
+	bFinished = true;
+	const EScenePhase Phase = Flow.GetPhase();
+	UE_LOG(LogAshes, Log, TEXT("Scene: closed as %s after %d turns"), *UEnum::GetDisplayValueAsText(Phase).ToString(), TurnsTaken);
+
+	if (Phase == EScenePhase::Caught)
+	{
+		OnTurnsChanged.Broadcast(GetTurnsLeft());
+		OnCaught.Broadcast();
+		return;
+	}
+
+	// Goal reached: the full closing (the romance line on that route, if written); turn limit: the weaker one
+	FString Closing;
+	if (Flow.WasFull())
+	{
+		const UNPCBrainComponent* NpcBrain = Brain.Get();
+		const FString Romance = Flow.GetClosingRomance();
+		Closing = (NpcBrain && NpcBrain->GetRoute() == EAshesRoute::Romance && !Romance.IsEmpty()) ? Romance : Scene.ClosingFull;
+	}
+	else
+	{
+		Closing = Scene.ClosingWeaker.IsEmpty() ? Scene.ClosingFull : Scene.ClosingWeaker;
+		for (const FName& Beat : Flow.GetForcedOnClose())
+		{
+			UE_LOG(LogAshes, Log, TEXT("Scene: beat set by the Director so the story goes on: %s"), *Beat.ToString());
+		}
+	}
+
+	if (Closing.IsEmpty())
+	{
+		OnLinePosted.Broadcast(FString(), TEXT("(The conversation is over.)"));
+	}
+	else
+	{
+		FLLMResponse Line;
+		UOfflineLLMProvider::SplitGesture(Closing, Line.Reply, Line.Gesture);
+		PostFallbackLine(Line);
+	}
+	OnTurnsChanged.Broadcast(0);
+	OnSceneResolved.Broadcast(Flow.WasFull());
+}
+
+void USceneDirectorSubsystem::DeliverReply(const FLLMResponse& InResponse, bool bFromFallback, bool bAuthored)
 {
 	if (GetWorld())
 	{
@@ -322,14 +511,14 @@ void USceneDirectorSubsystem::DeliverReply(const FLLMResponse& InResponse, bool 
 		const int32 Serial = GSceneSerial;
 		TWeakObjectPtr<USceneDirectorSubsystem> WeakThis(this);
 		FLLMResponse Copy = InResponse;
-		GetWorld()->GetTimerManager().SetTimer(ThinkingTimer, FTimerDelegate::CreateLambda([WeakThis, Serial, Copy, bFromFallback]()
+		GetWorld()->GetTimerManager().SetTimer(ThinkingTimer, FTimerDelegate::CreateLambda([WeakThis, Serial, Copy, bFromFallback, bAuthored]()
 		{
 			if (USceneDirectorSubsystem* Self = WeakThis.Get())
 			{
 				if (Serial == GSceneSerial && Self->bActive)
 				{
 					Self->RequestStartTime = 0.0; // show now
-					Self->DeliverReply(Copy, bFromFallback);
+					Self->DeliverReply(Copy, bFromFallback, bAuthored);
 				}
 			}
 		}), Delay, false);
@@ -342,15 +531,54 @@ void USceneDirectorSubsystem::DeliverReply(const FLLMResponse& InResponse, bool 
 		Response.Reply = TEXT("...");
 	}
 
-	// Values change only on real model replies (fallback lines leave them unchanged, GDD 8.1)
-	if (!bFromFallback)
+	// Values and beats change on real model replies and on offline tree answers;
+	// a fallback line leaves them unchanged (GDD 8.1)
+	const bool bCounts = !bFromFallback || bAuthored;
+	if (bCounts)
 	{
 		for (const TPair<FName, int32>& Delta : Response.Deltas)
 		{
-			int32& Value = State.Values.FindOrAdd(Delta.Key);
-			Value = FMath::Clamp(Value + Delta.Value, 0, 100);
-			UE_LOG(LogAshes, Log, TEXT("Scene: %s %+d -> %d"), *Delta.Key.ToString(), Delta.Value, Value);
+			UNPCBrainComponent* NpcBrain = Brain.Get();
+			if (NpcBrain && NpcBrain->HasValue(Delta.Key))
+			{
+				// The brain clamps to the card's per-turn limits and to 0-100, and reports thresholds
+				const int32 Value = NpcBrain->ApplyDelta(Delta.Key, Delta.Value);
+				UE_LOG(LogAshes, Log, TEXT("Scene: %s %+d -> %d"), *Delta.Key.ToString(), Delta.Value, Value);
+			}
 		}
+		if (const UNPCBrainComponent* NpcBrain = Brain.Get())
+		{
+			State.Values = NpcBrain->GetValues();
+		}
+	}
+
+	// The reply only claims beats; the scene's rules decide (order, earliest turn, values). Forced beats come from here too.
+	const TArray<FName> Accepted = Flow.ApplyReply(bCounts ? Response.Beats : TArray<FName>(), State.Values, bAuthored);
+	for (const FName& Beat : Accepted)
+	{
+		UE_LOG(LogAshes, Log, TEXT("Scene: beat reached: %s"), *Beat.ToString());
+	}
+	if (bCounts)
+	{
+		for (const FName& Beat : Response.Beats)
+		{
+			if (!Accepted.Contains(Beat))
+			{
+				UE_LOG(LogAshes, Log, TEXT("Scene: beat '%s' not accepted (already reached or its rule is not met yet)"), *Beat.ToString());
+			}
+		}
+	}
+	Response.Beats = Accepted;
+	if (bAuthored && bTreeEnded)
+	{
+		Flow.EndEarly(); // the tree has no more nodes
+		bTreeEnded = false;
+	}
+
+	// Offline and the tree did not answer this line: its replies stay on the buttons
+	if (bFromFallback && !bAuthored && Tree.IsActive() && Response.Suggestions.Num() == 0)
+	{
+		Response.Suggestions = Tree.GetReplies();
 	}
 
 	FConversationTurn Turn;
@@ -358,33 +586,25 @@ void USceneDirectorSubsystem::DeliverReply(const FLLMResponse& InResponse, bool 
 	Turn.Text = Response.Reply;
 	History.Add(Turn);
 	LastSuggestions = Response.Suggestions;
-	if (!bFromFallback)
-	{
-		for (const FName& Beat : Response.Beats)
-		{
-			if (!ReachedBeats.Contains(Beat))
-			{
-				ReachedBeats.Add(Beat);
-				UE_LOG(LogAshes, Log, TEXT("Scene: beat reached: %s"), *Beat.ToString());
-			}
-		}
-	}
 	LastEmotion = Response.Emotion;
 
 	bWaiting = false;
 	OnThinkingChanged.Broadcast(false);
-	UE_LOG(LogAshes, Log, TEXT("Scene: %s [%s]%s: %s"), *Card.DisplayName, *Response.Emotion.ToString(), bFromFallback ? TEXT(" (fallback)") : TEXT(""), *Response.Reply);
+	UE_LOG(LogAshes, Log, TEXT("Scene: %s [%s]%s: %s"), *Card.DisplayName, *Response.Emotion.ToString(),
+		bAuthored ? TEXT(" (offline tree)") : bFromFallback ? TEXT(" (fallback)") : TEXT(""), *Response.Reply);
 	OnLinePosted.Broadcast(Card.DisplayName, Response.Reply);
 	OnReplyReady.Broadcast(Response, bFromFallback);
 
-	// Simple end at the turn limit (Phase 7: nudge, resolve, forced close)
-	if (TurnsTaken >= Scene.TurnLimit)
+	// Hints instead of numbers: the lines of the thresholds this reply reached
+	for (const FString& Hint : PendingHints)
 	{
-		bFinished = true;
-		const FString Closing = Scene.ClosingFull.IsEmpty() ? TEXT("(The conversation is over.)") : Scene.ClosingFull;
-		UE_LOG(LogAshes, Log, TEXT("Scene: turn limit reached"));
-		OnLinePosted.Broadcast(Scene.ClosingFull.IsEmpty() ? FString() : Card.DisplayName, Closing);
-		OnTurnsChanged.Broadcast(0);
+		OnLinePosted.Broadcast(FString(), Hint);
+	}
+	PendingHints.Reset();
+
+	if (Flow.IsOver())
+	{
+		CloseScene();
 	}
 }
 
@@ -402,6 +622,14 @@ void USceneDirectorSubsystem::EndScene()
 		GetWorld()->GetTimerManager().ClearTimer(ThinkingTimer);
 		GetWorld()->GetTimerManager().ClearTimer(HesitateTimer);
 	}
+
+	if (UNPCBrainComponent* NpcBrain = Brain.Get())
+	{
+		NpcBrain->OnThresholdReached.RemoveDynamic(this, &USceneDirectorSubsystem::HandleThresholdReached);
+	}
+	PendingHints.Reset();
+	Flow = FSceneFlow(); // back to Idle: GetPhase() must not report the old scene
+	Tree.Reset();
 
 	if (Widget)
 	{
@@ -457,13 +685,12 @@ void USceneDirectorSubsystem::FillFallbackContext(FLLMRequest& Request) const
 	Request.FallbackScene = SceneRowName;
 	Request.FallbackCharacter = CharacterRowName;
 	Request.FallbackEmotion = LastEmotion;
-	Request.FallbackBeat = NAME_None;
-	for (const FBeatDef& Beat : Scene.Beats)
-	{
-		if (Beat.bRequired && !ReachedBeats.Contains(Beat.Id))
-		{
-			Request.FallbackBeat = Beat.Id; // the next beat the scene is pushing toward
-			break;
-		}
-	}
+	Request.FallbackBeat = Flow.GetPendingBeat(); // the next beat the scene is pushing toward
 }
+
+static FAutoConsoleCommandWithWorldAndArgs GAshesSceneStatus(
+	TEXT("Ashes.Scene.Status"), TEXT("Logs the open conversation's phase, turns, beats and values"),
+	FConsoleCommandWithWorldAndArgsDelegate::CreateLambda([](const TArray<FString>& Args, UWorld* World)
+	{
+		if (const USceneDirectorSubsystem* Director = GetDirectorFor(World)) { UE_LOG(LogAshes, Display, TEXT("Scene status: %s"), *Director->GetStatusText()); }
+	}));

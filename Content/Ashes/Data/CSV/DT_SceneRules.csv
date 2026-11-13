@@ -1,0 +1,3 @@
+﻿---,Scene,Beat,MinTurn,RequiresBeat,RequiresValue,RequiresMin,ForceAtTurn,NudgeNote,ClosingRomance
+Ch1_ZafirKeyScene_sahra_confronts_blade,Ch1_ZafirKeyScene,sahra_confronts_blade,0,,,0,0,"Turn the talk toward the blade Sahra has heard you carry, so that she asks about it or names the rumor.",
+Ch1_ZafirKeyScene_uneasy_truce,Ch1_ZafirKeyScene,uneasy_truce,4,sahra_confronts_blade,,0,0,"The night is almost over. Offer Sahra the truce now: each of you keeps the other's secret.",

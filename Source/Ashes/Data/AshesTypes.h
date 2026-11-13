@@ -509,3 +509,92 @@ struct ASHES_API FCutsceneLineRow : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cutscene")
 	FName Route;
 };
+
+// ---------------------------------------------------------------------------------------------
+// AI-assisted: Claude Code, 13.11.2026, Phase 7 rows: machine-readable beat rules and nudge notes per scene,
+// relationship thresholds, and the route. Reviewed by <pending>.
+// These tables sit beside DT_Scenes / DT_Characters (which keep the authored texts) so those assets stay as they are.
+// ---------------------------------------------------------------------------------------------
+
+/** Which ending route the player is on (GDD: romance when Affection is high enough, else comrade) */
+UENUM(BlueprintType)
+enum class EAshesRoute : uint8
+{
+	Comrade,
+	Romance
+};
+
+/**
+ * DT_SceneRules: what the Scene Director checks in C++ for one beat of a scene (the beat's Rule text in DT_Scenes
+ * is only read by the model). A row with an empty Beat is the scene-level row (NudgeNote for any beat, ClosingRomance).
+ */
+USTRUCT(BlueprintType)
+struct ASHES_API FSceneRuleRow : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	/** DT_Scenes row name */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SceneRule")
+	FName Scene;
+
+	/** Beat id of that scene; empty = the scene-level row */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SceneRule")
+	FName Beat;
+
+	/** The beat counts only from this turn on (1 = the first player line); 0 = any turn */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SceneRule", meta=(ClampMin="0"))
+	int32 MinTurn = 0;
+
+	/** The beat counts only after this beat was reached; empty = no order */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SceneRule")
+	FName RequiresBeat;
+
+	/** The beat counts only while this value is at least RequiresMin (e.g. trust 30); empty = no value rule */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SceneRule")
+	FName RequiresValue;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SceneRule")
+	int32 RequiresMin = 0;
+
+	/** The Director sets the beat itself at this turn (fixed outcome, e.g. Ch6_VashirTrap); 0 = never */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SceneRule", meta=(ClampMin="0"))
+	int32 ForceAtTurn = 0;
+
+	/** Steering note added to the prompt while the Director nudges toward this beat */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SceneRule", meta=(MultiLine=true))
+	FString NudgeNote;
+
+	/** Scene-level row only: closing line on the romance route (empty = ClosingFull) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SceneRule", meta=(MultiLine=true))
+	FString ClosingRomance;
+};
+
+/** DT_Thresholds: something unlocks when a relationship value first reaches AtLeast */
+USTRUCT(BlueprintType)
+struct ASHES_API FValueThresholdRow : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	/** DT_Characters row name */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Threshold")
+	FName Character;
+
+	/** trust / affection / favor / suspicion */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Threshold")
+	FName Value;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Threshold", meta=(ClampMin="0", ClampMax="100"))
+	int32 AtLeast = 0;
+
+	/** Id other systems listen for (e.g. one_true_thing, caught) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Threshold")
+	FName UnlockId;
+
+	/** Shown to the player instead of a number (e.g. "Zafir looks at you a moment too long."); may be empty */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Threshold", meta=(MultiLine=true))
+	FString HintLine;
+
+	/** Counts only on the romance route */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Threshold")
+	bool bRomanceOnly = false;
+};

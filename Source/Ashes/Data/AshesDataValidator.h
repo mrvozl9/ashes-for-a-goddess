@@ -1,4 +1,4 @@
-// AI-assisted: Claude Code, 12.11.2026, data report and checks for the CSV-imported DataTables (duplicate ids, missing references, empty required fields). Reviewed by Baha.
+// AI-assisted: Claude Code, 12.11.2026, data report and checks for the CSV-imported DataTables (duplicate ids, missing references, empty required fields); DT_SceneRules and DT_Thresholds (Phase 7, 13.11.2026). Reviewed by Baha.
 
 #pragma once
 
@@ -61,6 +61,8 @@ struct ASHES_API FAshesDataTables
 	const UDataTable* Barks = nullptr;
 	const UDataTable* DanceCharts = nullptr;
 	const UDataTable* Cutscenes = nullptr;
+	const UDataTable* SceneRules = nullptr;
+	const UDataTable* Thresholds = nullptr;
 };
 
 /** One imported table: asset name (also the CSV file name) and its row struct */
@@ -82,7 +84,7 @@ namespace AshesData
 	/** Folder of the CSV sources: <Project>/Content/Ashes/Data/CSV */
 	ASHES_API FString GetCsvFolder();
 
-	/** The eight imported tables, in import order (characters and scenes first, they are referenced by the rest) */
+	/** The ten tables, in import order (characters and scenes first, they are referenced by the rest) */
 	ASHES_API TConstArrayView<FAshesTableDef> GetTableDefs();
 
 	/** Loads every table asset that exists in /Game/Ashes/Data; missing ones stay null */

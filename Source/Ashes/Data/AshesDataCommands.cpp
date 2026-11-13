@@ -1,10 +1,10 @@
-// AI-assisted: Claude Code, 12.11.2026, console commands Ashes.Data.Import / Validate / ExportTemplates (CSV -> DataTable assets + data report). Reviewed by Baha.
+// AI-assisted: Claude Code, 12.11.2026, console commands Ashes.Data.Import / Validate / ExportTemplates (CSV -> DataTable assets + data report); DT_SceneRules and DT_Thresholds (Phase 7, 13.11.2026). Reviewed by Baha.
 //
 // Workflow: the CSV files live in Content/Ashes/Data/CSV/<TableName>.csv (first column = row id).
-// Only four tables are imported from CSV: DT_OfflineTrees, DT_Barks, DT_DanceCharts and DT_Cutscenes.
+// Only six tables are imported from CSV: DT_OfflineTrees, DT_Barks, DT_DanceCharts, DT_Cutscenes, DT_SceneRules and DT_Thresholds.
 // DT_Characters, DT_Scenes, DT_Clues and DT_FallbackLines are owned by the data team (Data/*.json); they are only checked.
-// After changing a CSV, run "Ashes.Data.Import" in the editor console: every one of the four tables that has a CSV is rebuilt from it,
-// saved, and all eight tables are checked. The report is printed to the Output Log and saved in Saved/DataReports.
+// After changing a CSV, run "Ashes.Data.Import" in the editor console: every one of the six tables that has a CSV is rebuilt from it,
+// saved, and all ten tables are checked. The report is printed to the Output Log and saved in Saved/DataReports.
 // No code changes are needed for new or changed rows.
 
 #include "CoreMinimal.h"

@@ -1,4 +1,4 @@
-// AI-assisted: Claude Code, 11.11.2026, runs one conversation scene: prompt, model, validator, turn limit (Phase 5; full state machine in Phase 7); beats, clue hints, fallback context (Phase 4 data, 12.11.2026); soft / hard limit with hesitation. Reviewed by <pending>.
+// AI-assisted: Claude Code, 11.11.2026, runs one conversation scene: prompt, model, validator, turn limit (Phase 5; full state machine in Phase 7); beats, clue hints, fallback context (Phase 4 data, 12.11.2026); soft / hard limit with hesitation; Phase 7: state machine (FSceneFlow), NPC brain, offline tree (13.11.2026). Reviewed by <pending>.
 
 #pragma once
 
@@ -6,11 +6,14 @@
 #include "Subsystems/WorldSubsystem.h"
 #include "AshesTypes.h"
 #include "LLMTypes.h"
+#include "SceneFlow.h"
+#include "OfflineTreeWalker.h"
 #include "SceneDirectorSubsystem.generated.h"
 
 class AAshesNPC;
 class AAshesCharacter;
 class UConversationWidget;
+class UNPCBrainComponent;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FAshesLinePosted, const FString&, Speaker, const FString&, Text);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FAshesReplyReady, const FLLMResponse&, Response, bool, bFromFallback);
@@ -18,10 +21,13 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FAshesThinkingChanged, bool, bThinki
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FAshesTurnsChanged, int32, TurnsLeft);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FAshesSceneEnded);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FAshesHesitating);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FAshesSceneResolved, bool, bFull);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FAshesCaught);
 
 /**
  *  One conversation at a time (technical_design.md section 4.2).
- *  Phase 5: start / turns / end. Phase 7 adds the full FSM (Intro, FreeTalk, Nudge, Resolve, ForcedClose, Caught).
+ *  Phase 7: the rules live in FSceneFlow (Intro, FreeTalk, Nudge, Resolve, ForcedClose, Caught), the values in the NPC's
+ *  UNPCBrainComponent, the offline answers in FOfflineTreeWalker; this class connects them to the prompt, the model and the screen.
  */
 UCLASS()
 class ASHES_API USceneDirectorSubsystem : public UWorldSubsystem
@@ -52,6 +58,17 @@ public:
 	UFUNCTION(BlueprintPure, Category="Conversation")
 	bool IsFinished() const { return bFinished; }
 
+	/** Where the scene is: Intro, FreeTalk, Nudge, Resolve, ForcedClose or Caught */
+	UFUNCTION(BlueprintPure, Category="Conversation")
+	EScenePhase GetPhase() const { return Flow.GetPhase(); }
+
+	/** The values of the character being talked to (null outside a scene) */
+	UFUNCTION(BlueprintPure, Category="Conversation")
+	UNPCBrainComponent* GetBrain() const;
+
+	/** One log line: phase, turns, beats, values (debug: Ashes.Scene.Status) */
+	FString GetStatusText() const;
+
 	UFUNCTION(BlueprintPure, Category="Conversation")
 	int32 GetTurnsLeft() const { return FMath::Max(0, Scene.TurnLimit - TurnsTaken); }
 
@@ -77,6 +94,14 @@ public:
 	UPROPERTY(BlueprintAssignable, Category="Conversation")
 	FAshesHesitating OnHesitating;
 
+	/** The scene closed by its goal (bFull) or by the turn limit (weaker outcome); only Leave is possible after it */
+	UPROPERTY(BlueprintAssignable, Category="Conversation")
+	FAshesSceneResolved OnSceneResolved;
+
+	/** Suspicion reached 100 */
+	UPROPERTY(BlueprintAssignable, Category="Conversation")
+	FAshesCaught OnCaught;
+
 	/** Minimum time the typing indicator shows (design.md Motion_TypingIndicator) */
 	static constexpr float MinThinkingSeconds = 0.4f;
 
@@ -86,7 +111,17 @@ public:
 private:
 
 	void RequestReply(const FLLMRequest& Request, int32 AttemptsLeft);
-	void DeliverReply(const FLLMResponse& Response, bool bFromFallback);
+	/** bAuthored: an offline tree answer (pre-written, but its value changes and beats count) */
+	void DeliverReply(const FLLMResponse& Response, bool bFromFallback, bool bAuthored = false);
+
+	/** Offline: answers from DT_OfflineTrees if the line matches a reply of the current node; false = use a fallback line */
+	bool TryAnswerFromTree(const FString& Line);
+
+	/** Resolve / ForcedClose / Caught: closing line, delegates, only Leave stays */
+	void CloseScene();
+
+	UFUNCTION()
+	void HandleThresholdReached(FName UnlockId, const FString& HintLine);
 	void UseFallback(const FLLMRequest& Request);
 
 	/** Soft limit reached: status only, keep waiting for the real answer */
@@ -114,7 +149,17 @@ private:
 	FPromptState State;
 	TArray<FConversationTurn> History;
 	TArray<FString> LastSuggestions;
-	TSet<FName> ReachedBeats;
+	/** Beats, turns, stall and the current phase (the rules) */
+	FSceneFlow Flow;
+
+	/** Offline answers for this scene (DT_OfflineTrees); inactive when the scene has no tree */
+	FOfflineTreeWalker Tree;
+	bool bTreeEnded = false;
+
+	/** Hint lines of thresholds reached by the current reply; shown after it */
+	TArray<FString> PendingHints;
+
+	TWeakObjectPtr<UNPCBrainComponent> Brain;
 	FName LastEmotion;
 	FName SceneRowName;
 	FName CharacterRowName;
