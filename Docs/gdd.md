@@ -16,9 +16,9 @@
 | Member | Role | Owns |
 | :-- | :-- | :-- |
 | Merve Özal | Team Lead, Level Designer, Narrative Lead | Level (palace grey-box, rooms, spawn points, guard routes, hiding and eavesdrop spots, lighting), story and lines with Claude, data entry, tracker and board; wrote the code for Phases 0–5 (movement, interaction, built-in AI model, prompt builder, validator, conversation screen) |
-| Tuana Tuna | Lead Artist, UI Artist | Portraits, character looks, palace kit, UI style, 2D backgrounds; reviews the writing |
-| Tala | Audio and VFX Designer | Music, dance songs, dance charts and animations, sound effects and mix, Niagara effects, cutscene sequences, credits, licenses, playtests |
-| Baha | Programmer | Gameplay code from Phase 7: Scene Director, offline trees, clues, guards, dance, cutscene player, the spirit chapter, packaging |
+| Tuana Tuna | Lead Artist, UI Artist, Narrative Designer | Portraits, character looks, palace kit, UI style, 2D backgrounds; reviews the writing |
+| Tala Alsayed | Audio and VFX Designer | Music, dance songs, dance charts and animations, sound effects and mix, Niagara effects, cutscene sequences, credits, licenses, playtests |
+| Ebrar Baha Özüpek | Lead Programmer and Gameplay Systems | Gameplay code from Phase 7: Scene Director, offline trees, clues, guards, dance, cutscene player, the spirit chapter, packaging |
 
 > **Team update (12.11.2026).** Tala and Baha joined Merve and Tuana. The work is split by role (table above); `production_pipeline.md` and `Docs/workplan/index.html` list who owns each phase and each day's task.
 
