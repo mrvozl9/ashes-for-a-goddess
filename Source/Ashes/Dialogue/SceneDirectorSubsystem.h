@@ -192,6 +192,14 @@ private:
 	/** The time to the first words was logged for the current line */
 	bool bFirstWordsLogged = false;
 
+	/** Thinking limit (FirstWordsTimeoutSeconds): no words on screen by then -> stop the model, the character dodges */
+	FTimerHandle FirstWordsTimer;
+
+	/** The request of the line being answered (the dodge line after the thinking limit needs its context) */
+	FLLMRequest PendingRequest;
+
+	void HandleFirstWordsTimeout();
+
 	/** The AI went online or offline during the scene: show or hide typing, and offline give pick-only buttons */
 	void HandleAIModeChanged();
 	FDelegateHandle AIModeHandle;

@@ -2,6 +2,12 @@
 
 > Newest entry on top. Write one entry at the end of every work session.
 
+## 13.11.2026 (Baha: 10 s thinking limit; shorter gestures and suggestions)
+- **Decided by Baha:** the model may "think" at most 10 s. On the laptop CPU (6–7 tokens/s) a whole reply of ~100–170 tokens cannot be written in 10 s with this model, so the limit is on the **first words**: if none of the reply's words are on screen 10 s after the player's line, the model is stopped and the character dodges (Hesitate line, turn not counted). Once words appear, the reply may finish up to the hard limit (20 s in the game, 60 s in the editor, unchanged).
+- **Done:** `UAshesAISettings::FirstWordsTimeoutSeconds = 10` (also in `Config/DefaultGame.ini`; same value in the editor and the game). `USceneDirectorSubsystem`: a timer per line; at 10 s without words it logs `Scene: no words after 10 s: the model is stopped`, plays the dodge line and calls the new `UAshesGameInstance::CancelModelRequests` → `ULLMProvider::CancelActive` (the HTTP request is closed so llama-server stops writing; its late answer is dropped). `UPromptBuilder` (Merve's file): `gesture` and each of the 3 `suggestions` at most 6 words (fewer tokens per reply). `Ashes.Settings.EditorLimits` checks the new limit. Build ok, 42 of 42 Automation tests green.
+- **Not changed (needs the team):** the reply itself is still "1–4 sentences, at most 80 words" (GDD 5 numbers). If the whole reply must also finish in about 10 s on the laptop, it has to become about 1–2 sentences / 30 words (Merve and the GDD), or the game needs a faster PC / GPU or a smaller model.
+- **Not verified:** not played yet; the new log lines (`first words after X s`, `no words after 10 s`) show the real numbers.
+
 ## 13.11.2026 (Baha: Phase 7, the reply is shown word by word; Phase 6 fix 8)
 - **Done (branch `feature/baha-phase7-scene-director`):** the character's reply appears on screen while the model writes it, as decided on 13.11 (GDD 13.5: first words within 4 s).
   - `UOpenAICompatibleLLMProvider` (Merve's file): the body is collected with `SetResponseBodyReceiveStreamDelegateV2` (HTTP thread, into a locked buffer); `OnRequestProgress64` (game thread) passes the model's text so far (`ContentSoFar`) to a new `FOnLLMPartial` callback; the finished body is parsed as before. `ULLMProvider::SendAsyncStreaming` (default: no streaming), `UAshesGameInstance::RequestReply(..., Partial)`. The warm-up, the debug commands and the offline provider are unchanged.

@@ -364,5 +364,24 @@ void UOpenAICompatibleLLMProvider::SendAsyncStreaming(const FLLMRequest& Request
 			Callback.ExecuteIfBound(Reply);
 		});
 
+	ActiveRequests.RemoveAll([](const TWeakPtr<IHttpRequest, ESPMode::ThreadSafe>& Weak) { return !Weak.IsValid() || EHttpRequestStatus::IsFinished(Weak.Pin()->GetStatus()); });
+	ActiveRequests.Add(Http);
 	Http->ProcessRequest();
+}
+
+void UOpenAICompatibleLLMProvider::CancelActive()
+{
+	// Copy first: cancelling can run the completion callback, which may send a new request
+	const TArray<TWeakPtr<IHttpRequest, ESPMode::ThreadSafe>> Running = MoveTemp(ActiveRequests);
+	ActiveRequests.Reset();
+	for (const TWeakPtr<IHttpRequest, ESPMode::ThreadSafe>& Weak : Running)
+	{
+		if (const TSharedPtr<IHttpRequest, ESPMode::ThreadSafe> Request = Weak.Pin())
+		{
+			if (!EHttpRequestStatus::IsFinished(Request->GetStatus()))
+			{
+				Request->CancelRequest();
+			}
+		}
+	}
 }

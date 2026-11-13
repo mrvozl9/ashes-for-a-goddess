@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "LLMProvider.h"
+#include "Interfaces/IHttpRequest.h"
 #include "OpenAICompatibleLLMProvider.generated.h"
 
 /**
@@ -42,6 +43,10 @@ public:
 
 	/** The text written so far in a streamed body that may end in the middle of a line (public for tests) */
 	static FString ContentSoFar(const FString& StreamBody);
+
+	/** Closes the running requests; llama-server stops writing a streamed answer as soon as its connection closes */
+	virtual void CancelActive() override;
+
 	virtual bool IsAvailable() const override { return !BaseUrl.IsEmpty(); }
 	virtual FString GetProviderName() const override { return FString::Printf(TEXT("OpenAI-compatible (%s)"), *BaseUrl); }
 
@@ -50,4 +55,9 @@ public:
 
 	/** Reads choices[0].message.content and timings from a response body (public for tests) */
 	static bool ParseResponseBody(const FString& Body, FLLMReply& OutReply);
+
+private:
+
+	/** Requests not finished yet (for CancelActive) */
+	TArray<TWeakPtr<IHttpRequest, ESPMode::ThreadSafe>> ActiveRequests;
 };

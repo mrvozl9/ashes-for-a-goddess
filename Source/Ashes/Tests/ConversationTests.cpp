@@ -370,6 +370,9 @@ bool FAshesAILimits::RunTest(const FString& Parameters)
 	TestTrue(TEXT("editor hard limit at least 60 s"), Settings->EditorHardTimeoutSeconds >= 60.f);
 	TestEqual(TEXT("soft limit = RequestTimeoutSeconds"), Settings->GetHesitateAfterSeconds(), Settings->RequestTimeoutSeconds);
 	TestTrue(TEXT("soft before hard"), Settings->GetHesitateAfterSeconds() < Settings->GetEffectiveRequestTimeout());
+	// Thinking limit (13.11.2026): first words within 10 s; after the soft limit, before the game's hard limit
+	TestEqual(TEXT("thinking limit 10 s"), Settings->FirstWordsTimeoutSeconds, 10.f);
+	TestTrue(TEXT("soft < thinking < game hard limit"), Settings->GetHesitateAfterSeconds() < Settings->FirstWordsTimeoutSeconds && Settings->FirstWordsTimeoutSeconds < Settings->HardTimeoutSeconds);
 	return true;
 }
 

@@ -28,6 +28,9 @@ public:
 	 */
 	virtual void SendAsyncStreaming(const FLLMRequest& Request, FOnLLMReply Callback, FOnLLMPartial Partial);
 
+	/** Stops every request still running (their callbacks then run once, as failures). Default: nothing to stop. */
+	virtual void CancelActive() {}
+
 	/** True when the provider can answer right now */
 	virtual bool IsAvailable() const { return false; }
 

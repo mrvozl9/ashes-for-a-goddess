@@ -39,6 +39,9 @@ public:
 	/** Sends the prompt with a 1-token limit and ignores the answer, so the model caches it before the player's first line */
 	void PrimeModel(const FLLMRequest& Request);
 
+	/** Stops the model's running answers (the thinking limit passed); their callbacks still run once */
+	void CancelModelRequests();
+
 	/** Drops a warm-up that is still waiting for the model (the scene that asked for it has closed) */
 	void ClearPendingPrime() { PendingPrime.Reset(); }
 

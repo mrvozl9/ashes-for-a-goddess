@@ -235,8 +235,9 @@ void USceneDirectorSubsystem::SubmitLine(const FString& InLine)
 	{
 		return;
 	}
-	UE_LOG(LogAshes, Log, TEXT("Scene: waiting (soft limit %.0f s, hard limit %.0f s%s)"), GetDefault<UAshesAISettings>()->GetHesitateAfterSeconds(),
-		GetDefault<UAshesAISettings>()->GetEffectiveRequestTimeout(), GIsEditor ? TEXT(", editor") : TEXT(""));
+	UE_LOG(LogAshes, Log, TEXT("Scene: waiting (soft limit %.0f s, first words by %.0f s, hard limit %.0f s%s)"), GetDefault<UAshesAISettings>()->GetHesitateAfterSeconds(),
+		GetDefault<UAshesAISettings>()->FirstWordsTimeoutSeconds, GetDefault<UAshesAISettings>()->GetEffectiveRequestTimeout(), GIsEditor ? TEXT(", editor") : TEXT(""));
+	PendingRequest = Request;
 	RequestReply(Request, 1); // 1 silent retry on a broken / spoiling reply (GDD 8.1)
 
 	// Soft limit: after RequestTimeoutSeconds (6 s) Zafir visibly hesitates, but we keep waiting up to the hard limit
@@ -253,6 +254,32 @@ void USceneDirectorSubsystem::SubmitLine(const FString& InLine)
 				Self->ShowHesitation();
 			}
 		}), GetDefault<UAshesAISettings>()->GetHesitateAfterSeconds(), false);
+
+		// Thinking limit: no words on screen by FirstWordsTimeoutSeconds (10 s) -> stop the model, the character dodges
+		GetWorld()->GetTimerManager().SetTimer(FirstWordsTimer, FTimerDelegate::CreateLambda([WeakThis, ReqSerial]()
+		{
+			USceneDirectorSubsystem* Self = WeakThis.Get();
+			if (Self && ReqSerial == Self->RequestSerial && Self->bWaiting)
+			{
+				Self->HandleFirstWordsTimeout();
+			}
+		}), GetDefault<UAshesAISettings>()->FirstWordsTimeoutSeconds, false);
+	}
+}
+
+void USceneDirectorSubsystem::HandleFirstWordsTimeout()
+{
+	if (bFirstWordsLogged || !LiveReply.IsEmpty())
+	{
+		return; // the words are coming: the reply may finish up to the hard limit
+	}
+	const float Limit = GetDefault<UAshesAISettings>()->FirstWordsTimeoutSeconds;
+	UE_LOG(LogAshes, Log, TEXT("Scene: no words after %.0f s: the model is stopped"), Limit);
+	// The dodge first (it ends the wait), then stop the model: its callback then finds the line answered and is dropped
+	HesitateInsteadOfReply(PendingRequest, FString::Printf(TEXT("no words within %.0f s"), Limit));
+	if (UAshesGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance<UAshesGameInstance>() : nullptr)
+	{
+		GI->CancelModelRequests();
 	}
 }
 
@@ -399,6 +426,7 @@ void USceneDirectorSubsystem::HesitateInsteadOfReply(const FLLMRequest& Request,
 	if (GetWorld())
 	{
 		GetWorld()->GetTimerManager().ClearTimer(HesitateTimer);
+		GetWorld()->GetTimerManager().ClearTimer(FirstWordsTimer);
 	}
 	ClearLiveReply(); // the words shown so far will not be his answer
 	UE_LOG(LogAshes, Log, TEXT("Scene: no answer (%s): hesitate line, turn not counted"), *Reason);
@@ -652,6 +680,7 @@ void USceneDirectorSubsystem::DeliverReply(const FLLMResponse& InResponse, bool 
 	if (GetWorld())
 	{
 		GetWorld()->GetTimerManager().ClearTimer(HesitateTimer);
+		GetWorld()->GetTimerManager().ClearTimer(FirstWordsTimer);
 	}
 
 	// Keep the typing indicator up for at least 0.4 s (fallback lines arrive instantly)
@@ -789,6 +818,7 @@ void USceneDirectorSubsystem::EndScene()
 	{
 		GetWorld()->GetTimerManager().ClearTimer(ThinkingTimer);
 		GetWorld()->GetTimerManager().ClearTimer(HesitateTimer);
+		GetWorld()->GetTimerManager().ClearTimer(FirstWordsTimer);
 	}
 
 	if (UNPCBrainComponent* NpcBrain = Brain.Get())

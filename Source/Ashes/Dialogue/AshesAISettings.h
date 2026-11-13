@@ -1,4 +1,4 @@
-// AI-assisted: Claude Code, 10.11.2026, project settings for the built-in AI (Phase 3); editor-only timeout (11.11.2026); soft / hard limits (12.11.2026). Reviewed by <pending>.
+// AI-assisted: Claude Code, 10.11.2026, project settings for the built-in AI (Phase 3); editor-only timeout (11.11.2026); soft / hard limits (12.11.2026); 10 s thinking limit to the first words (13.11.2026). Reviewed by <pending>.
 
 #pragma once
 
@@ -67,6 +67,14 @@ public:
 	/** Hard limit in the editor and Play-in-Editor only (slow development PCs); never used by packaged builds */
 	UPROPERTY(config, EditAnywhere, Category="Requests", meta=(ClampMin="1", Units="s"))
 	float EditorHardTimeoutSeconds = 60.f;
+
+	/**
+	 *  Thinking limit (Baha, 13.11.2026): if none of the reply's words are on screen this long after the player's line,
+	 *  the model is stopped and the character dodges (the turn does not count). Once words appear, the reply may finish
+	 *  up to the hard limit. Same value in the editor and the game.
+	 */
+	UPROPERTY(config, EditAnywhere, Category="Requests", meta=(ClampMin="1", Units="s"))
+	float FirstWordsTimeoutSeconds = 10.f;
 
 	/** Hard limit: EditorHardTimeoutSeconds in the editor (incl. PIE), HardTimeoutSeconds in the game */
 	float GetEffectiveRequestTimeout() const;

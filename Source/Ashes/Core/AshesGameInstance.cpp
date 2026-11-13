@@ -124,6 +124,14 @@ void UAshesGameInstance::RequestReply(const FLLMRequest& Request, FOnLLMReply Ca
 	}), Partial);
 }
 
+void UAshesGameInstance::CancelModelRequests()
+{
+	if (ModelProvider)
+	{
+		ModelProvider->CancelActive();
+	}
+}
+
 void UAshesGameInstance::RequestFallback(const FLLMRequest& Request, FOnLLMReply Callback)
 {
 	FallbackProvider->SendAsync(Request, Callback);

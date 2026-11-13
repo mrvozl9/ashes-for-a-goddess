@@ -1,4 +1,4 @@
-// AI-assisted: Claude Code, 11.11.2026, builds the model request from card, lore, scene, state and turns (Phase 4); clue hints, pronouns in gestures (12.11.2026); state in the newest message, history in blocks (Phase 6 fix 1, 13.11.2026). Reviewed by <pending>.
+// AI-assisted: Claude Code, 11.11.2026, builds the model request from card, lore, scene, state and turns (Phase 4); clue hints, pronouns in gestures (12.11.2026); state in the newest message, history in blocks (Phase 6 fix 1, 13.11.2026); gesture and suggestions at most 6 words (faster replies, 13.11.2026). Reviewed by <pending>.
 
 #include "PromptBuilder.h"
 
@@ -98,7 +98,7 @@ FString UPromptBuilder::BuildSystemPrompt(const FCharacterCardRow& Card, const F
 	// Gesture = what this character does, with their own pronouns (the model once wrote "her lips" for Zafir)
 	const FString Possessive = PossessiveFromPronouns(Card.Pronouns);
 	const FString GestureRule = FString::Printf(
-		TEXT("\"gesture\" (a few words about what %s does, third person%s, e.g. tilts %s head, smiling; never describe Sahra)"),
+		TEXT("\"gesture\" (at most 6 words about what %s does, third person%s, e.g. tilts %s head, smiling; never describe Sahra)"),
 		*Card.DisplayName,
 		Card.Pronouns.IsEmpty() ? TEXT("") : *FString::Printf(TEXT(", using %s"), *Card.Pronouns),
 		*Possessive);
@@ -108,7 +108,7 @@ FString UPromptBuilder::BuildSystemPrompt(const FCharacterCardRow& Card, const F
 		"Answer in 1-4 sentences, at most 80 words, plain text without * or _ markup. Reply ONLY with one JSON object with these keys: "
 		"\"reply\" (what you say), \"emotion\" (one of: %s), %s, %s"
 		"\"beats\" (array; only these ids: %s; usually empty), "
-		"\"suggestions\" (array of exactly 3 short things Sahra could say next), "
+		"\"suggestions\" (array of exactly 3 short things Sahra could say next, at most 6 words each), "
 		"\"off_topic\" (true if Sahra talks about things outside this world).\n"),
 		*JoinNames(Card.Emotions), *GestureRule, *DeltaKeys, BeatIds.Num() > 0 ? *JoinNames(BeatIds) : TEXT("none"));
 
