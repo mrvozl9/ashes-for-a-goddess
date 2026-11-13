@@ -1,4 +1,4 @@
-// AI-assisted: Claude Code, 10.11.2026, AI mode and the single entry point for model requests with automatic fallback (Phase 3); prompt warm-up (Phase 5, 11.11.2026). Reviewed by <pending>.
+// AI-assisted: Claude Code, 10.11.2026, AI mode and the single entry point for model requests with automatic fallback (Phase 3); prompt warm-up (Phase 5, 11.11.2026); warm-up kept until the model is ready, AI mode change event (Phase 6 fix 6, 13.11.2026). Reviewed by <pending>.
 
 #pragma once
 
@@ -39,6 +39,9 @@ public:
 	/** Sends the prompt with a 1-token limit and ignores the answer, so the model caches it before the player's first line */
 	void PrimeModel(const FLLMRequest& Request);
 
+	/** Drops a warm-up that is still waiting for the model (the scene that asked for it has closed) */
+	void ClearPendingPrime() { PendingPrime.Reset(); }
+
 	/** A pre-written fallback line right away (after a reply failed validation twice) */
 	void RequestFallback(const FLLMRequest& Request, FOnLLMReply Callback);
 
@@ -49,9 +52,20 @@ public:
 	UFUNCTION(BlueprintPure, Category="AI")
 	FString GetAIStatusText() const;
 
+	/** Fires when the AI goes online or offline (the built-in model finished loading, stopped or failed) */
+	FSimpleMulticastDelegate OnAIModeChanged;
+
 private:
 
 	void HandleLocalModelState(ELocalModelState NewState);
+
+	/** A warm-up asked for while the model was still loading; sent as soon as it is ready (Phase 6 fix 6) */
+	TOptional<FLLMRequest> PendingPrime;
+
+	/** Sends the 1-token warm-up request */
+	void SendPrime(const FLLMRequest& Request);
+
+	EAIMode LastAIMode = EAIMode::Offline;
 
 	UPROPERTY()
 	TObjectPtr<UOpenAICompatibleLLMProvider> ModelProvider;

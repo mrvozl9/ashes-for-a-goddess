@@ -1,4 +1,4 @@
-// AI-assisted: Claude Code, 11.11.2026, conversation screen logic; WBP_Conversation provides the layout (Phase 5); hesitation status (12.11.2026). Reviewed by <pending>.
+// AI-assisted: Claude Code, 11.11.2026, conversation screen logic; WBP_Conversation provides the layout (Phase 5); hesitation status (12.11.2026); pick-only with 1 / 2 / 3 keys while the AI is offline (13.11.2026). Reviewed by <pending>.
 
 #pragma once
 
@@ -35,6 +35,9 @@ public:
 protected:
 
 	virtual void NativeConstruct() override;
+
+	/** Offline the text box is hidden: 1 / 2 / 3 on the keyboard pick a reply here instead */
+	virtual FReply NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent) override;
 
 	UPROPERTY(meta=(BindWidget)) TObjectPtr<UTextBlock> NameText;
 	UPROPERTY(meta=(BindWidget)) TObjectPtr<UTextBlock> DialogueText;

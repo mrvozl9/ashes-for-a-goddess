@@ -66,6 +66,9 @@ struct ASHES_API FSceneFlow
 	/** Scene-level ClosingRomance (may be empty) */
 	FString GetClosingRomance() const;
 
+	/** Scene-level StockSuggestions as a list (may be empty) */
+	TArray<FString> GetStockSuggestions() const;
+
 private:
 	const FBeatDef* FindBeat(FName Beat) const;
 	const FSceneRuleRow* FindRule(FName Beat) const;

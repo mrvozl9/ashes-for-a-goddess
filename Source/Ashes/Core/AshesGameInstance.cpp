@@ -1,4 +1,4 @@
-// AI-assisted: Claude Code, 10.11.2026, AI mode and the single entry point for model requests with automatic fallback (Phase 3); prompt warm-up (Phase 5, 11.11.2026). Reviewed by <pending>.
+// AI-assisted: Claude Code, 10.11.2026, AI mode and the single entry point for model requests with automatic fallback (Phase 3); prompt warm-up (Phase 5, 11.11.2026); warm-up kept until the model is ready, AI mode change event (Phase 6 fix 6, 13.11.2026). Reviewed by <pending>.
 
 #include "AshesGameInstance.h"
 #include "Ashes.h"
@@ -36,6 +36,7 @@ void UAshesGameInstance::Init()
 		HandleLocalModelState(Local->GetState());
 	}
 
+	LastAIMode = GetAIMode();
 	UE_LOG(LogAshes, Log, TEXT("%s"), *GetAIStatusText());
 }
 
@@ -55,6 +56,23 @@ void UAshesGameInstance::HandleLocalModelState(ELocalModelState NewState)
 	{
 		ModelProvider->BaseUrl = (NewState == ELocalModelState::Ready) ? Local->GetBaseUrl() : FString();
 	}
+
+	const EAIMode Mode = GetAIMode();
+	if (Mode == LastAIMode)
+	{
+		return;
+	}
+	LastAIMode = Mode;
+
+	// A scene opened while the model was loading: warm it up now, so the first real reply is not a cold one (41 s in the playtest)
+	if (Mode == EAIMode::Online && PendingPrime.IsSet())
+	{
+		UE_LOG(LogAshes, Log, TEXT("AI ready: sending the warm-up that waited for it"));
+		const FLLMRequest Request = PendingPrime.GetValue();
+		PendingPrime.Reset();
+		SendPrime(Request);
+	}
+	OnAIModeChanged.Broadcast();
 }
 
 EAIMode UAshesGameInstance::GetAIMode() const
@@ -115,8 +133,15 @@ void UAshesGameInstance::PrimeModel(const FLLMRequest& Request)
 {
 	if (GetAIMode() != EAIMode::Online)
 	{
+		PendingPrime = Request; // the newest scene's prompt; sent when the model is ready
 		return;
 	}
+	PendingPrime.Reset();
+	SendPrime(Request);
+}
+
+void UAshesGameInstance::SendPrime(const FLLMRequest& Request)
+{
 	// llama-server keeps the processed prompt in its cache; the real first request then only adds the new line
 	FLLMRequest Prime = Request;
 	Prime.MaxTokens = 1;

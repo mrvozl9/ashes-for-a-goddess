@@ -1,4 +1,4 @@
-// AI-assisted: Claude Code, 11.11.2026, checks and clamps every model reply before the game uses it (Phase 4); spoiler unlock chapters (12.11.2026). Reviewed by <pending>.
+// AI-assisted: Claude Code, 11.11.2026, checks and clamps every model reply before the game uses it (Phase 4); spoiler unlock chapters (12.11.2026); MatchId for small id slips (13.11.2026). Reviewed by <pending>.
 
 #pragma once
 
@@ -71,4 +71,13 @@ public:
 
 	/** Default safety word list (placeholder until the team writes the real list) */
 	static TArray<FString> DefaultSafetyWords();
+
+	/**
+	 *  The allowed id the model meant, or None. Exact (any case) first; then the same letters and digits without
+	 *  punctuation ("sa_hra_confronts_blade" -> sahra_confronts_blade); then one wrong letter for ids of at least
+	 *  MinLengthForSlip letters, only when exactly one allowed id fits. Public for tests.
+	 */
+	static FName MatchId(const FString& RawId, const TArray<FName>& Allowed);
+
+	static constexpr int32 MinLengthForSlip = 8;
 };

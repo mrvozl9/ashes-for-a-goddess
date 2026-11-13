@@ -128,6 +128,38 @@ bool FAshesValidatorBeats::RunTest(const FString& Parameters)
 	return true;
 }
 
+// AI-assisted: Claude Code, 13.11.2026, id slip test (Phase 6 fix 5). Reviewed by <pending>.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAshesValidatorIdSlips, "Ashes.Validator.IdSlips", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FAshesValidatorIdSlips::RunTest(const FString& Parameters)
+{
+	const TArray<FName> Ch1 = { TEXT("sahra_confronts_blade"), TEXT("uneasy_truce") };
+	TestEqual(TEXT("exact"), UResponseValidator::MatchId(TEXT("uneasy_truce"), Ch1), FName(TEXT("uneasy_truce")));
+	TestEqual(TEXT("playtest slip: extra underscore"), UResponseValidator::MatchId(TEXT("sa_hra_confronts_blade"), Ch1), FName(TEXT("sahra_confronts_blade")));
+	TestEqual(TEXT("case and spaces"), UResponseValidator::MatchId(TEXT(" Uneasy Truce "), Ch1), FName(TEXT("uneasy_truce")));
+	TestEqual(TEXT("one wrong letter"), UResponseValidator::MatchId(TEXT("sahra_confronts_blase"), Ch1), FName(TEXT("sahra_confronts_blade")));
+	TestEqual(TEXT("one missing letter"), UResponseValidator::MatchId(TEXT("uneasy_truc"), Ch1), FName(TEXT("uneasy_truce")));
+	TestTrue(TEXT("two wrong letters: no"), UResponseValidator::MatchId(TEXT("uneazy_trace"), Ch1).IsNone());
+	TestTrue(TEXT("a sentence: no"), UResponseValidator::MatchId(TEXT("They agree on an uneasy truce."), Ch1).IsNone());
+	TestTrue(TEXT("empty: no"), UResponseValidator::MatchId(TEXT("  "), Ch1).IsNone());
+
+	// One letter apart from two ids: no guess
+	const TArray<FName> Close = { TEXT("clue_garden_a"), TEXT("clue_garden_b") };
+	TestTrue(TEXT("ambiguous: no"), UResponseValidator::MatchId(TEXT("clue_garden_c"), Close).IsNone());
+	// A different digit is a different id, not a slip (review 13.11)
+	const TArray<FName> Stage = { TEXT("stage_1_reached") };
+	TestTrue(TEXT("digit changed: no"), UResponseValidator::MatchId(TEXT("stage_2_reached"), Stage).IsNone());
+	TestTrue(TEXT("digit added at the end: no"), UResponseValidator::MatchId(TEXT("stage_1_reached1"), Stage).IsNone());
+	TestEqual(TEXT("letter slip next to a digit: yes"), UResponseValidator::MatchId(TEXT("stage_1_reachet"), Stage), FName(TEXT("stage_1_reached")));
+	// Short ids need the exact letters
+	const TArray<FName> Short = { TEXT("kiss") };
+	TestTrue(TEXT("short id, wrong letter: no"), UResponseValidator::MatchId(TEXT("kis5"), Short).IsNone());
+
+	// Through Validate: the slip is kept as the real id and noted
+	const FAshesValidationResult R = UResponseValidator::Validate(TEXT(R"({"reply":"Hm.","emotion":"teasing","beats":["ALLIANCE-AGREED"]})"), AshesTestData::MakeContext());
+	TestTrue(TEXT("kept through Validate"), R.Response.Beats.Contains(FName(TEXT("alliance_agreed"))));
+	return true;
+}
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAshesValidatorSpoiler, "Ashes.Validator.SpoilerAndSafety", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 bool FAshesValidatorSpoiler::RunTest(const FString& Parameters)
 {
@@ -164,17 +196,70 @@ bool FAshesPromptBuilder::RunTest(const FString& Parameters)
 
 	TestEqual(TEXT("system + 8 turns + new line"), Request.Messages.Num(), 10);
 	TestEqual(TEXT("oldest kept turn is turn 4"), Request.Messages[1].Content, FString(TEXT("turn 4")));
-	TestEqual(TEXT("last message is the player's line"), Request.Messages.Last().Content, FString(TEXT("Who sent you?")));
+	TestTrue(TEXT("last message ends with the player's line"), Request.Messages.Last().Content.EndsWith(TEXT("Who sent you?")));
 	TestTrue(TEXT("chapter 1 secret included"), System.Contains(TEXT("SECRET_CH1")));
 	TestFalse(TEXT("chapter 4 secret NOT included in chapter 1"), System.Contains(TEXT("SECRET_CH4")));
 	TestTrue(TEXT("order: card < lore < scene < state"),
 		System.Find(TEXT("## Character")) < System.Find(TEXT("LORE_TEXT")) &&
 		System.Find(TEXT("LORE_TEXT")) < System.Find(TEXT("## Scene")) &&
 		System.Find(TEXT("## Scene")) < System.Find(TEXT("## State")));
-	TestTrue(TEXT("trust 55 as a word"), System.Contains(TEXT("trust toward Sahra: warming")));
+	TestTrue(TEXT("trust 55 as a word, in the newest message"), Request.Messages.Last().Content.Contains(TEXT("trust toward Sahra: warming")));
+	TestFalse(TEXT("values are not in the system message (cache)"), System.Contains(TEXT("toward Sahra: warming")));
 	TestTrue(TEXT("beat ids listed"), System.Contains(TEXT("zafir_reveals_target")));
 	TestTrue(TEXT("delta keys from the card"), System.Contains(TEXT("\"trust_delta\"")) && System.Contains(TEXT("\"affection_delta\"")));
 	TestTrue(TEXT("pronouns for gestures"), System.Contains(TEXT("You are Zafir (he/him)")) && System.Contains(TEXT("tilts his head")));
+	return true;
+}
+
+// AI-assisted: Claude Code, 13.11.2026, prompt cache test (Phase 6 fix 1). Reviewed by <pending>.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAshesPromptCache, "Ashes.PromptBuilder.CacheFriendly", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FAshesPromptCache::RunTest(const FString& Parameters)
+{
+	auto MakeHistory = [](int32 Num)
+	{
+		TArray<FConversationTurn> History;
+		for (int32 i = 0; i < Num; ++i)
+		{
+			FConversationTurn Turn;
+			Turn.bFromPlayer = (i % 2 == 1); // turn 0 is the opener
+			Turn.Text = FString::Printf(TEXT("turn %d"), i);
+			History.Add(Turn);
+		}
+		return History;
+	};
+
+	// The system message does not change when the values, memories or clue hints change
+	FPromptState Cold;
+	Cold.Values.Add(TEXT("trust"), 20);
+	FPromptState Warm;
+	Warm.Values.Add(TEXT("trust"), 60);
+	Warm.Memories.Add(TEXT("She kept my secret."));
+	Warm.ClueHints.Add(TEXT("HINT_TEXT"));
+	const FLLMRequest A = UPromptBuilder::Build(AshesTestData::MakeZafir(), TEXT("LORE"), AshesTestData::MakeScene(), Cold, MakeHistory(3), TEXT("Hello"), 1);
+	const FLLMRequest B = UPromptBuilder::Build(AshesTestData::MakeZafir(), TEXT("LORE"), AshesTestData::MakeScene(), Warm, MakeHistory(3), TEXT("Hello"), 1);
+	TestEqual(TEXT("same system message for other values"), A.Messages[0].Content, B.Messages[0].Content);
+	TestTrue(TEXT("memory and hint in the newest message"), B.Messages.Last().Content.Contains(TEXT("She kept my secret.")) && B.Messages.Last().Content.Contains(TEXT("HINT_TEXT")));
+	TestTrue(TEXT("state note before the line"), B.Messages.Last().Content.StartsWith(TEXT("[")) && B.Messages.Last().Content.EndsWith(TEXT("Hello")));
+	TestEqual(TEXT("earlier lines stay plain"), B.Messages[2].Content, FString(TEXT("turn 1")));
+
+	// The history window moves in blocks, not every turn
+	TestEqual(TEXT("8 turns: from 0"), UPromptBuilder::GetHistoryStart(8), 0);
+	for (int32 Num = 9; Num <= 12; ++Num)
+	{
+		TestEqual(FString::Printf(TEXT("%d turns: same start"), Num), UPromptBuilder::GetHistoryStart(Num), 4);
+	}
+	TestEqual(TEXT("13 turns: next block"), UPromptBuilder::GetHistoryStart(13), 8);
+	TestEqual(TEXT("23 turns (11-turn scene): at most 8 sent"), 23 - UPromptBuilder::GetHistoryStart(23), 7);
+
+	// Same start of the prompt for turns that share a block: only new messages are added at the end
+	const FLLMRequest Turn9 = UPromptBuilder::Build(AshesTestData::MakeZafir(), TEXT("LORE"), AshesTestData::MakeScene(), Cold, MakeHistory(9), TEXT("x"), 1);
+	const FLLMRequest Turn11 = UPromptBuilder::Build(AshesTestData::MakeZafir(), TEXT("LORE"), AshesTestData::MakeScene(), Warm, MakeHistory(11), TEXT("y"), 1);
+	bool bPrefixSame = Turn9.Messages.Num() < Turn11.Messages.Num();
+	for (int32 i = 0; bPrefixSame && i < Turn9.Messages.Num() - 1; ++i)
+	{
+		bPrefixSame = Turn9.Messages[i].Content == Turn11.Messages[i].Content;
+	}
+	TestTrue(TEXT("turn 11 starts with turn 9's prompt"), bPrefixSame);
 	return true;
 }
 

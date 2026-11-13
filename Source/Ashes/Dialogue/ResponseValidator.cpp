@@ -1,4 +1,4 @@
-// AI-assisted: Claude Code, 11.11.2026, checks and clamps every model reply before the game uses it (Phase 4); spoiler unlock chapters, strip * and _ (12.11.2026). Reviewed by <pending>.
+// AI-assisted: Claude Code, 11.11.2026, checks and clamps every model reply before the game uses it (Phase 4); spoiler unlock chapters, strip * and _ (12.11.2026); small slips in beat and clue ids accepted (Phase 6 fix 5, 13.11.2026). Reviewed by <pending>.
 
 #include "ResponseValidator.h"
 #include "Dom/JsonObject.h"
@@ -25,6 +25,108 @@ TArray<FString> UResponseValidator::DefaultSafetyWords()
 {
 	// MISSING (team): the real safety word list. Placeholder only.
 	return { TEXT("kill yourself"), TEXT("nazi"), TEXT("rape") };
+}
+
+namespace
+{
+	/** Lower case, letters and digits only: "Sa_hra-Confronts Blade" -> "sahraconfrontsblade" */
+	FString NormalizeId(const FString& Id)
+	{
+		FString Out;
+		for (const TCHAR Char : Id.ToLower())
+		{
+			if (FChar::IsAlnum(Char))
+			{
+				Out.AppendChar(Char);
+			}
+		}
+		return Out;
+	}
+
+	/** True if A and B differ by at most one inserted, removed or changed letter */
+	bool WithinOneEdit(const FString& A, const FString& B)
+	{
+		const FString& Short = A.Len() <= B.Len() ? A : B;
+		const FString& Long = A.Len() <= B.Len() ? B : A;
+		if (Long.Len() - Short.Len() > 1)
+		{
+			return false;
+		}
+		// A digit is never the slip: stage_1 and stage_2 are different ids, not a typo
+		auto IsDigitAt = [](const FString& S, int32 Index) { return S.IsValidIndex(Index) && FChar::IsDigit(S[Index]); };
+		int32 i = 0;
+		int32 j = 0;
+		bool bEdited = false;
+		while (i < Short.Len() && j < Long.Len())
+		{
+			if (Short[i] == Long[j])
+			{
+				++i;
+				++j;
+				continue;
+			}
+			if (bEdited || IsDigitAt(Long, j) || (Short.Len() == Long.Len() && IsDigitAt(Short, i)))
+			{
+				return false;
+			}
+			bEdited = true;
+			if (Short.Len() == Long.Len())
+			{
+				++i; // changed letter
+			}
+			++j; // extra letter in the longer one
+		}
+		// The longer one may end with one extra character that the loop never looked at
+		return !(j < Long.Len() && (bEdited || IsDigitAt(Long, j)));
+	}
+}
+
+FName UResponseValidator::MatchId(const FString& RawId, const TArray<FName>& Allowed)
+{
+	const FString Trimmed = RawId.TrimStartAndEnd();
+	if (Trimmed.IsEmpty())
+	{
+		return NAME_None;
+	}
+	for (const FName& Id : Allowed)
+	{
+		if (Id.ToString().Equals(Trimmed, ESearchCase::IgnoreCase))
+		{
+			return Id;
+		}
+	}
+
+	// Small slips (Phase 6 playtest: "sa_hra_confronts_blade"): compare without case and punctuation,
+	// then allow one wrong letter in long ids, but only if exactly one id fits
+	const FString Wanted = NormalizeId(Trimmed);
+	if (Wanted.IsEmpty())
+	{
+		return NAME_None;
+	}
+	for (const FName& Id : Allowed)
+	{
+		if (NormalizeId(Id.ToString()) == Wanted)
+		{
+			return Id;
+		}
+	}
+	if (Wanted.Len() < MinLengthForSlip)
+	{
+		return NAME_None;
+	}
+	FName Found = NAME_None;
+	for (const FName& Id : Allowed)
+	{
+		if (WithinOneEdit(NormalizeId(Id.ToString()), Wanted))
+		{
+			if (!Found.IsNone())
+			{
+				return NAME_None; // two ids fit: do not guess
+			}
+			Found = Id;
+		}
+	}
+	return Found;
 }
 
 bool UResponseValidator::IsUnsafeText(const FString& Text, const TArray<FString>& SafetyWords)
@@ -164,9 +266,13 @@ FAshesValidationResult UResponseValidator::Validate(const FString& RawJson, cons
 			FString Id;
 			if (Item.IsValid() && Item->TryGetString(Id))
 			{
-				const FName IdName(*Id.TrimStartAndEnd().ToLower());
-				if (Allowed.Contains(IdName))
+				const FName IdName = UResponseValidator::MatchId(Id, Allowed);
+				if (!IdName.IsNone())
 				{
+					if (!IdName.ToString().Equals(Id.TrimStartAndEnd(), ESearchCase::IgnoreCase))
+					{
+						Result.Notes.Add(FString::Printf(TEXT("%s: read '%s' as '%s'"), Key, *Id.Left(40), *IdName.ToString()));
+					}
 					Out.AddUnique(IdName);
 				}
 				else

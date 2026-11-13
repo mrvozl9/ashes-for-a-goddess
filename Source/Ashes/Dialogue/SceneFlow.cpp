@@ -316,3 +316,22 @@ FString FSceneFlow::GetClosingRomance() const
 	const FSceneRuleRow* SceneRule = FindRule(NAME_None);
 	return SceneRule ? SceneRule->ClosingRomance : FString();
 }
+
+TArray<FString> FSceneFlow::GetStockSuggestions() const
+{
+	TArray<FString> Out;
+	if (const FSceneRuleRow* SceneRule = FindRule(NAME_None))
+	{
+		TArray<FString> Parts;
+		SceneRule->StockSuggestions.ParseIntoArray(Parts, TEXT(";"), true);
+		for (const FString& Part : Parts)
+		{
+			const FString Line = Part.TrimStartAndEnd();
+			if (!Line.IsEmpty())
+			{
+				Out.Add(Line);
+			}
+		}
+	}
+	return Out;
+}

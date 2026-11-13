@@ -1,4 +1,4 @@
-// AI-assisted: Claude Code, 11.11.2026, conversation screen logic; WBP_Conversation provides the layout (Phase 5); hesitation status (12.11.2026). Reviewed by <pending>.
+// AI-assisted: Claude Code, 11.11.2026, conversation screen logic; WBP_Conversation provides the layout (Phase 5); hesitation status (12.11.2026); no typing while the AI is offline (Phase 6 fix 7, 13.11.2026). Reviewed by <pending>.
 
 #include "ConversationWidget.h"
 #include "SceneDirectorSubsystem.h"
@@ -33,7 +33,12 @@ void UConversationWidget::InitConversation(USceneDirectorSubsystem* InDirector)
 
 TSharedPtr<SWidget> UConversationWidget::GetFocusTarget() const
 {
-	return InputBox ? InputBox->TakeWidget() : TSharedPtr<SWidget>();
+	// Offline the text box is hidden, so the screen itself gets the keys
+	if (InputBox && (!Director.IsValid() || Director->IsTypingAllowed()))
+	{
+		return InputBox->TakeWidget();
+	}
+	return const_cast<UConversationWidget*>(this)->TakeWidget();
 }
 
 void UConversationWidget::NativeConstruct()
@@ -48,6 +53,7 @@ void UConversationWidget::NativeConstruct()
 	InputBox->OnTextCommitted.AddUniqueDynamic(this, &UConversationWidget::HandleTextCommitted);
 	InputBox->OnTextChanged.AddUniqueDynamic(this, &UConversationWidget::HandleTextChanged);
 	InputBox->SetHintText(LOCTEXT("InputHint", "Say something (Enter) or press 1 / 2 / 3"));
+	SetIsFocusable(true); // offline the screen itself takes the 1 / 2 / 3 keys
 }
 
 void UConversationWidget::HandleLinePosted(const FString& Speaker, const FString& Text)
@@ -165,9 +171,36 @@ void UConversationWidget::UpdateInteractivity()
 	const bool bCanTalk = Director.IsValid() && !bThinking && !Director->IsFinished();
 	InputBox->SetIsEnabled(bCanTalk);
 	SendButton->SetIsEnabled(bCanTalk);
+
+	// Offline (no AI) the player only picks a reply: typed text cannot fit the pre-written lines (Phase 6 fix 7)
+	const ESlateVisibility TypingVisibility = (Director.IsValid() && Director->IsTypingAllowed()) ? ESlateVisibility::Visible : ESlateVisibility::Collapsed;
+	InputBox->SetVisibility(TypingVisibility);
+	SendButton->SetVisibility(TypingVisibility);
+	if (TypingVisibility == ESlateVisibility::Collapsed)
+	{
+		SetKeyboardFocus(); // the screen itself takes 1 / 2 / 3 (NativeOnKeyDown)
+	}
 	Reply1->SetIsEnabled(bCanTalk);
 	Reply2->SetIsEnabled(bCanTalk);
 	Reply3->SetIsEnabled(bCanTalk);
+}
+
+FReply UConversationWidget::NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent)
+{
+	if (Director.IsValid() && !Director->IsTypingAllowed() && !bThinking && !Director->IsFinished())
+	{
+		const FKey Key = InKeyEvent.GetKey();
+		int32 Index = 0;
+		if (Key == EKeys::One || Key == EKeys::NumPadOne) { Index = 1; }
+		else if (Key == EKeys::Two || Key == EKeys::NumPadTwo) { Index = 2; }
+		else if (Key == EKeys::Three || Key == EKeys::NumPadThree) { Index = 3; }
+		if (Index > 0 && Index <= SuggestionCount)
+		{
+			Director->PickSuggestion(Index);
+			return FReply::Handled();
+		}
+	}
+	return Super::NativeOnKeyDown(InGeometry, InKeyEvent);
 }
 
 void UConversationWidget::HandleReply1() { if (Director.IsValid()) Director->PickSuggestion(1); }

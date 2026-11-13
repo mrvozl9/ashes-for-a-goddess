@@ -852,8 +852,12 @@ namespace
 				{
 					Report.Warning(Table, Row, TEXT("ClosingRomance is only read from the scene-level row (empty Beat)"));
 				}
+				if (!Rule.Beat.IsNone() && !IsBlank(Rule.StockSuggestions))
+				{
+					Report.Warning(Table, Row, TEXT("StockSuggestions is only read from the scene-level row (empty Beat)"));
+				}
 				if (Rule.Beat.IsNone() && Rule.MinTurn == 0 && Rule.RequiresBeat.IsNone() && Rule.RequiresValue.IsNone()
-					&& Rule.ForceAtTurn == 0 && IsBlank(Rule.NudgeNote) && IsBlank(Rule.ClosingRomance))
+					&& Rule.ForceAtTurn == 0 && IsBlank(Rule.NudgeNote) && IsBlank(Rule.ClosingRomance) && IsBlank(Rule.StockSuggestions))
 				{
 					Report.Warning(Table, Row, TEXT("the row sets nothing"));
 				}

@@ -1,4 +1,4 @@
-// AI-assisted: Claude Code, 11.11.2026, builds the model request from card, lore, scene, state and turns (Phase 4); clue hints, pronouns in gestures (12.11.2026). Reviewed by <pending>.
+// AI-assisted: Claude Code, 11.11.2026, builds the model request from card, lore, scene, state and turns (Phase 4); clue hints, pronouns in gestures (12.11.2026); state in the newest message, history in blocks (Phase 6 fix 1, 13.11.2026). Reviewed by <pending>.
 
 #include "PromptBuilder.h"
 
@@ -79,28 +79,9 @@ FString UPromptBuilder::BuildSystemPrompt(const FCharacterCardRow& Card, const F
 	}
 	AddSection(Out, TEXT("Scene"), SceneText);
 
-	// (4) State as words + memories + clues
-	FString StateText;
-	for (const FRelationshipValueDef& Def : Card.Values)
-	{
-		const int32* Current = State.Values.Find(Def.Name);
-		const int32 Value = Current ? *Current : Def.Start;
-		StateText += FString::Printf(TEXT("Your %s toward Sahra: %s\n"), *Def.Name.ToString(), *ValueToWord(Value));
-	}
-	for (const FString& Memory : State.Memories)
-	{
-		StateText += FString::Printf(TEXT("You remember: %s\n"), *Memory);
-	}
-	for (const FString& Clue : State.KnownClues)
-	{
-		StateText += FString::Printf(TEXT("Sahra has learned: %s\n"), *Clue);
-	}
-	for (const FString& Hint : State.ClueHints)
-	{
-		// DT_Clues PromptHint of the talk clues this character holds (accepting found clues comes in Phase 9)
-		StateText += FString::Printf(TEXT("Something you can reveal: %s\n"), *Hint);
-	}
-	AddSection(Out, TEXT("State"), StateText);
+	// (4) State: it changes during the scene, so it is NOT here but in the newest message (see Build).
+	// Everything in this system message stays the same for the whole scene, so the model's prompt cache keeps it.
+	AddSection(Out, TEXT("State"), TEXT("Sahra's newest message starts with a note in [square brackets] on how things stand right now (your feelings toward her, what you remember, what you may reveal). Sahra does not say that note; use it, never repeat it."));
 
 	// JSON contract (GDD 8.1); delta keys come from the card's values
 	FString DeltaKeys;
@@ -140,13 +121,54 @@ FLLMRequest UPromptBuilder::Build(const FCharacterCardRow& Card, const FString& 
 	FLLMRequest Request;
 	Request.Messages.Emplace(TEXT("system"), BuildSystemPrompt(Card, LoreBible, Scene, State, Chapter));
 
-	// (5) Last 8 turns + the new line
-	const int32 First = FMath::Max(0, History.Num() - MaxHistoryTurns);
+	// (5) Earlier turns: the window moves in blocks, so the start of the prompt stays the same for several turns
+	// and the model's cache can reuse it (a window that moves every turn made it re-read ~600 tokens each time)
+	const int32 First = GetHistoryStart(History.Num());
 	for (int32 Index = First; Index < History.Num(); ++Index)
 	{
 		const FConversationTurn& Turn = History[Index];
 		Request.Messages.Emplace(Turn.bFromPlayer ? TEXT("user") : TEXT("assistant"), Turn.Text);
 	}
-	Request.Messages.Emplace(TEXT("user"), PlayerLine.Left(200)); // GDD: max 200 characters input
+
+	// (4) + new line: the state note rides on the newest message only; the history keeps the plain lines
+	const FString StateText = BuildStateText(Card, State);
+	const FString Line = PlayerLine.Left(200); // GDD: max 200 characters input
+	Request.Messages.Emplace(TEXT("user"), StateText.IsEmpty() ? Line : FString::Printf(TEXT("[%s]\n\n%s"), *StateText, *Line));
 	return Request;
+}
+
+int32 UPromptBuilder::GetHistoryStart(int32 HistoryNum)
+{
+	const int32 Excess = HistoryNum - MaxHistoryTurns;
+	if (Excess <= 0)
+	{
+		return 0;
+	}
+	// Round the cut up to a whole block: between MaxHistoryTurns - HistoryBlock + 1 and MaxHistoryTurns turns are sent
+	return FMath::DivideAndRoundUp(Excess, HistoryBlock) * HistoryBlock;
+}
+
+FString UPromptBuilder::BuildStateText(const FCharacterCardRow& Card, const FPromptState& State)
+{
+	TArray<FString> Parts;
+	for (const FRelationshipValueDef& Def : Card.Values)
+	{
+		const int32* Current = State.Values.Find(Def.Name);
+		const int32 Value = Current ? *Current : Def.Start;
+		Parts.Add(FString::Printf(TEXT("Your %s toward Sahra: %s."), *Def.Name.ToString(), *ValueToWord(Value)));
+	}
+	for (const FString& Memory : State.Memories)
+	{
+		Parts.Add(FString::Printf(TEXT("You remember: %s"), *Memory));
+	}
+	for (const FString& Clue : State.KnownClues)
+	{
+		Parts.Add(FString::Printf(TEXT("Sahra has learned: %s"), *Clue));
+	}
+	for (const FString& Hint : State.ClueHints)
+	{
+		// DT_Clues PromptHint of the talk clues this character holds (accepting found clues comes in Phase 9)
+		Parts.Add(FString::Printf(TEXT("Something you can reveal: %s"), *Hint));
+	}
+	return FString::Join(Parts, TEXT(" "));
 }

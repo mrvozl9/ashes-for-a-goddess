@@ -151,13 +151,23 @@ bool USceneDirectorSubsystem::StartScene(AAshesNPC* Npc, AAshesCharacter* Sahra)
 	OnTurnsChanged.Broadcast(GetTurnsLeft());
 
 	UAshesGameInstance* GI = GetWorld()->GetGameInstance<UAshesGameInstance>();
+	if (GI)
+	{
+		AIModeHandle = GI->OnAIModeChanged.AddUObject(this, &USceneDirectorSubsystem::HandleAIModeChanged);
+	}
 
-	// Offline with a tree: Sahra's first replies are the tree's (the opener itself stays the scene card's)
-	if (Tree.IsActive() && (!GI || GI->GetAIMode() == EAIMode::Offline))
+	// Reply buttons for the first line: offline the tree's replies (or the stock lines), online the stock lines
 	{
 		FLLMResponse First;
 		First.Emotion = Card.FallbackEmotion;
-		First.Suggestions = Tree.GetReplies();
+		if (IsTypingAllowed())
+		{
+			TopUpSuggestions(First.Suggestions, GetStockSuggestions());
+		}
+		else
+		{
+			First.Suggestions = GetChoicesWithoutModel(); // exactly the tree's replies, or the stock lines
+		}
 		LastSuggestions = First.Suggestions;
 		OnReplyReady.Broadcast(First, true);
 	}
@@ -366,6 +376,15 @@ void USceneDirectorSubsystem::FinishHesitation(const FLLMResponse& Hesitation)
 	// Values unchanged; the previous suggestions stay; the player can ask again
 	UE_LOG(LogAshes, Log, TEXT("Scene: %s dodges: %s [%s]"), *Card.DisplayName, *Hesitation.Reply, *Hesitation.Gesture);
 	PostFallbackLine(Hesitation);
+	if (!IsTypingAllowed())
+	{
+		// The AI went offline while this line waited: the model's old suggestions would get unrelated pre-written answers
+		FLLMResponse Choices;
+		Choices.Emotion = LastEmotion.IsNone() ? Card.FallbackEmotion : LastEmotion;
+		Choices.Suggestions = GetChoicesWithoutModel();
+		LastSuggestions = Choices.Suggestions;
+		OnReplyReady.Broadcast(Choices, true);
+	}
 	OnTurnsChanged.Broadcast(GetTurnsLeft());
 }
 
@@ -423,6 +442,72 @@ void USceneDirectorSubsystem::HandleThresholdReached(FName UnlockId, const FStri
 	{
 		PendingHints.Add(HintLine); // shown after the reply that caused it; never a number
 	}
+}
+
+void USceneDirectorSubsystem::HandleAIModeChanged()
+{
+	if (!bActive || bFinished)
+	{
+		return;
+	}
+	UE_LOG(LogAshes, Log, TEXT("Scene: AI is now %s"), IsTypingAllowed() ? TEXT("online (typing allowed)") : TEXT("offline (pick a reply)"));
+	if (!IsTypingAllowed() && !bWaiting)
+	{
+		// The model's last suggestions would get unrelated pre-written answers: offer the tree's replies or the stock lines
+		FLLMResponse Choices;
+		Choices.Emotion = LastEmotion.IsNone() ? Card.FallbackEmotion : LastEmotion;
+		Choices.Suggestions = GetChoicesWithoutModel();
+		LastSuggestions = Choices.Suggestions;
+		OnReplyReady.Broadcast(Choices, true);
+	}
+	OnTurnsChanged.Broadcast(GetTurnsLeft()); // the screen shows or hides the text box
+}
+
+bool USceneDirectorSubsystem::IsTypingAllowed() const
+{
+	const UAshesGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance<UAshesGameInstance>() : nullptr;
+	return GI && GI->GetAIMode() == EAIMode::Online;
+}
+
+void USceneDirectorSubsystem::TopUpSuggestions(TArray<FString>& Suggestions, const TArray<FString>& Stock, const FString& AvoidLine)
+{
+	auto Has = [&Suggestions](const FString& Line)
+	{
+		return Suggestions.ContainsByPredicate([&Line](const FString& S) { return S.TrimStartAndEnd().Equals(Line, ESearchCase::IgnoreCase); });
+	};
+	const FString Avoid = AvoidLine.TrimStartAndEnd();
+	for (const FString& Line : Stock)
+	{
+		if (Suggestions.Num() >= SuggestionCount)
+		{
+			break;
+		}
+		const FString Trimmed = Line.TrimStartAndEnd();
+		if (!Trimmed.IsEmpty() && !Has(Trimmed) && !Trimmed.Equals(Avoid, ESearchCase::IgnoreCase))
+		{
+			Suggestions.Add(Trimmed);
+		}
+	}
+}
+
+TArray<FString> USceneDirectorSubsystem::GetStockSuggestions() const
+{
+	TArray<FString> Stock = Flow.GetStockSuggestions();
+	// Last resort when the scene has no stock lines yet: neutral lines that fit any conversation
+	Stock.Append({ TEXT("Tell me more."), TEXT("Why do you say that?"), TEXT("Let's talk about something else.") });
+	return Stock;
+}
+
+TArray<FString> USceneDirectorSubsystem::GetChoicesWithoutModel() const
+{
+	if (Tree.IsActive())
+	{
+		return Tree.GetReplies();
+	}
+	TArray<FString> Choices;
+	const FString PlayerLine = (History.Num() > 0 && History.Last().bFromPlayer) ? History.Last().Text : FString();
+	TopUpSuggestions(Choices, GetStockSuggestions(), PlayerLine);
+	return Choices;
 }
 
 UNPCBrainComponent* USceneDirectorSubsystem::GetBrain() const
@@ -575,10 +660,26 @@ void USceneDirectorSubsystem::DeliverReply(const FLLMResponse& InResponse, bool 
 		bTreeEnded = false;
 	}
 
-	// Offline and the tree did not answer this line: its replies stay on the buttons
-	if (bFromFallback && !bAuthored && Tree.IsActive() && Response.Suggestions.Num() == 0)
+	// Always 3 reply buttons (Phase 6 fix 4): offline without a tree answer, the tree's replies or the stock lines;
+	// a model reply with fewer than 3 suggestions is filled up from the stock lines. Tree answers keep their own replies.
+	if (!bAuthored)
 	{
-		Response.Suggestions = Tree.GetReplies();
+		const FString PlayerLine = (History.Num() > 0 && History.Last().bFromPlayer) ? History.Last().Text : FString();
+		// Offline: pick-only choices; also for a model reply that arrived just after the AI went offline
+		const bool bPickOnly = bFromFallback || !IsTypingAllowed();
+		if (bPickOnly)
+		{
+			Response.Suggestions = GetChoicesWithoutModel();
+		}
+		if (!(bPickOnly && Tree.IsActive()))
+		{
+			const int32 Before = Response.Suggestions.Num();
+			TopUpSuggestions(Response.Suggestions, GetStockSuggestions(), PlayerLine);
+			if (!bFromFallback && Response.Suggestions.Num() > Before)
+			{
+				UE_LOG(LogAshes, Log, TEXT("Scene: %d suggestion(s) from the model, filled up to %d"), Before, Response.Suggestions.Num());
+			}
+		}
 	}
 
 	FConversationTurn Turn;
@@ -628,6 +729,12 @@ void USceneDirectorSubsystem::EndScene()
 		NpcBrain->OnThresholdReached.RemoveDynamic(this, &USceneDirectorSubsystem::HandleThresholdReached);
 	}
 	PendingHints.Reset();
+	if (UAshesGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance<UAshesGameInstance>() : nullptr)
+	{
+		GI->OnAIModeChanged.Remove(AIModeHandle);
+		GI->ClearPendingPrime(); // a warm-up still waiting for the model belongs to this scene
+	}
+	AIModeHandle.Reset();
 	Flow = FSceneFlow(); // back to Idle: GetPhase() must not report the old scene
 	Tree.Reset();
 

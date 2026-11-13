@@ -567,6 +567,13 @@ struct ASHES_API FSceneRuleRow : public FTableRowBase
 	/** Scene-level row only: closing line on the romance route (empty = ClosingFull) */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SceneRule", meta=(MultiLine=true))
 	FString ClosingRomance;
+
+	/**
+	 * Scene-level row only: safe things Sahra can say in this scene, ';' separated. They fill the reply buttons up to 3
+	 * when the model sends fewer, and are the choices offline when the scene has no offline tree (Phase 6 fix 4, 13.11.2026).
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="SceneRule", meta=(MultiLine=true))
+	FString StockSuggestions;
 };
 
 /** DT_Thresholds: something unlocks when a relationship value first reaches AtLeast */

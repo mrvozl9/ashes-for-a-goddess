@@ -69,6 +69,19 @@ public:
 	/** One log line: phase, turns, beats, values (debug: Ashes.Scene.Status) */
 	FString GetStatusText() const;
 
+	/** False while the AI is offline: then the player only picks a reply (typed text cannot fit pre-written lines) */
+	UFUNCTION(BlueprintPure, Category="Conversation")
+	bool IsTypingAllowed() const;
+
+	/** Number of reply buttons the screen has */
+	static constexpr int32 SuggestionCount = 3;
+
+	/**
+	 *  Fills Suggestions up to SuggestionCount from Stock (in order), skipping lines already there and AvoidLine
+	 *  (what the player just said); any case. Public for tests.
+	 */
+	static void TopUpSuggestions(TArray<FString>& Suggestions, const TArray<FString>& Stock, const FString& AvoidLine = FString());
+
 	UFUNCTION(BlueprintPure, Category="Conversation")
 	int32 GetTurnsLeft() const { return FMath::Max(0, Scene.TurnLimit - TurnsTaken); }
 
@@ -155,6 +168,16 @@ private:
 	/** Offline answers for this scene (DT_OfflineTrees); inactive when the scene has no tree */
 	FOfflineTreeWalker Tree;
 	bool bTreeEnded = false;
+
+	/** The AI went online or offline during the scene: show or hide typing, and offline give pick-only buttons */
+	void HandleAIModeChanged();
+	FDelegateHandle AIModeHandle;
+
+	/** The scene's stock lines (DT_SceneRules StockSuggestions), then a few generic ones */
+	TArray<FString> GetStockSuggestions() const;
+
+	/** Reply buttons when nothing else gives them: the offline tree's replies, else the stock lines */
+	TArray<FString> GetChoicesWithoutModel() const;
 
 	/** Hint lines of thresholds reached by the current reply; shown after it */
 	TArray<FString> PendingHints;

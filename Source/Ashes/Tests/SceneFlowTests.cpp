@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
 #include "SceneFlow.h"
+#include "SceneDirectorSubsystem.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -116,6 +117,42 @@ bool FAshesSceneFlowEarlyClaim::RunTest(const FString& Parameters)
 		TestEqual(TEXT("not remembered when the value rises"), Turn(Flow, {}, High).Num(), 0);
 		TestTrue(TEXT("a new claim counts"), Turn(Flow, { Truce }, High).Contains(Truce));
 	}
+	return true;
+}
+
+// AI-assisted: Claude Code, 13.11.2026, reply buttons always 3 (Phase 6 fix 4). Reviewed by <pending>.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAshesSuggestionTopUp, "Ashes.SceneDirector.SuggestionsTopUp", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FAshesSuggestionTopUp::RunTest(const FString& Parameters)
+{
+	using namespace SceneFlowTestData;
+	const TArray<FString> Stock = { TEXT("Why do they say you carry a knife?"), TEXT("Who are you, really?"), TEXT("Why do you call me Little Ember?") };
+
+	TArray<FString> None;
+	USceneDirectorSubsystem::TopUpSuggestions(None, Stock);
+	TestEqual(TEXT("no suggestions -> 3 stock lines"), None.Num(), 3);
+
+	TArray<FString> One = { TEXT("who are you, really?") };
+	USceneDirectorSubsystem::TopUpSuggestions(One, Stock);
+	TestEqual(TEXT("one -> 3"), One.Num(), 3);
+	TestEqual(TEXT("the model's line stays first"), One[0], FString(TEXT("who are you, really?")));
+	TestFalse(TEXT("no duplicate (any case)"), One.Contains(TEXT("Who are you, really?")) && One.Contains(TEXT("who are you, really?")) && One.Num() > 3);
+
+	TArray<FString> Avoid;
+	USceneDirectorSubsystem::TopUpSuggestions(Avoid, Stock, TEXT("Why do they say you carry a knife?"));
+	TestFalse(TEXT("the line just said is not offered again"), Avoid.Contains(TEXT("Why do they say you carry a knife?")));
+
+	TArray<FString> Full = { TEXT("a"), TEXT("b"), TEXT("c") };
+	USceneDirectorSubsystem::TopUpSuggestions(Full, Stock);
+	TestEqual(TEXT("3 from the model: unchanged"), Full.Num(), 3);
+
+	// Stock lines come from the scene-level DT_SceneRules row
+	FSceneRuleRow SceneRow_;
+	SceneRow_.Scene = SceneRow;
+	SceneRow_.StockSuggestions = TEXT(" One? ;Two;; Three ");
+	FSceneFlow Flow = MakeFlow(11, { SceneRow_ });
+	const TArray<FString> Lines = Flow.GetStockSuggestions();
+	TestTrue(TEXT("split, trimmed, empty parts dropped"), Lines.Num() == 3 && Lines[0] == TEXT("One?") && Lines[2] == TEXT("Three"));
+	TestEqual(TEXT("no scene-level row: none"), MakeFlow(11, MakeRules()).GetStockSuggestions().Num(), 0);
 	return true;
 }
 
