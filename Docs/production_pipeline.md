@@ -201,7 +201,7 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 
 **Tasks:**
 - All: play `L_Test` end to end, online and offline.
-- ⚠️ Early warning check (GDD 13.5): average reply over 4 s, or under 90% valid JSON? If yes → offline mode becomes the default and the side characters and the Chapter 7 confession use their pre-written trees and lines.
+- ⚠️ Early warning check (GDD 13.5): do the character's first words take over 4 s on average to appear (measured in the game window on Merve's laptop, not in the editor; rule changed 13.11.2026 from "whole reply over 4 s"), or under 90% valid JSON? If yes → offline mode becomes the default and the side characters and the Chapter 7 confession use their pre-written trees and lines.
 - Update this tracker, `PROGRESS.md` and the task board.
 
 **Deliverable:** Signed-off prototype; risk decision recorded in Notes.
@@ -223,6 +223,7 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 - [C++] Baha: turn limits per scene row (Zafir 11, Vashir 7, others 5); forced beats for `Ch6_VashirTrap`; `ClosingRomance` field in `FSceneCardRow` (proposed).
 - [C++] Baha: offline mode: `FOfflineNodeRow` / `DT_OfflineTrees` tree walker in `UOfflineLLMProvider`, `FFallbackLineRow` / `DT_FallbackLines` with the pick order (scene + beat + emotion → clue → scene → any; never the same line twice in a row).
 - [WRITE] Merve: enter the Master Lore cards, scene rows, hint lines, nudge notes, 142 fallback lines and the offline trees into the DataTables (CSV import).
+- [C++] Baha: show the reply word by word while the model writes it (decided 13.11.2026): `UOpenAICompatibleLLMProvider` passes partial text to the Scene Director, `WBP_Conversation` shows the `reply` field as it grows; the finished reply still passes `UResponseValidator`, and a failed check replaces the shown words with the regenerated or fallback line. Log the time to the first words (the GDD 13.5 early warning number).
 - [C++] Automation tests for transitions, thresholds and offline trees (every key-scene path reaches its required beats).
 
 **Deliverable:** The Zafir scene resolves with full or weaker outcome, online and offline; hints instead of numbers.
@@ -302,7 +303,7 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 - [C++] Test harness (commandlet or editor utility) and first red-team run (50 lines per character: off-topic, jailbreak, spoiler, rude); LLM judge flags spoilers and broken voice.
 - Measure tokens per playthrough and average reply time.
 - Decide: memories + generated Chapter 7 confession in or out; 10 or 5 ambient NPCs.
-- ⚠️ Early warnings (GDD 13.5): average reply over 4 s on the stronger PC or under 90% valid JSON → smaller model, shorter replies or word-by-word streaming; side characters fall back to their offline nodes more often. Chapter 2–6 data not entered → apply the cut order. Palace still grey-box → custom models cut.
+- ⚠️ Early warnings (GDD 13.5): first words over 4 s on average (game window) or under 90% valid JSON → smaller model or shorter replies; side characters fall back to their offline nodes more often. Chapter 2–6 data not entered → apply the cut order. Palace still grey-box → custom models cut.
 
 **Deliverable:** Playable Chapter 1, red-team report, decisions in Notes and `PROGRESS.md`.
 **Verification Gate:** User plays Chapter 1 and confirms the loop is fun; decisions confirmed. ✋
