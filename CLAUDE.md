@@ -2,7 +2,7 @@
 
 > Claude reads this file automatically when it opens the project. For Codex, copy this file and name the copy `AGENTS.md`.
 > Unreal Engine 5.8, C++ and Blueprints (module `Ashes`). Not Unity: the old Unity skeleton lives only in the Git tag `unity-skeleton`.
-> Course: Advanced Game Programming. Team of four (12.11.2026): Merve (level design, story and data), Tuana (art), Tala (audio, VFX and other work), Baha (code from Phase 7 on). The story has 7 chapters; turn limits Zafir 11, Vashir 7, others 5.
+> Course: Advanced Game Programming. Team of four (12.11.2026): Merve Özal (level design, story and data), Tuana Tuna (art), Tala Alsayed (audio, VFX and other work), Ebrar Baha Özüpek (code from Phase 7 on). The story has 7 chapters; turn limits Zafir 11, Vashir 7, others 5.
 
 ## Read first (every session)
 - `SKILL.md` (how to work)

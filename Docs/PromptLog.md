@@ -1,6 +1,6 @@
 # Prompt Log
 
-Our AI prompt log (GDD 8.2) is for the course **Game Design Studio-III** (the rest of the project docs belong to Advanced Game Programming). It is a Google Sheet that is shared with the Game Design Studio-III instructor:
+Our AI prompt log (GDD 8.2) is for the course **Game Design Studio-III**. It is a Google Sheet that is shared with the Game Design Studio-III instructor:
 
 **[BurntPotatoGames_PromptLog](https://docs.google.com/spreadsheets/d/1D1uqRMgC_2E4n-PsOUjiOAxivMPjW9H0ComF00bLa40/edit?usp=sharing)**
 

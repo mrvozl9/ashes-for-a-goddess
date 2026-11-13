@@ -1,8 +1,8 @@
 # Ashes for a Goddess · Technical Design Document (technical_design.md)
 
 > **Canonical design source:** `gdd.md`. This document turns the GDD into a concrete Blueprint / C++ architecture. **Where this document and the GDD disagree, the GDD wins** and this document must be corrected.
-> **Engine target:** Unreal Engine 5.8 (C++ + Blueprints), Windows. Changed from Unity 6.3 HDRP on 10.11.2026 with the teacher's approval.
-> **Course:** Advanced Game Programming. **Team (12.11.2026):** Merve (level design; wrote the Phase 0–5 code), Tuana (art), Tala (audio, VFX, dance charts and animations, cutscene sequences, credits, playtests), Baha (C++ systems from Phase 7 on).
+> **Engine target:** Unreal Engine 5.8 (C++ + Blueprints), Windows.
+> **Course:** Advanced Game Programming. **Team (12.11.2026):** Merve Özal (level design; wrote the Phase 0–5 code), Tuana Tuna (art), Tala Alsayed (audio, VFX, dance charts and animations, cutscene sequences, credits, playtests), Ebrar Baha Özüpek (C++ systems from Phase 7 on).
 > **Companion documents:** `level-design.md` (where things are) and `production_pipeline.md` (build order). Game data texts: the Master Lore document (single source for lore, cards, clues, barks, fallback lines and offline trees).
 
 **Status legend:** `✅ Built` · `🟡 Partial` · `🔲 Not started` · `♻️ Built but must change`
