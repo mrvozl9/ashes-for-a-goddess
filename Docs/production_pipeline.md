@@ -433,7 +433,7 @@ Phases 0 to 6                Phases 7 to 17                  Phases 18 to 22
 **Depends on:** Phase 20.
 
 **Tasks:**
-- Tala: credits screen: team (Merve, Tuana, Tala, Baha), licensed assets, AI-assisted assets and tools; course: Advanced Game Programming.
+- Tala: credits screen: team (Merve Özal, Tuana Tuna, Tala Alsayed, Ebrar Baha Özüpek), licensed assets, AI-assisted assets and tools; course: Advanced Game Programming.
 - Tala: `Docs/Licenses.md` complete; Merve: prompt log sheet final (`Docs/PromptLog.md` links it); Baha: AI-assisted headers on every C++ file and a header Comment node in AI-assisted Blueprints.
 
 **Deliverable:** Paperwork complete.

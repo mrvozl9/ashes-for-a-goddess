@@ -3,7 +3,7 @@
 
 > *"Some gods brighten the sky when they are born; others, when they die."*
 
-**Author:** Burnt Potato Games (BPG): Merve Özal, Tuana Tuna, Tala, Baha · **Version:** 1.4 (Markdown version of the midterm GDD dated 07.11.2026; 4-week schedule; "Court of Whispers" investigation concept added 09.11.2026; day/night loop, nightly dance and guard stealth added 10.11.2026; engine changed to Unreal Engine 5.8 and the AI model built into the game on 10.11.2026; 7-chapter story, living palace and spirit chapter added 11.11.2026; character, scene and clue data, turn limits, offline trees and the team of four added 12.11.2026) · **Date:** 12.11.2026
+**Author:** Burnt Potato Games (BPG): Merve Özal, Tuana Tuna, Tala Alsayed, Ebrar Baha Özüpek · **Version:** 1.4 (Markdown version of the midterm GDD dated 07.11.2026; 4-week schedule; "Court of Whispers" investigation concept added 09.11.2026; day/night loop, nightly dance and guard stealth added 10.11.2026; engine changed to Unreal Engine 5.8 and the AI model built into the game on 10.11.2026; 7-chapter story, living palace and spirit chapter added 11.11.2026; character, scene and clue data, turn limits, offline trees and the team of four added 12.11.2026) · **Date:** 12.11.2026
 **Genre:** Third-person narrative RPG and visual novel hybrid; dark fantasy romance · **Platform:** Windows PC, keyboard and mouse (Unreal packaged build) · **Engine:** Unreal Engine 5.8, C++ and Blueprints, 3D, Lumen · **Players:** Single player
 
 | Field | Details |

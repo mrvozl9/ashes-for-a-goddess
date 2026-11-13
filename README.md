@@ -119,9 +119,9 @@ Plugins/VibeUE/    editor access for the AI agent (git submodule)
 | Member | Role |
 |---|---|
 | Merve Özal | Team Lead, Level Designer, Narrative Lead (wrote the Phase 0–5 code) |
-| Tuana Tuna | Lead Artist, UI Artist (reviews the writing) |
-| Tala | Audio and VFX Designer (music, dance songs and charts, SFX, Niagara, cutscene sequences, credits, playtests) |
-| Baha | Programmer (gameplay systems from Phase 7 on, packaging) |
+| Tuana Tuna | Lead Artist, UI Artist, Narrative Designer (reviews the writing) |
+| Tala Alsayed | Audio and VFX Designer (music, dance songs and charts, SFX, Niagara, cutscene sequences, credits, playtests) |
+| Ebrar Baha Özüpek | Lead Programmer and Gameplay Systems (gameplay code from Phase 7 on, packaging) |
 
 Tala and Baha joined on 12.11.2026.
 
