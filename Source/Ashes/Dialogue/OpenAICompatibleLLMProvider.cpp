@@ -1,4 +1,4 @@
-// AI-assisted: Claude Code, 10.11.2026, HTTP provider for OpenAI-compatible chat endpoints (built-in llama-server, Ollama, cloud) (Phase 3); streamed so a timed-out answer stops on the server (11.11.2026); prompt cache + timings (12.11.2026). Reviewed by <pending>.
+// AI-assisted: Claude Code, 10.11.2026, HTTP provider for OpenAI-compatible chat endpoints (built-in llama-server, Ollama, cloud) (Phase 3); streamed so a timed-out answer stops on the server (11.11.2026); partial text while the model writes (Phase 7, 13.11.2026); prompt cache + timings (12.11.2026). Reviewed by <pending>.
 
 #include "OpenAICompatibleLLMProvider.h"
 #include "Ashes.h"
@@ -209,7 +209,70 @@ bool UOpenAICompatibleLLMProvider::ParseResponseBody(const FString& Body, FLLMRe
 	return true;
 }
 
+FString UOpenAICompatibleLLMProvider::ContentSoFar(const FString& StreamBody)
+{
+	// Same as ParseStreamBody, but forgiving: the last line may be cut in the middle, unknown lines are skipped
+	FString Content;
+	TArray<FString> Lines;
+	StreamBody.ParseIntoArrayLines(Lines);
+	for (FString& Line : Lines)
+	{
+		Line.TrimStartAndEndInline();
+		if (!Line.StartsWith(TEXT("data:")))
+		{
+			continue;
+		}
+		const FString Data = Line.RightChop(5).TrimStartAndEnd();
+		if (Data.IsEmpty() || Data == TEXT("[DONE]"))
+		{
+			continue;
+		}
+		TSharedPtr<FJsonObject> Chunk;
+		TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Data);
+		if (!FJsonSerializer::Deserialize(Reader, Chunk) || !Chunk.IsValid())
+		{
+			continue; // the half-received last line
+		}
+		const TArray<TSharedPtr<FJsonValue>>* Choices = nullptr;
+		if (Chunk->TryGetArrayField(TEXT("choices"), Choices) && Choices->Num() > 0)
+		{
+			const TSharedPtr<FJsonObject> Choice = (*Choices)[0]->AsObject();
+			const TSharedPtr<FJsonObject>* Delta = nullptr;
+			FString Piece;
+			if (Choice.IsValid() && Choice->TryGetObjectField(TEXT("delta"), Delta) && (*Delta)->TryGetStringField(TEXT("content"), Piece))
+			{
+				Content += Piece;
+			}
+		}
+	}
+	return Content;
+}
+
+namespace
+{
+	/** The response body as it arrives: written on the HTTP thread, read on the game thread */
+	struct FStreamBuffer
+	{
+		FCriticalSection Lock;
+		TArray<uint8> Bytes;
+		int32 BytesAtLastPartial = 0;
+		FString LastPartial;
+
+		FString ReadAll()
+		{
+			FScopeLock ScopeLock(&Lock);
+			const FUTF8ToTCHAR Converted(reinterpret_cast<const ANSICHAR*>(Bytes.GetData()), Bytes.Num());
+			return FString(Converted.Length(), Converted.Get());
+		}
+	};
+}
+
 void UOpenAICompatibleLLMProvider::SendAsync(const FLLMRequest& Request, FOnLLMReply Callback)
+{
+	SendAsyncStreaming(Request, Callback, FOnLLMPartial());
+}
+
+void UOpenAICompatibleLLMProvider::SendAsyncStreaming(const FLLMRequest& Request, FOnLLMReply Callback, FOnLLMPartial Partial)
 {
 	if (BaseUrl.IsEmpty())
 	{
@@ -236,12 +299,48 @@ void UOpenAICompatibleLLMProvider::SendAsync(const FLLMRequest& Request, FOnLLMR
 
 	const double StartTime = FPlatformTime::Seconds();
 
+	// The body is collected here as it arrives (HTTP thread), so the game can show the reply while it is written
+	// (word by word, Phase 7). With a receive delegate the response itself no longer keeps the body.
+	TSharedRef<FStreamBuffer, ESPMode::ThreadSafe> Buffer = MakeShared<FStreamBuffer, ESPMode::ThreadSafe>();
+	const bool bStreamed = Http->SetResponseBodyReceiveStreamDelegateV2(FHttpRequestStreamDelegateV2::CreateLambda([Buffer](void* Ptr, int64& InOutLength)
+	{
+		FScopeLock ScopeLock(&Buffer->Lock);
+		Buffer->Bytes.Append(static_cast<const uint8*>(Ptr), static_cast<int32>(InOutLength));
+	}));
+	if (!bStreamed)
+	{
+		UE_LOG(LogAshes, Warning, TEXT("LLM: this HTTP backend cannot stream the body; the reply will appear at once"));
+	}
+
+	if (Partial.IsBound() && bStreamed)
+	{
+		// Progress runs on the game thread (default delegate thread policy)
+		Http->OnRequestProgress64().BindLambda([Buffer, Partial](FHttpRequestPtr /*Req*/, uint64 /*Sent*/, uint64 /*Received*/)
+		{
+			{
+				FScopeLock ScopeLock(&Buffer->Lock);
+				if (Buffer->Bytes.Num() == Buffer->BytesAtLastPartial)
+				{
+					return;
+				}
+				Buffer->BytesAtLastPartial = Buffer->Bytes.Num();
+			}
+			const FString SoFar = ContentSoFar(Buffer->ReadAll());
+			if (!SoFar.IsEmpty() && SoFar != Buffer->LastPartial)
+			{
+				Buffer->LastPartial = SoFar;
+				Partial.ExecuteIfBound(SoFar);
+			}
+		});
+	}
+
 	// Completion runs on the game thread; the game never waits for the model
 	Http->OnProcessRequestComplete().BindLambda(
-		[Callback, StartTime, Body](FHttpRequestPtr /*Req*/, FHttpResponsePtr Response, bool bConnected)
+		[Callback, StartTime, Body, Buffer, bStreamed](FHttpRequestPtr /*Req*/, FHttpResponsePtr Response, bool bConnected)
 		{
 			FLLMReply Reply;
 			Reply.LatencySeconds = static_cast<float>(FPlatformTime::Seconds() - StartTime);
+			const FString ResponseBody = bStreamed ? Buffer->ReadAll() : (Response.IsValid() ? Response->GetContentAsString() : FString());
 
 			if (!bConnected || !Response.IsValid())
 			{
@@ -250,12 +349,12 @@ void UOpenAICompatibleLLMProvider::SendAsync(const FLLMRequest& Request, FOnLLMR
 			else if (Response->GetResponseCode() != 200)
 			{
 				// Include the server's message (e.g. llama-server's error JSON) for the log
-				Reply.Error = FString::Printf(TEXT("http %d: %s"), Response->GetResponseCode(), *Response->GetContentAsString().Left(300).Replace(TEXT("\n"), TEXT(" ")));
+				Reply.Error = FString::Printf(TEXT("http %d: %s"), Response->GetResponseCode(), *ResponseBody.Left(300).Replace(TEXT("\n"), TEXT(" ")));
 				UE_LOG(LogAshes, Verbose, TEXT("LLM request body was: %s"), *Body);
 			}
 			else
 			{
-				ParseResponseBody(Response->GetContentAsString(), Reply);
+				ParseResponseBody(ResponseBody, Reply);
 			}
 
 			if (!Reply.bSuccess)

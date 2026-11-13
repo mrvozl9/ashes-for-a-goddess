@@ -1,4 +1,4 @@
-// AI-assisted: Claude Code, 11.11.2026, runs one conversation scene: prompt, model, validator, turn limit (Phase 5; full state machine in Phase 7); beats, clue hints, fallback context (Phase 4 data, 12.11.2026); soft / hard limit with hesitation; Phase 7: state machine (FSceneFlow), NPC brain, offline tree (13.11.2026). Reviewed by <pending>.
+// AI-assisted: Claude Code, 11.11.2026, runs one conversation scene: prompt, model, validator, turn limit (Phase 5; full state machine in Phase 7); beats, clue hints, fallback context (Phase 4 data, 12.11.2026); soft / hard limit with hesitation; Phase 7: state machine (FSceneFlow), NPC brain, offline tree, word-by-word reply (13.11.2026); Phase 6 fixes 4, 7. Reviewed by <pending>.
 
 #include "SceneDirectorSubsystem.h"
 #include "Ashes.h"
@@ -12,6 +12,7 @@
 #include "ResponseValidator.h"
 #include "NPCBrainComponent.h"
 #include "OfflineLLMProvider.h"
+#include "ReplyStream.h"
 #include "Engine/DataTable.h"
 #include "Engine/World.h"
 #include "TimerManager.h"
@@ -225,6 +226,7 @@ void USceneDirectorSubsystem::SubmitLine(const FString& InLine)
 
 	bWaiting = true;
 	RequestStartTime = FPlatformTime::Seconds();
+	bFirstWordsLogged = false;
 	OnThinkingChanged.Broadcast(true);
 	++RequestSerial;
 
@@ -266,6 +268,19 @@ void USceneDirectorSubsystem::RequestReply(const FLLMRequest& Request, int32 Att
 	const int32 Serial = GSceneSerial;
 	const int32 ReqSerial = RequestSerial;
 	TWeakObjectPtr<USceneDirectorSubsystem> WeakThis(this);
+
+	// Word by word (Phase 7): a new attempt (also the silent retry) starts with an empty live line
+	ClearLiveReply();
+	bLiveBlocked = false;
+	FOnLLMPartial Partial = FOnLLMPartial::CreateLambda([WeakThis, Serial, ReqSerial](const FString& TextSoFar)
+	{
+		USceneDirectorSubsystem* Self = WeakThis.Get();
+		if (Self && Serial == GSceneSerial && Self->bActive && ReqSerial == Self->RequestSerial && Self->bWaiting)
+		{
+			Self->HandlePartialText(TextSoFar);
+		}
+	});
+
 	GI->RequestReply(Request, FOnLLMReply::CreateLambda([WeakThis, Serial, ReqSerial, Request, AttemptsLeft](const FLLMReply& Reply)
 	{
 		USceneDirectorSubsystem* Self = WeakThis.Get();
@@ -313,7 +328,53 @@ void USceneDirectorSubsystem::RequestReply(const FLLMRequest& Request, int32 Att
 		{
 			Self->UseFallback(Request);
 		}
-	}));
+	}), Partial);
+}
+
+void USceneDirectorSubsystem::HandlePartialText(const FString& TextSoFar)
+{
+	if (bLiveBlocked)
+	{
+		return;
+	}
+	const FString Reply = AshesReplyStream::ExtractReply(TextSoFar);
+	if (Reply.TrimStartAndEnd().IsEmpty())
+	{
+		return;
+	}
+	const FAshesValidationContext Context = FAshesValidationContext::FromCard(Card, Scene);
+	if (AshesReplyStream::IsBlocked(Reply, Context))
+	{
+		// A locked spoiler or unsafe word is being written: take it off the screen at once; the validator will
+		// reject the finished reply and ask again (or the character dodges)
+		UE_LOG(LogAshes, Log, TEXT("Scene: live reply hidden (blocked word while writing)"));
+		bLiveBlocked = true;
+		ClearLiveReply();
+		return;
+	}
+	// Whole words only, and nothing that could be the start of a locked phrase
+	const FString Shown = AshesReplyStream::SafeToShow(Reply, Context);
+	if (Shown.IsEmpty() || Shown == LiveReply)
+	{
+		return;
+	}
+	if (!bFirstWordsLogged)
+	{
+		bFirstWordsLogged = true;
+		// GDD 13.5 early warning: the first words should appear within 4 s on average (measured in the game window)
+		UE_LOG(LogAshes, Log, TEXT("Scene: first words after %.1f s"), FPlatformTime::Seconds() - RequestStartTime);
+	}
+	LiveReply = Shown;
+	OnReplyPartial.Broadcast(LiveReply);
+}
+
+void USceneDirectorSubsystem::ClearLiveReply()
+{
+	if (!LiveReply.IsEmpty())
+	{
+		LiveReply.Reset();
+		OnReplyPartial.Broadcast(FString());
+	}
 }
 
 void USceneDirectorSubsystem::UseFallback(const FLLMRequest& Request)
@@ -325,6 +386,10 @@ void USceneDirectorSubsystem::UseFallback(const FLLMRequest& Request)
 void USceneDirectorSubsystem::ShowHesitation()
 {
 	// Status only ("Zafir hesitates..."): no dialogue line, the real answer may still come
+	if (!LiveReply.IsEmpty())
+	{
+		return; // the words are already appearing: no need to say he hesitates
+	}
 	UE_LOG(LogAshes, Log, TEXT("Scene: soft limit reached after %.1f s, still waiting"), FPlatformTime::Seconds() - RequestStartTime);
 	OnHesitating.Broadcast();
 }
@@ -335,6 +400,7 @@ void USceneDirectorSubsystem::HesitateInsteadOfReply(const FLLMRequest& Request,
 	{
 		GetWorld()->GetTimerManager().ClearTimer(HesitateTimer);
 	}
+	ClearLiveReply(); // the words shown so far will not be his answer
 	UE_LOG(LogAshes, Log, TEXT("Scene: no answer (%s): hesitate line, turn not counted"), *Reason);
 
 	UAshesGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance<UAshesGameInstance>() : nullptr;
@@ -615,6 +681,7 @@ void USceneDirectorSubsystem::DeliverReply(const FLLMResponse& InResponse, bool 
 	{
 		Response.Reply = TEXT("...");
 	}
+	ClearLiveReply(); // the checked, final line replaces the words shown while writing
 
 	// Values and beats change on real model replies and on offline tree answers;
 	// a fallback line leaves them unchanged (GDD 8.1)
@@ -735,6 +802,8 @@ void USceneDirectorSubsystem::EndScene()
 		GI->ClearPendingPrime(); // a warm-up still waiting for the model belongs to this scene
 	}
 	AIModeHandle.Reset();
+	LiveReply.Reset();
+	bLiveBlocked = false;
 	Flow = FSceneFlow(); // back to Idle: GetPhase() must not report the old scene
 	Tree.Reset();
 

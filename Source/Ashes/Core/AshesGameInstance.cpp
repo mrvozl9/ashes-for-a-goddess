@@ -1,4 +1,4 @@
-// AI-assisted: Claude Code, 10.11.2026, AI mode and the single entry point for model requests with automatic fallback (Phase 3); prompt warm-up (Phase 5, 11.11.2026); warm-up kept until the model is ready, AI mode change event (Phase 6 fix 6, 13.11.2026). Reviewed by <pending>.
+// AI-assisted: Claude Code, 10.11.2026, AI mode and the single entry point for model requests with automatic fallback (Phase 3); prompt warm-up (Phase 5, 11.11.2026); warm-up kept until the model is ready, AI mode change event (Phase 6 fix 6, 13.11.2026); partial text passed through for word-by-word replies (Phase 7, 13.11.2026). Reviewed by <pending>.
 
 #include "AshesGameInstance.h"
 #include "Ashes.h"
@@ -93,7 +93,7 @@ FString UAshesGameInstance::GetAIStatusText() const
 	return TEXT("AI: offline, pre-written dialogue");
 }
 
-void UAshesGameInstance::RequestReply(const FLLMRequest& Request, FOnLLMReply Callback)
+void UAshesGameInstance::RequestReply(const FLLMRequest& Request, FOnLLMReply Callback, FOnLLMPartial Partial)
 {
 	if (GetAIMode() == EAIMode::Offline)
 	{
@@ -102,7 +102,7 @@ void UAshesGameInstance::RequestReply(const FLLMRequest& Request, FOnLLMReply Ca
 	}
 
 	TWeakObjectPtr<UAshesGameInstance> WeakThis(this);
-	ModelProvider->SendAsync(Request, FOnLLMReply::CreateLambda([WeakThis, Request, Callback](const FLLMReply& Reply)
+	ModelProvider->SendAsyncStreaming(Request, FOnLLMReply::CreateLambda([WeakThis, Request, Callback](const FLLMReply& Reply)
 	{
 		UAshesGameInstance* Self = WeakThis.Get();
 		if (Reply.bSuccess || !Self)
@@ -121,7 +121,7 @@ void UAshesGameInstance::RequestReply(const FLLMRequest& Request, FOnLLMReply Ca
 			Out.LatencySeconds = Latency;
 			Callback.ExecuteIfBound(Out);
 		}));
-	}));
+	}), Partial);
 }
 
 void UAshesGameInstance::RequestFallback(const FLLMRequest& Request, FOnLLMReply Callback)

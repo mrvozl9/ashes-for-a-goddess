@@ -1,4 +1,4 @@
-// AI-assisted: Claude Code, 10.11.2026, request / reply types for the LLM providers (Phase 3); fallback context fields (Phase 4, 12.11.2026). Reviewed by <pending>.
+// AI-assisted: Claude Code, 10.11.2026, request / reply types for the LLM providers (Phase 3); fallback context fields (Phase 4, 12.11.2026); FOnLLMPartial for word-by-word replies (Phase 7, 13.11.2026). Reviewed by <pending>.
 
 #pragma once
 
@@ -104,3 +104,10 @@ struct ASHES_API FLLMReply
 
 /** Called on the game thread when a request finishes (success, failure or timeout) */
 DECLARE_DELEGATE_OneParam(FOnLLMReply, const FLLMReply& /*Reply*/);
+
+/**
+ *  Called on the game thread while the model is still writing, with all of its raw text so far (the JSON as it grows).
+ *  Not validated: only for showing the reply word by word; the finished reply still goes through UResponseValidator.
+ *  (Phase 7, 13.11.2026)
+ */
+DECLARE_DELEGATE_OneParam(FOnLLMPartial, const FString& /*TextSoFar*/);

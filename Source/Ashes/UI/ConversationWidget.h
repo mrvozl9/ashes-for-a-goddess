@@ -1,4 +1,4 @@
-// AI-assisted: Claude Code, 11.11.2026, conversation screen logic; WBP_Conversation provides the layout (Phase 5); hesitation status (12.11.2026); pick-only with 1 / 2 / 3 keys while the AI is offline (13.11.2026). Reviewed by <pending>.
+// AI-assisted: Claude Code, 11.11.2026, conversation screen logic; WBP_Conversation provides the layout (Phase 5); hesitation status (12.11.2026); pick-only with 1 / 2 / 3 keys while the AI is offline; reply shown word by word (13.11.2026). Reviewed by <pending>.
 
 #pragma once
 
@@ -70,6 +70,7 @@ private:
 	UFUNCTION() void HandleReplyReady(const FLLMResponse& Response, bool bFromFallback);
 	UFUNCTION() void HandleThinking(bool bThinking);
 	UFUNCTION() void HandleHesitating();
+	UFUNCTION() void HandleReplyPartial(const FString& TextSoFar);
 	UFUNCTION() void HandleTurns(int32 TurnsLeft);
 	UFUNCTION() void HandleReply1();
 	UFUNCTION() void HandleReply2();
@@ -88,4 +89,10 @@ private:
 	TArray<FString> Lines;
 	int32 SuggestionCount = 0;
 	bool bThinking = false;
+
+	/** Index in Lines of the reply that is still being written (word by word), or INDEX_NONE */
+	int32 LiveLineIndex = INDEX_NONE;
+
+	/** Removes the unfinished reply line, if any */
+	void RemoveLiveLine();
 };

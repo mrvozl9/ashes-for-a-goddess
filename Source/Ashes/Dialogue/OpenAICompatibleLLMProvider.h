@@ -1,4 +1,4 @@
-// AI-assisted: Claude Code, 10.11.2026, HTTP provider for OpenAI-compatible chat endpoints (built-in llama-server, Ollama, cloud) (Phase 3); streamed so a timed-out answer stops on the server (11.11.2026). Reviewed by <pending>.
+// AI-assisted: Claude Code, 10.11.2026, HTTP provider for OpenAI-compatible chat endpoints (built-in llama-server, Ollama, cloud) (Phase 3); streamed so a timed-out answer stops on the server (11.11.2026); partial text while the model writes (Phase 7, 13.11.2026). Reviewed by <pending>.
 
 #pragma once
 
@@ -36,6 +36,12 @@ public:
 	bool bDisableThinking = true;
 
 	virtual void SendAsync(const FLLMRequest& Request, FOnLLMReply Callback) override;
+
+	/** Streams: Partial gets the model's text so far while it arrives (Phase 7, word-by-word reply) */
+	virtual void SendAsyncStreaming(const FLLMRequest& Request, FOnLLMReply Callback, FOnLLMPartial Partial) override;
+
+	/** The text written so far in a streamed body that may end in the middle of a line (public for tests) */
+	static FString ContentSoFar(const FString& StreamBody);
 	virtual bool IsAvailable() const override { return !BaseUrl.IsEmpty(); }
 	virtual FString GetProviderName() const override { return FString::Printf(TEXT("OpenAI-compatible (%s)"), *BaseUrl); }
 

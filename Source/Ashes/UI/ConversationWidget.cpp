@@ -1,4 +1,4 @@
-// AI-assisted: Claude Code, 11.11.2026, conversation screen logic; WBP_Conversation provides the layout (Phase 5); hesitation status (12.11.2026); no typing while the AI is offline (Phase 6 fix 7, 13.11.2026). Reviewed by <pending>.
+// AI-assisted: Claude Code, 11.11.2026, conversation screen logic; WBP_Conversation provides the layout (Phase 5); hesitation status (12.11.2026); no typing while the AI is offline (Phase 6 fix 7, 13.11.2026); reply shown word by word (Phase 7, 13.11.2026). Reviewed by <pending>.
 
 #include "ConversationWidget.h"
 #include "SceneDirectorSubsystem.h"
@@ -23,6 +23,7 @@ void UConversationWidget::InitConversation(USceneDirectorSubsystem* InDirector)
 	InDirector->OnThinkingChanged.AddDynamic(this, &UConversationWidget::HandleThinking);
 	InDirector->OnTurnsChanged.AddDynamic(this, &UConversationWidget::HandleTurns);
 	InDirector->OnHesitating.AddDynamic(this, &UConversationWidget::HandleHesitating);
+	InDirector->OnReplyPartial.AddDynamic(this, &UConversationWidget::HandleReplyPartial);
 
 	NameText->SetText(FText::FromString(InDirector->GetSpeakerName()));
 	ThinkingText->SetText(FText::Format(LOCTEXT("Thinking", "{0} is thinking..."), FText::FromString(InDirector->GetSpeakerName())));
@@ -56,8 +57,43 @@ void UConversationWidget::NativeConstruct()
 	SetIsFocusable(true); // offline the screen itself takes the 1 / 2 / 3 keys
 }
 
+void UConversationWidget::HandleReplyPartial(const FString& TextSoFar)
+{
+	// Word by word (Phase 7): one line that grows while the model writes; the checked line replaces it
+	if (TextSoFar.IsEmpty())
+	{
+		RemoveLiveLine();
+		// Still waiting (a retry after a failed check, or a blocked word): show "... is thinking" again
+		ThinkingText->SetVisibility(bThinking ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden);
+		RefreshDialogue();
+		return;
+	}
+	const FString Speaker = Director.IsValid() ? Director->GetSpeakerName() : FString();
+	const FString Line = Speaker.IsEmpty() ? TextSoFar : FString::Printf(TEXT("%s: %s"), *Speaker, *TextSoFar);
+	if (Lines.IsValidIndex(LiveLineIndex))
+	{
+		Lines[LiveLineIndex] = Line;
+	}
+	else
+	{
+		LiveLineIndex = Lines.Add(Line);
+	}
+	ThinkingText->SetVisibility(ESlateVisibility::Hidden); // the words themselves show that he is answering
+	RefreshDialogue();
+}
+
+void UConversationWidget::RemoveLiveLine()
+{
+	if (Lines.IsValidIndex(LiveLineIndex))
+	{
+		Lines.RemoveAt(LiveLineIndex);
+	}
+	LiveLineIndex = INDEX_NONE;
+}
+
 void UConversationWidget::HandleLinePosted(const FString& Speaker, const FString& Text)
 {
+	RemoveLiveLine(); // a finished line never sits next to its unfinished copy
 	Lines.Add(Speaker.IsEmpty() ? Text : FString::Printf(TEXT("%s: %s"), *Speaker, *Text));
 	RefreshDialogue();
 }

@@ -1,4 +1,4 @@
-// AI-assisted: Claude Code, 11.11.2026, runs one conversation scene: prompt, model, validator, turn limit (Phase 5; full state machine in Phase 7); beats, clue hints, fallback context (Phase 4 data, 12.11.2026); soft / hard limit with hesitation; Phase 7: state machine (FSceneFlow), NPC brain, offline tree (13.11.2026). Reviewed by <pending>.
+// AI-assisted: Claude Code, 11.11.2026, runs one conversation scene: prompt, model, validator, turn limit (Phase 5; full state machine in Phase 7); beats, clue hints, fallback context (Phase 4 data, 12.11.2026); soft / hard limit with hesitation; Phase 7: state machine (FSceneFlow), NPC brain, offline tree, word-by-word reply (13.11.2026); Phase 6 fixes 4, 7. Reviewed by <pending>.
 
 #pragma once
 
@@ -22,6 +22,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FAshesTurnsChanged, int32, TurnsLeft
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FAshesSceneEnded);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FAshesHesitating);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FAshesSceneResolved, bool, bFull);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FAshesReplyPartial, const FString&, TextSoFar);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FAshesCaught);
 
 /**
@@ -115,6 +116,13 @@ public:
 	UPROPERTY(BlueprintAssignable, Category="Conversation")
 	FAshesCaught OnCaught;
 
+	/**
+	 *  The character's reply while the model is still writing it (word by word, not yet validated).
+	 *  Empty text = take the unfinished line off the screen (it failed the check, or the final line replaces it).
+	 */
+	UPROPERTY(BlueprintAssignable, Category="Conversation")
+	FAshesReplyPartial OnReplyPartial;
+
 	/** Minimum time the typing indicator shows (design.md Motion_TypingIndicator) */
 	static constexpr float MinThinkingSeconds = 0.4f;
 
@@ -168,6 +176,21 @@ private:
 	/** Offline answers for this scene (DT_OfflineTrees); inactive when the scene has no tree */
 	FOfflineTreeWalker Tree;
 	bool bTreeEnded = false;
+
+	/** Word by word (Phase 7): the model's text so far arrived for the current line */
+	void HandlePartialText(const FString& TextSoFar);
+
+	/** Takes the unfinished line off the screen (before the final line, a retry or a dodge) */
+	void ClearLiveReply();
+
+	/** The reply text shown so far for the current request (empty = nothing shown) */
+	FString LiveReply;
+
+	/** The shown text hit a locked spoiler or unsafe word: stop showing this request's words */
+	bool bLiveBlocked = false;
+
+	/** The time to the first words was logged for the current line */
+	bool bFirstWordsLogged = false;
 
 	/** The AI went online or offline during the scene: show or hide typing, and offline give pick-only buttons */
 	void HandleAIModeChanged();
